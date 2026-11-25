@@ -1,6 +1,6 @@
 use super::setups::{self, PrinterSetup};
 use super::{Binding, BookletSubset, Content, Layout, Orientation, PageOrder, SizeMode, Subset, print, spool};
-use pdfcraft_engine::print::PAPERS;
+use patronuspdf_engine::print::PAPERS;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Which {
@@ -101,7 +101,7 @@ pub struct PrintDraft {
     /// Label: turn a further 180°.
     pub label_flip: bool,
     /// Label: each page's printed area and text direction, read when Label is chosen
-    /// ([`PdfCraftApp::read_label_crops`]); empty until then.
+    /// ([`PatronusPdfApp::read_label_crops`]); empty until then.
     pub crops: Vec<Option<print::Crop>>,
     /// The pages `crops` were read for, so a changed page selection reads them again.
     pub crop_pages: Option<Vec<usize>>,

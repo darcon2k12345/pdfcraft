@@ -4,7 +4,7 @@ use egui::Key;
 use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use pdfcraft_ui_egui::PdfCraftApp;
+use patronuspdf_ui_egui::PatronusPdfApp;
 
 /// A one-page document showing "Page 1".
 fn fixture() -> Vec<u8> {
@@ -32,9 +32,9 @@ fn fixture() -> Vec<u8> {
 }
 
 /// The document open in Edit text with its paragraph in the editor.
-fn editing() -> Harness<'static, PdfCraftApp> {
+fn editing() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture()).expect("fixture opens");
         app
@@ -54,7 +54,7 @@ fn editing() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn paragraph_spacing(h: &Harness<'static, PdfCraftApp>) -> Option<f64> {
+fn paragraph_spacing(h: &Harness<'static, PatronusPdfApp>) -> Option<f64> {
     h.state().views[0].line_editor.as_ref().map(|e| e.extras.paragraph_spacing)
 }
 

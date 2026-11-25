@@ -28,14 +28,14 @@ pub(crate) type NomError<'a> = nom::error::Error<ParserInput<'a>>;
 
 pub(crate) type NomResult<'a, O, E = NomError<'a>> = IResult<ParserInput<'a>, O, E>;
 
-/// PdfCraft patch: objects one top-level parse may build, counting every array element and
-/// dictionary value at any depth (the same cap as `pdfcraft_cos`'s `MAX_NODES`). Each object
+/// Patronus PDF patch: objects one top-level parse may build, counting every array element and
+/// dictionary value at any depth (the same cap as `patronuspdf_cos`'s `MAX_NODES`). Each object
 /// costs a hundred bytes or more, so a decoded stream of `0 0 0 ...` otherwise built one per
 /// two input bytes: gigabytes from a stream inside the decompression limit. Real arrays (page
 /// trees, parent trees, widths) stay far below.
 pub(crate) const MAX_OBJECT_NODES: usize = 1 << 22;
 
-/// PdfCraft patch: the budget of a container parsed outside `_direct_object` (an indirect
+/// Patronus PDF patch: the budget of a container parsed outside `_direct_object` (an indirect
 /// object's body, a content-stream operand, a CMap or inline-image dictionary). Its contents are
 /// charged but the container itself isn't, so it starts one short and the whole object stays
 /// within `MAX_OBJECT_NODES`. (`MAX_OBJECT_NODES` is a nonzero constant, so this can't underflow.)
@@ -289,7 +289,7 @@ fn null(input: ParserInput) -> NomResult<Object> {
     map(tag(&b"null"[..]), |_| Object::Null).parse(input)
 }
 
-/// An array, nested at most `depth` levels. PdfCraft patch: every element is charged to `nodes`
+/// An array, nested at most `depth` levels. Patronus PDF patch: every element is charged to `nodes`
 /// (see `_direct_object`), which bounds the element count of one array and of all arrays nested
 /// in it.
 fn array(depth: usize, nodes: &Cell<usize>) -> impl Fn(ParserInput) -> NomResult<Vec<Object>> {
@@ -492,7 +492,7 @@ fn _direct_object(depth: usize, nodes: &Cell<usize>) -> impl Fn(ParserInput) -> 
             return Err(nom::Err::Failure(NomError::from_error_kind(input, ErrorKind::TooLarge)));
         }
         let (rest, object) = terminated(_direct_objects(depth - 1, nodes), space).parse(input)?;
-        // PdfCraft patch: charge each object once it is built, so a failed alternative costs
+        // Patronus PDF patch: charge each object once it is built, so a failed alternative costs
         // nothing; its children were charged as they were built. A spent budget is a Failure,
         // which ends the whole parse instead of backtracking into another alternative.
         let Some(left) = nodes.get().checked_sub(1) else {
@@ -503,14 +503,14 @@ fn _direct_object(depth: usize, nodes: &Cell<usize>) -> impl Fn(ParserInput) -> 
     }
 }
 
-/// One direct object from a fresh node budget. PdfCraft patch: object streams now parse through
+/// One direct object from a fresh node budget. Patronus PDF patch: object streams now parse through
 /// `direct_object_within`; only tests use this.
 #[cfg(test)]
 pub fn direct_object(input: ParserInput) -> Option<Object> {
     direct_object_within(input, &Cell::new(MAX_OBJECT_NODES))
 }
 
-/// PdfCraft patch: parse one direct object, building at most `nodes` objects (the object itself
+/// Patronus PDF patch: parse one direct object, building at most `nodes` objects (the object itself
 /// and everything nested in it) and leaving the unspent count in `nodes`.
 pub(crate) fn direct_object_within(input: ParserInput, nodes: &Cell<usize>) -> Option<Object> {
     strip_nom(_direct_object(crate::reader::MAX_NESTING_DEPTH, nodes)(input))

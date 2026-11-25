@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use pdfcraft_automation::{Automation, Content, ToolError};
+use patronuspdf_automation::{Automation, Content, ToolError};
 use serde_json::{Value, json};
 
 /// One visible page and a hidden template `More` holding the text field `Extra`.
@@ -34,7 +34,7 @@ fn form() -> Vec<u8> {
 }
 
 fn setup(test: &str) -> (PathBuf, Automation) {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-page-templates-{test}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-page-templates-{test}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("form.pdf"), form()).unwrap();

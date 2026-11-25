@@ -33,12 +33,12 @@ fn picture_hash(width: usize, height: usize, rgba: &[u8]) -> u64 {
     h.finish()
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Whether text and images may be copied out of document `id`; says why not when they may
     /// not. Reading aloud and accessibility tools don't ask (assistive technology may read
     /// anything, §7.6.4.2).
     pub(crate) fn may_copy(&mut self, id: DocId) -> bool {
-        if self.session.get(id).is_none_or(pdfcraft_engine::Document::allows_copying) {
+        if self.session.get(id).is_none_or(patronuspdf_engine::Document::allows_copying) {
             return true;
         }
         self.notify(copy_refused().to_string());
@@ -149,8 +149,11 @@ impl PdfCraftApp {
         // A newer copy wins over a whole-document copy still reading its pages.
         self.document_copy = None;
         let text = clip.text();
-        let picture =
-            clip.objects().iter().find(|o| o.target.kind == pdfcraft_engine::ObjectKind::Image && o.content_type == "image").map(|o| o.target.index);
+        let picture = clip
+            .objects()
+            .iter()
+            .find(|o| o.target.kind == patronuspdf_engine::ObjectKind::Image && o.content_type == "image")
+            .map(|o| o.target.index);
         self.object_clip_mark = if !text.is_empty() {
             ctx.copy_text(text.clone());
             ObjectClipMark::Text(text)
@@ -162,8 +165,8 @@ impl PdfCraftApp {
         } else {
             ObjectClipMark::None
         };
-        self.object_clipboard = Some(pdfcraft_engine::ObjectClipboard::new(clip));
-        if cut && let Some(delete) = pdfcraft_engine::Edit::delete_objects(page, targets) {
+        self.object_clipboard = Some(patronuspdf_engine::ObjectClipboard::new(clip));
+        if cut && let Some(delete) = patronuspdf_engine::Edit::delete_objects(page, targets) {
             self.apply_edit(delete);
         }
         true
@@ -174,7 +177,7 @@ impl PdfCraftApp {
     fn pastes_objects(&self, pastes: &[ClipboardPaste]) -> bool {
         pastes.iter().all(|paste| match (paste, &self.object_clip_mark) {
             (ClipboardPaste::Text(text), ObjectClipMark::Text(copied)) => text.replace("\r\n", "\n").trim_end() == copied.trim_end(),
-            (ClipboardPaste::Text(text), ObjectClipMark::None) => !pdfcraft_engine::is_xfdf_comments(text),
+            (ClipboardPaste::Text(text), ObjectClipMark::None) => !patronuspdf_engine::is_xfdf_comments(text),
             (ClipboardPaste::Image(image), ObjectClipMark::Picture(hash)) => {
                 let rgba: Vec<u8> = image.pixels.iter().flat_map(egui::Color32::to_srgba_unmultiplied).collect();
                 picture_hash(image.size[0], image.size[1], &rgba) == *hash
@@ -237,7 +240,7 @@ impl PdfCraftApp {
     /// nothing legible (a word copied in another app since is that word, not the comments copied
     /// before it).
     fn paste_comment_text(&mut self, i: usize, text: String) {
-        if pdfcraft_engine::is_xfdf_comments(&text) {
+        if patronuspdf_engine::is_xfdf_comments(&text) {
             self.paste_comments(i, Some(text), None);
         } else if text.trim().is_empty() && self.comment_clipboard.is_some() {
             self.paste_comments(i, None, None);
@@ -287,20 +290,20 @@ impl PdfCraftApp {
             self.notify_tr("The document's security settings don't allow this change");
             return false;
         }
-        let count = pdfcraft_engine::comment_count(&xfdf);
-        let Some(bounds) = pdfcraft_engine::comments_bounds(&xfdf).filter(|_| count > 0) else {
+        let count = patronuspdf_engine::comment_count(&xfdf);
+        let Some(bounds) = patronuspdf_engine::comments_bounds(&xfdf).filter(|_| count > 0) else {
             self.notify_tr("The clipboard holds no comments");
             return false;
         };
         match at {
             Some((page, [x, y])) => {
                 let offset = [x - (bounds[0] + bounds[2]) / 2.0, y - (bounds[1] + bounds[3]) / 2.0];
-                self.apply_edit(pdfcraft_engine::Edit::PasteComments { xfdf, page, offset: Some(offset) })
+                self.apply_edit(patronuspdf_engine::Edit::PasteComments { xfdf, page, offset: Some(offset) })
             }
             None => {
                 let Some(view) = self.views.get_mut(i) else { return false };
                 view.comments.clear_selection();
-                let outlines = pdfcraft_engine::comment_outlines(&xfdf);
+                let outlines = patronuspdf_engine::comment_outlines(&xfdf);
                 view.comments.gesture = Some(comments::Gesture::Place { xfdf, bounds, count, outlines });
                 self.notify_tr("Click where the copied comments go; Escape lets them go");
                 true
@@ -324,7 +327,7 @@ impl PdfCraftApp {
             if !self.may_copy(id) {
                 return false;
             }
-            let job = |v: &crate::DocView, doc: &pdfcraft_engine::Document| match waiting {
+            let job = |v: &crate::DocView, doc: &patronuspdf_engine::Document| match waiting {
                 Some(span) if !v.all_text => DocumentCopyJob::of_selection(v, doc, span),
                 _ => DocumentCopyJob::of(v, doc),
             };
@@ -412,15 +415,15 @@ mod review_tests {
         egui::Event::Key { key: egui::Key::V, physical_key: None, pressed, repeat: false, modifiers }
     }
 
-    fn image_app() -> PdfCraftApp {
-        let mut app = PdfCraftApp::new();
+    fn image_app() -> PatronusPdfApp {
+        let mut app = PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
         app.clipboard_override = Some(crate::create_ui::Clip::Image { width: 1, height: 1, rgba: vec![255, 0, 0, 255] });
         app
     }
 
-    fn frame(app: &mut PdfCraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> usize {
+    fn frame(app: &mut PatronusPdfApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) -> usize {
         ctx.run_ui(egui::RawInput { time: Some(time), events, ..Default::default() }, |ui| app.clipboard_keys(0, ui.ctx()))
             .drop_without_applying_deltas();
         app.session.get(app.views[0].id).unwrap().page_images(0).len()
@@ -534,12 +537,12 @@ mod review_tests {
         app.views[0].organize = true;
         assert_eq!(frame(&mut app, &ctx, 2.0, vec![delivered()]), 0);
         app.views[0].organize = false;
-        app.apply_edit(pdfcraft_engine::Edit::Protect(pdfcraft_engine::Protection {
+        app.apply_edit(patronuspdf_engine::Edit::Protect(patronuspdf_engine::Protection {
             permissions_password: Some("owner".into()),
             ..Default::default()
         }));
         let bytes = app.session.save_bytes(app.views[0].id).unwrap();
-        let mut restricted = PdfCraftApp::new();
+        let mut restricted = PatronusPdfApp::new();
         restricted.open_bytes("restricted.pdf", None, bytes.as_ref().clone()).unwrap();
         assert!(!restricted.session.get(restricted.views[0].id).unwrap().allows_modification());
         assert_eq!(frame(&mut restricted, &ctx, 3.0, vec![delivered()]), 0);
@@ -547,7 +550,7 @@ mod review_tests {
 
     #[test]
     fn review_an_image_less_release_is_silent_but_explicit_paste_explains() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
         app.toast = None;
@@ -573,7 +576,7 @@ mod review_tests {
 
     #[test]
     fn review_text_paste_release_is_silent_and_later_image_paste_still_works() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
         app.last_copied_image = Some((1, 1, vec![255, 0, 0, 255]));
@@ -609,7 +612,7 @@ mod review_tests {
 
     #[test]
     fn review_failed_keyboard_cut_keeps_the_image_selection() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
         app.views[0].image_selection = Some(crate::edit_text_ui::ImageSelection::at(0, 0));
@@ -623,13 +626,13 @@ mod review_tests {
     /// even with a comment selected too, rather than copying the comment.
     #[test]
     fn a_selection_waiting_for_its_text_takes_copy_over_a_selected_comment() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
-        let shape = pdfcraft_engine::Shape::Rectangle { rect: [10.0, 10.0, 50.0, 50.0] };
-        let style = pdfcraft_engine::Style::default_for(&shape);
-        let note = pdfcraft_engine::NewAnnotation { page: 0, shape, style, contents: String::new(), author: String::new() };
-        assert!(app.apply_edit(pdfcraft_engine::Edit::AddAnnotation(note)));
+        let shape = patronuspdf_engine::Shape::Rectangle { rect: [10.0, 10.0, 50.0, 50.0] };
+        let style = patronuspdf_engine::Style::default_for(&shape);
+        let note = patronuspdf_engine::NewAnnotation { page: 0, shape, style, contents: String::new(), author: String::new() };
+        assert!(app.apply_edit(patronuspdf_engine::Edit::AddAnnotation(note)));
         app.views[0].comments.select_only((0, 0));
         // The page's text is not read yet: the selection waits for it.
         app.views[0].texts.clear();

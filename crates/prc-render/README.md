@@ -1,4 +1,4 @@
-# pdfcraft-prc-render
+# patronuspdf-prc-render
 
 A headless CPU renderer for PRC 3D models read by `craft-prc`: placed meshes in world space, a fitted camera, a
 depth-buffered triangle fill and headlight shading, into a straight-RGBA image.

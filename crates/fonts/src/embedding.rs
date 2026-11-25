@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object};
 use skrifa::{
     FontRef, MetadataProvider,
     instance::{LocationRef, Size},
@@ -310,7 +310,7 @@ fn same_resource(doc: &Document, fonts: &Dict, name: &str, programs: &mut Progra
 mod tests {
     use super::*;
     use crate::pdf::Metrics;
-    use pdfcraft_cos::Stream;
+    use patronuspdf_cos::Stream;
 
     #[test]
     fn full_unicode_embedding_keeps_outlines_advances_and_roundtrip_codes() {

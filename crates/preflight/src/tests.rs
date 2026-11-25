@@ -116,7 +116,7 @@ fn convert_fixes_all_but_fonts() {
     assert_eq!(xmp::value(&x, "dc:title").as_deref(), Some("Report"));
     assert_eq!(xmp::value(&x, "xmp:CreateDate").as_deref(), Some("2024-01-05T09:30:00Z"));
     // It survives a save.
-    let bytes = pdfcraft_cos::write_full(&doc, &Default::default()).unwrap();
+    let bytes = patronuspdf_cos::write_full(&doc, &Default::default()).unwrap();
     let back = Document::open(std::sync::Arc::new(bytes)).unwrap();
     assert_eq!(verify(&back, Level::A2b).len(), 1);
 }
@@ -472,8 +472,8 @@ fn forbidden_actions_chained_behind_allowed_ones_are_found_and_removed() {
         assert!(found, "case {i}: {:#?}", verify(&doc, Level::A2b));
         let r = convert(&mut doc, Level::A2b).unwrap();
         assert!(!r.remaining.iter().any(|x| x.clause == "6.5.1"), "case {i}: {:#?}", r.remaining);
-        let plain = pdfcraft_cos::SaveOptions { object_streams: false, ..Default::default() };
-        let bytes = pdfcraft_cos::write_full(&doc, &plain).unwrap();
+        let plain = patronuspdf_cos::SaveOptions { object_streams: false, ..Default::default() };
+        let bytes = patronuspdf_cos::write_full(&doc, &plain).unwrap();
         assert!(!bytes.windows(11).any(|w| w == b"/JavaScript"), "case {i}: {}", String::from_utf8_lossy(&bytes));
     }
 }
@@ -504,7 +504,7 @@ fn an_output_intent_profile_header_is_read_within_a_size_cap() {
         let mut doc = build(&[&format!("<< /Type /Catalog {intent} >>"), "null"], "");
         let mut profile = vec![0; size];
         profile[16..20].copy_from_slice(b"CMYK");
-        doc.set(pdfcraft_cos::ObjRef::new(2, 0), Object::Stream(pdfcraft_cos::Stream::flate(Dict::new(), &profile)));
+        doc.set(patronuspdf_cos::ObjRef::new(2, 0), Object::Stream(patronuspdf_cos::Stream::flate(Dict::new(), &profile)));
         assert_eq!(pdfa_intent_profile(&doc), Some(n), "a {size}-byte profile");
     }
 }
@@ -518,7 +518,7 @@ fn a_widget_without_a_type_loses_its_additional_actions() {
     let widget = "<< /Subtype /Widget /Rect [0 0 10 10] /F 4 /T (f) /AA << /K << /S /JavaScript /JS (1) >> >> >>";
     let mut doc = build(&["<< /Type /Catalog /Pages 2 0 R >>", pages, page, widget], "");
     convert(&mut doc, Level::A2b).unwrap();
-    let w = doc.get(pdfcraft_cos::ObjRef::new(4, 0));
+    let w = doc.get(patronuspdf_cos::ObjRef::new(4, 0));
     assert!(w.as_dict().is_some_and(|d| d.get(b"AA").is_none()), "{w:?}");
 }
 
@@ -535,7 +535,7 @@ fn forbidden_annotations_leave_their_page_together() {
     let mut doc = build(&refs, "");
     let r = convert(&mut doc, Level::A2b).unwrap();
     assert!(r.fixed.iter().any(|f| f.starts_with(&format!("{n}: removed multimedia"))), "{:?}", r.fixed);
-    let left = pdfcraft_model::pages(&doc)[0].dict.get(b"Annots").and_then(|a| doc.resolve(a).as_array().map(Vec::len));
+    let left = patronuspdf_model::pages(&doc)[0].dict.get(b"Annots").and_then(|a| doc.resolve(a).as_array().map(Vec::len));
     assert_eq!(left, Some(1));
 }
 
@@ -1782,7 +1782,7 @@ fn file_header_is_checked_and_rewritten() {
     assert!(report.fixed.iter().any(|f| f == "Rewrote the file header"));
     assert_eq!(doc.version(), "1.7");
     assert!(verify(&doc, Level::A2b).iter().all(|i| i.clause != "6.1.2"));
-    let saved = pdfcraft_cos::write_full(&doc, &Default::default()).unwrap();
+    let saved = patronuspdf_cos::write_full(&doc, &Default::default()).unwrap();
     assert!(saved.starts_with(b"%PDF-1.7\n%\xE2\xE3\xCF\xD3\n"));
     // A good version with a short comment is rewritten too, keeping its version.
     let mut doc = build_with_header(b"%PDF-1.4\n%ab\n", &objs, "");
@@ -1919,7 +1919,7 @@ fn trailer_file_identifier_is_checked_and_added() {
         let report = convert(&mut doc, Level::A2b).unwrap();
         assert!(report.fixed.iter().any(|f| f == "Added a file identifier (ID)"), "{extra}");
         assert!(verify(&doc, Level::A2b).iter().all(|i| i.clause != "6.1.3"), "{extra}");
-        let saved = pdfcraft_cos::write_incremental(&doc, &Default::default()).unwrap();
+        let saved = patronuspdf_cos::write_incremental(&doc, &Default::default()).unwrap();
         let saved = Document::open(std::sync::Arc::new(saved)).unwrap();
         assert!(verify(&saved, Level::A2b).iter().all(|i| i.clause != "6.1.3"), "{extra}");
     }
@@ -2039,7 +2039,7 @@ fn set_state_no_op_and_named_actions_are_checked_wherever_actions_are() {
         ("<< /S /Named /N /Print >>", "A Named Print action isn't allowed"),
         ("<< /S /Named /N 6 0 R >>", "A Named Print action isn't allowed"),
     ];
-    let plain = pdfcraft_cos::SaveOptions { object_streams: false, ..Default::default() };
+    let plain = patronuspdf_cos::SaveOptions { object_streams: false, ..Default::default() };
     for (action, message) in forbidden {
         for (place, mut doc) in placed(action) {
             let issues = verify(&doc, Level::A2b);
@@ -2048,7 +2048,7 @@ fn set_state_no_op_and_named_actions_are_checked_wherever_actions_are() {
             let r = convert(&mut doc, Level::A2b).unwrap();
             let left: Vec<_> = r.remaining.iter().filter(|i| i.clause.starts_with("6.5")).collect();
             assert!(left.is_empty(), "{action} in {place}: {left:#?}");
-            let bytes = pdfcraft_cos::write_full(&doc, &plain).unwrap();
+            let bytes = patronuspdf_cos::write_full(&doc, &plain).unwrap();
             for kind in [&b"/SetState"[..], b"/NOP", b"/Named"] {
                 assert!(!bytes.windows(kind.len()).any(|w| w == kind), "{action} in {place}: {}", String::from_utf8_lossy(&bytes));
             }
@@ -2059,7 +2059,7 @@ fn set_state_no_op_and_named_actions_are_checked_wherever_actions_are() {
         let issues = verify(&doc, Level::A2b);
         assert!(!issues.iter().any(|i| i.clause == "6.5.1"), "{place}: {issues:#?}");
         convert(&mut doc, Level::A2b).unwrap();
-        let bytes = pdfcraft_cos::write_full(&doc, &plain).unwrap();
+        let bytes = patronuspdf_cos::write_full(&doc, &plain).unwrap();
         let kept = bytes.windows(6).any(|w| w == b"/Named");
         assert_eq!(kept, place != "a page's /AA", "{place}: {}", String::from_utf8_lossy(&bytes));
     }
@@ -2337,7 +2337,7 @@ fn pages_sharing_a_form_read_it_once() {
     }
     let objs: Vec<&str> = objs.iter().map(String::as_str).collect();
     let doc = build(&objs, "");
-    let list = pdfcraft_model::pages(&doc);
+    let list = patronuspdf_model::pages(&doc);
     let mut shared = transparency::Shared::default();
     let reads: Vec<usize> = list.iter().map(|p| transparency::page_reads(&doc, &p.dict, &mut shared)).collect();
     assert!(reads.first().is_some_and(|&n| n > 200), "the first page reads the chain: {reads:?}");

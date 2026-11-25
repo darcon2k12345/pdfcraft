@@ -62,8 +62,8 @@ const BLUE: [u8; 4] = [0, 0, 255, 255];
 /// RGBA at PDF point (x, y) on `page` as the viewer draws it (1 px/pt, page height 300).
 fn shown(s: &Session, id: DocId, page: usize, x: u32, y: u32) -> [u8; 4] {
     let doc = s.get(id).unwrap();
-    let mut r = pdfcraft_render::PageRenderer::new(doc.display.clone(), screen_config(doc));
-    let out = r.render(pdfcraft_render::RenderRequest { page, scale: 1.0, ..Default::default() });
+    let mut r = patronuspdf_render::PageRenderer::new(doc.display.clone(), screen_config(doc));
+    let out = r.render(patronuspdf_render::RenderRequest { page, scale: 1.0, ..Default::default() });
     assert!(out.error.is_none(), "{:?}", out.error);
     let i = (((300 - y) * out.width + x) * 4) as usize;
     out.rgba[i..i + 4].try_into().unwrap()
@@ -72,8 +72,8 @@ fn shown(s: &Session, id: DocId, page: usize, x: u32, y: u32) -> [u8; 4] {
 /// RGBA at (x, y) on `page` as it prints or exports: the document itself.
 fn printed(s: &Session, id: DocId, page: usize, x: u32, y: u32) -> [u8; 4] {
     let doc = s.get(id).unwrap();
-    let mut r = pdfcraft_render::PageRenderer::new(doc.bytes.clone(), doc.config.clone());
-    let out = r.render(pdfcraft_render::RenderRequest { page, scale: 1.0, ..Default::default() });
+    let mut r = patronuspdf_render::PageRenderer::new(doc.bytes.clone(), doc.config.clone());
+    let out = r.render(patronuspdf_render::RenderRequest { page, scale: 1.0, ..Default::default() });
     let i = (((300 - y) * out.width + x) * 4) as usize;
     out.rgba[i..i + 4].try_into().unwrap()
 }

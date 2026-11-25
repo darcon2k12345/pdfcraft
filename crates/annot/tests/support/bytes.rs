@@ -3,7 +3,7 @@
 //! that have nothing to do with the test being written.
 #![allow(dead_code)]
 
-//! A deliberately strict reader over the *bytes* a save produced, independent of `pdfcraft-cos`.
+//! A deliberately strict reader over the *bytes* a save produced, independent of `patronuspdf-cos`.
 //!
 //! Reopening saved bytes with `Document::open` and comparing dictionaries proves that our writer
 //! and our reader agree. It does not prove what is actually *in the file*: a lenient parser can

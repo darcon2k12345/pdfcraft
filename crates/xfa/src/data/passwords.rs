@@ -6,7 +6,7 @@ use super::write::{datasets_stream_ref, rewrite};
 use super::{DataNode, DataPath, Document, MAX_DEPTH, Node, ObjRef, Object, SomIndices, Template, Ui, XfaError};
 
 /// How deep the AcroForm field tree is walked for password fields: as deep as the form's own
-/// field walk (`pdfcraft_forms::fields`), which is what editing and dataset synchronization see.
+/// field walk (`patronuspdf_forms::fields`), which is what editing and dataset synchronization see.
 const MAX_ACRO_DEPTH: usize = 64;
 
 /// The SOM path and default value of every AcroForm text field with the Password flag (bit 14,

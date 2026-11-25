@@ -3,11 +3,11 @@
 //! with an IME leaves the composition alone (the find bar and the Search panel).
 
 use egui_kittest::Harness;
-use pdfcraft_ui_egui::PdfCraftApp;
+use patronuspdf_ui_egui::PatronusPdfApp;
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.run_inline = true;
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, include_bytes!("../data/form.pdf").to_vec()).unwrap();
@@ -18,7 +18,7 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn query(h: &Harness<'static, PdfCraftApp>) -> String {
+fn query(h: &Harness<'static, PatronusPdfApp>) -> String {
     h.state().views[0].find.as_ref().unwrap().query.clone()
 }
 
@@ -41,7 +41,7 @@ fn find_selects_the_query_when_the_field_takes_the_keyboard() {
     assert_eq!(query(&h), "dog", "typing replaces the selected query");
 }
 
-type Open = dyn Fn(&mut Harness<'static, PdfCraftApp>);
+type Open = dyn Fn(&mut Harness<'static, PatronusPdfApp>);
 
 /// The find bar (⌘F) and the Search panel (Advanced Search) share the focus request.
 fn fields() -> [(&'static str, Box<Open>); 2] {

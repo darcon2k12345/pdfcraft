@@ -1,7 +1,7 @@
 //! Editing a button's visible label through the CLI/MCP tool table (#2892).
 
-use pdfcraft_automation::{Automation, Content};
-use pdfcraft_engine::{DocId, Edit, NewField, Session};
+use patronuspdf_automation::{Automation, Content};
+use patronuspdf_engine::{DocId, Edit, NewField, Session};
 use serde_json::{Value, json};
 
 fn tool(a: &mut Automation, name: &str, args: Value) -> Value {
@@ -14,7 +14,7 @@ fn tool(a: &mut Automation, name: &str, args: Value) -> Value {
 #[test]
 /// Changing an existing caption regenerates the saved appearance and preserves form values.
 fn button_caption_can_be_changed_after_creation() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-button-caption-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-button-caption-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let mut session = Session::new();
     let bytes = session.create_blank(300.0, 400.0, 1).unwrap();
@@ -52,7 +52,7 @@ fn button_caption_can_be_changed_after_creation() {
     tool(&mut a, "edit_redo", json!({"doc": id}));
     tool(&mut a, "doc_save", json!({"doc": id, "path": "labelled.pdf"}));
     let saved = std::sync::Arc::new(std::fs::read(dir.join("labelled.pdf")).unwrap());
-    let doc = pdfcraft_cos::Document::open(saved).unwrap();
+    let doc = patronuspdf_cos::Document::open(saved).unwrap();
     let root = doc.get(doc.root().unwrap());
     let form = doc.resolve(root.as_dict().unwrap().get(b"AcroForm").unwrap());
     let fields = doc.resolve(form.as_dict().unwrap().get(b"Fields").unwrap());
@@ -99,9 +99,9 @@ fn button_caption_can_be_changed_after_creation() {
 /// An unindexed setter reaches both widgets even when the first caption already matches.
 #[test]
 fn javascript_caption_updates_all_widgets_with_undo_and_save() {
-    use pdfcraft_cos::{Dict, Document, Object, PdfString, SaveOptions, write_full};
+    use patronuspdf_cos::{Dict, Document, Object, PdfString, SaveOptions, write_full};
 
-    let dir = std::env::temp_dir().join(format!("pdfcraft-js-multi-caption-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-js-multi-caption-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let mut session = Session::new();
     let bytes = session.create_blank(300.0, 400.0, 1).unwrap();

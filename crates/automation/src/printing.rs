@@ -1,7 +1,7 @@
 //! Printing tools: list printers, and print (or save the print-ready PDF) with Acrobat's Print
 //! dialog options.
 
-use pdfcraft_engine::print::{self, Binding, BookletSubset, Layout, Orientation, PAPERS, PageOrder, SizeMode, Subset, spool};
+use patronuspdf_engine::print::{self, Binding, BookletSubset, Layout, Orientation, PAPERS, PageOrder, SizeMode, Subset, spool};
 use serde_json::{Value, json};
 
 use crate::{Args, Automation, Result, ToolError, failed, write_atomic};
@@ -160,12 +160,12 @@ impl Automation {
             None => (0..n).collect(),
         };
         let target = match a.opt_str("to")?.unwrap_or("gray") {
-            "gray" | "grayscale" => pdfcraft_engine::ColourTarget::Gray,
-            "rgb" => pdfcraft_engine::ColourTarget::Rgb,
-            "cmyk" => pdfcraft_engine::ColourTarget::Cmyk,
+            "gray" | "grayscale" => patronuspdf_engine::ColourTarget::Gray,
+            "rgb" => patronuspdf_engine::ColourTarget::Rgb,
+            "cmyk" => patronuspdf_engine::ColourTarget::Cmyk,
             other => return Err(ToolError::InvalidArgs(format!("unknown target {other:?} (gray, rgb, cmyk)"))),
         };
-        let settings = pdfcraft_engine::ConvertColours {
+        let settings = patronuspdf_engine::ConvertColours {
             target,
             preserve_black: a.opt_bool("preserve_black")?.unwrap_or(true),
             images: a.opt_bool("images")?.unwrap_or(true),
@@ -180,7 +180,7 @@ impl Automation {
         let declared = self.doc(a)?.standards();
         let pdfa = declared.pdfa.map(|(part, level)| format!("PDF/A-{part}{}", level.to_lowercase()));
         let loses: Vec<String> = pdfa.into_iter().chain(declared.output_intents.iter().map(|i| format!("output intent {i}"))).collect();
-        let r = self.apply(a, pdfcraft_engine::Edit::ConvertColours { pages, settings })?;
+        let r = self.apply(a, patronuspdf_engine::Edit::ConvertColours { pages, settings })?;
         Ok(json!({
             "colours": found.colours,
             "images": found.images,
@@ -389,7 +389,7 @@ impl Automation {
         };
         // The document's Will Print actions run first: what they change is printed (#269).
         let scripts = if self.doc(a)?.allows_printing() {
-            self.session.run_document_actions(id, pdfcraft_engine::js::DocumentScriptEvent::WillPrint)
+            self.session.run_document_actions(id, patronuspdf_engine::js::DocumentScriptEvent::WillPrint)
         } else {
             Default::default()
         };
@@ -411,7 +411,7 @@ impl Automation {
                 // A GDI (v3) driver gets transparent sheets flattened (#6155, #5838, #5940); XPS
                 // (v4) drivers print them as they are.
                 let flatten = job.printer.as_deref().is_some_and(spool::gdi_driver);
-                let bytes = pdfcraft_engine::spooler::spooler_copy(bytes, &mut job, flatten);
+                let bytes = patronuspdf_engine::spooler::spooler_copy(bytes, &mut job, flatten);
                 out["job"] = json!(spool::submit(&bytes, &job).map_err(|e| failed(e.to_string()))?);
             }
         }

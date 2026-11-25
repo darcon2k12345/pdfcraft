@@ -1,4 +1,4 @@
-# PdfCraft integration candidate, 2026-10-30
+# Patronus PDF integration candidate, 2026-10-30
 
 Base: 1d1cbc4ec92012767f5b48c92b451e15eb401c42
 
@@ -54,7 +54,7 @@ Integration-specific changes: preserve hard/soft wrap metadata together with per
 
 ## Per-PR regression evidence
 
-Evidence: [Linux job 124006360624](https://github.com/FredApps/pdfcraft/actions/runs/41038860617/job/124006360624) on bdf56209ce6a22980ef488eec92a55073f5a4e18: 5,627 passed, 15 skipped. The Windows leg of the same run also passed.
+Evidence: [Linux job 124006360624](https://github.com/FredApps/patronuspdf/actions/runs/41038860617/job/124006360624) on bdf56209ce6a22980ef488eec92a55073f5a4e18: 5,627 passed, 15 skipped. The Windows leg of the same run also passed.
 
 For each source-head diff above, the added `#[test]` function names were matched against PASS/SKIP entries in the combined Linux log. Every listed source regression was found passing, none skipped or missing. Counts overlap because stacked PRs carry their prerequisites; they must not be summed as distinct tests. This records source regression coverage, not manual feature acceptance.
 

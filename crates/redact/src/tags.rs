@@ -8,7 +8,7 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object};
 
 use crate::RedactError;
 
@@ -64,7 +64,7 @@ fn by_mcid(doc: &Document, resources: &Dict, data: &[u8]) -> Marked {
     let held = resources.get(b"Properties").filter(|p| matches!(p, Object::Ref(_))).map(|p| doc.resolve(p));
     let named = held.as_deref().or_else(|| resources.get(b"Properties")).and_then(Object::as_dict);
     let mut mcids: HashMap<Vec<u8>, Option<i64>> = HashMap::new();
-    for op in pdfcraft_content::parse(data).ops {
+    for op in patronuspdf_content::parse(data).ops {
         match op.op.as_slice() {
             b"BDC" => {
                 // The property list is the last operand, as the renderer reads it.
@@ -106,7 +106,7 @@ fn by_mcid(doc: &Document, resources: &Dict, data: &[u8]) -> Marked {
             b"f" | b"F" | b"f*" | b"B" | b"B*" | b"b" | b"b*" | b"S" | b"s" | b"sh" | b"Do" | b"BI" => true,
             _ => false,
         };
-        pdfcraft_content::write_op(&op, &mut out.ops);
+        patronuspdf_content::write_op(&op, &mut out.ops);
         drawn += usize::from(draws);
     }
     // Sequences the stream leaves open run to its end.

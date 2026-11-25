@@ -8,7 +8,7 @@ use std::sync::{
 };
 
 use lopdf::{Dictionary, Error, Object, ObjectId, Result};
-use pdfcraft_cos::{Document, Object as CosObject};
+use patronuspdf_cos::{Document, Object as CosObject};
 
 pub(crate) trait Structure {
     fn trailer(&self) -> &Dictionary;
@@ -187,14 +187,14 @@ impl Structure for LazyStructure {
     }
 }
 
-/// Nesting `convert` accepts: the same as `pdfcraft_cos`'s parser (each array or dictionary
+/// Nesting `convert` accepts: the same as `patronuspdf_cos`'s parser (each array or dictionary
 /// one level), so every object cos parsed converts. A lower limit would turn deep but valid
 /// nesting into a lazy-reader failure and force the eager lopdf fallback.
 const CONVERT_DEPTH: usize = 128;
 
 /// Convert a cos dictionary to lopdf's, without `/PieceInfo`. `depth` is the nesting level of
 /// the dictionary itself; its values sit one level deeper.
-fn convert_dict(dict: &pdfcraft_cos::Dict, depth: usize) -> Result<Dictionary> {
+fn convert_dict(dict: &patronuspdf_cos::Dict, depth: usize) -> Result<Dictionary> {
     if depth > CONVERT_DEPTH {
         return Err(Error::RecursionLimit);
     }
@@ -330,7 +330,7 @@ trailer
         let mut bytes = Vec::new();
         source.save_to(&mut bytes).unwrap();
         let cos = Document::open(Arc::new(bytes)).unwrap();
-        let compressed = pdfcraft_cos::write_full(&cos, &pdfcraft_cos::SaveOptions::default()).unwrap();
+        let compressed = patronuspdf_cos::write_full(&cos, &patronuspdf_cos::SaveOptions::default()).unwrap();
         let eager = lopdf::Document::load_mem(&compressed).unwrap();
         let expected = Structure::page_ids(&eager);
         let view = LazyStructure::new(Arc::new(compressed), None).unwrap();

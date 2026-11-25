@@ -575,7 +575,7 @@ fn document_level_functions_are_available() {
 }
 
 /// #3940: a document script that throws after defining a helper (here calling an Acrobat method
-/// PdfCraft lacks) still leaves the helper, and the later scripts, to the field script.
+/// Patronus PDF lacks) still leaves the helper, and the later scripts, to the field script.
 #[test]
 fn a_failing_document_script_does_not_stop_the_field_script() {
     let docs = [
@@ -692,7 +692,7 @@ fn ordinary_nesting_still_runs() {
 /// hide the brackets that follow it from the nesting guard. The old scan read `'` as the start
 /// of a string, so every `(` after `/'/` on the line was skipped; boa's unbounded recursive
 /// parser then overflowed the script thread's stack (the console's `js_run` path, on the
-/// `pdfcraft-js` thread) and aborted the app. With that scan, 200 brackets fail this assertion
+/// `patronuspdf-js` thread) and aborted the app. With that scan, 200 brackets fail this assertion
 /// cleanly (boa reports a SyntaxError) and 64,000, the issue's file, overflow the stack.
 #[test]
 fn a_quote_in_a_regex_cannot_hide_nesting_from_the_guard() {
@@ -2176,7 +2176,7 @@ mod session {
     }
 
     /// The #5079 reproduction on the XFA-open path: an initialize script of `/'/` followed by
-    /// 64,000 `(` overflowed the `pdfcraft-xfa-session` thread's stack and aborted the app. The
+    /// 64,000 `(` overflowed the `patronuspdf-xfa-session` thread's stack and aborted the app. The
     /// nesting guard reads past the regex's quote, so the script is refused and the session stays
     /// alive for the next one. So is one where the quote puts later strings out of phase, nesting
     /// a level deeper on each of 5,000 lines.

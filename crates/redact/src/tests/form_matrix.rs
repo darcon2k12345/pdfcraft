@@ -65,7 +65,7 @@ fn a_form_whose_matrix_is_not_six_numbers_is_refused() {
         mark(&mut doc, 0, &[MARK], "");
         let result = apply(&mut doc, None);
         assert!(
-            matches!(&result, Err(RedactError::Cos(pdfcraft_cos::CosError::Syntax { detail, .. })) if detail.contains("/Matrix")),
+            matches!(&result, Err(RedactError::Cos(patronuspdf_cos::CosError::Syntax { detail, .. })) if detail.contains("/Matrix")),
             "{matrix} with 8 0 obj {}: {result:?}",
             String::from_utf8_lossy(extra)
         );
@@ -88,7 +88,7 @@ fn a_form_whose_matrix_goes_through_a_reference_to_a_reference_is_refused() {
             mark(&mut doc, 0, &[mark_at], "");
             let result = apply(&mut doc, None);
             assert!(
-                matches!(&result, Err(RedactError::Cos(pdfcraft_cos::CosError::Syntax { detail, .. })) if detail.contains("/Matrix")),
+                matches!(&result, Err(RedactError::Cos(patronuspdf_cos::CosError::Syntax { detail, .. })) if detail.contains("/Matrix")),
                 "{matrix}, 8 0 obj 9 0 R, 9 0 obj {}, mark at {mark_at:?}: {result:?}",
                 String::from_utf8_lossy(target)
             );
@@ -106,7 +106,7 @@ fn a_form_whose_matrix_is_not_six_numbers_counts_in_the_scans() {
     let counts: std::collections::HashMap<Hidden, usize> = scan(&doc).into_iter().collect();
     assert_eq!(counts[&Hidden::HiddenText], 1);
     let removed = remove_hidden(&mut doc, &[Hidden::HiddenText]);
-    assert!(matches!(&removed, Err(RedactError::Cos(pdfcraft_cos::CosError::Syntax { detail, .. })) if detail.contains("/Matrix")), "{removed:?}");
+    assert!(matches!(&removed, Err(RedactError::Cos(patronuspdf_cos::CosError::Syntax { detail, .. })) if detail.contains("/Matrix")), "{removed:?}");
 }
 
 /// Removing hidden layers alone never asks where content lands, so such a form is walked as it

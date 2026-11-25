@@ -2,11 +2,11 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::PdfCraftApp;
+use patronuspdf_ui_egui::PatronusPdfApp;
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, include_bytes!("../data/form.pdf").to_vec()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -18,9 +18,9 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn harness_with_bytes(name: &'static str, bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
+fn harness_with_bytes(name: &'static str, bytes: Vec<u8>) -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes(name, None, bytes).unwrap();
         app.set_option("zoom", "150").unwrap();
@@ -30,23 +30,23 @@ fn harness_with_bytes(name: &'static str, bytes: Vec<u8>) -> Harness<'static, Pd
     h
 }
 
-fn value(h: &Harness<'static, PdfCraftApp>, name: &str) -> Vec<String> {
+fn value(h: &Harness<'static, PatronusPdfApp>, name: &str) -> Vec<String> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().value.clone()
 }
 
 /// Click the centre of a field's widget.
-fn click_field(h: &mut Harness<'static, PdfCraftApp>, name: &str, widget: usize) {
+fn click_field(h: &mut Harness<'static, PatronusPdfApp>, name: &str, widget: usize) {
     let p = {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == name).unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, widget).expect("on screen").center()
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, widget).expect("on screen").center()
     };
     click_at(h, p);
 }
 
-fn click_at(h: &mut Harness<'static, PdfCraftApp>, p: egui::Pos2) {
+fn click_at(h: &mut Harness<'static, PatronusPdfApp>, p: egui::Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     h.drag_at(p);
@@ -56,12 +56,12 @@ fn click_at(h: &mut Harness<'static, PdfCraftApp>, p: egui::Pos2) {
 }
 
 /// Rest the pointer on the centre of a field's widget long enough for a tooltip.
-fn rest_on_field(h: &mut Harness<'static, PdfCraftApp>, name: &str) {
+fn rest_on_field(h: &mut Harness<'static, PatronusPdfApp>, name: &str) {
     let p = {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == name).unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen").center()
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen").center()
     };
     h.hover_at(p);
     for _ in 0..40 {
@@ -85,8 +85,8 @@ fn hovering_a_field_shows_its_tooltip() {
 }
 
 /// Give the `city` field these properties, as the Properties dialog would.
-fn set_city(h: &mut Harness<'static, PdfCraftApp>, props: pdfcraft_engine::FieldProps) {
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps { name: "city".into(), props: Box::new(props) });
+fn set_city(h: &mut Harness<'static, PatronusPdfApp>, props: patronuspdf_engine::FieldProps) {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps { name: "city".into(), props: Box::new(props) });
     h.run_steps(3);
 }
 
@@ -94,7 +94,7 @@ fn set_city(h: &mut Harness<'static, PdfCraftApp>, props: pdfcraft_engine::Field
 #[test]
 fn a_read_only_fields_tooltip_shows_on_hover() {
     let mut h = harness();
-    set_city(&mut h, pdfcraft_engine::FieldProps { tooltip: Some("Where you live".into()), read_only: Some(true), ..Default::default() });
+    set_city(&mut h, patronuspdf_engine::FieldProps { tooltip: Some("Where you live".into()), read_only: Some(true), ..Default::default() });
     rest_on_field(&mut h, "city");
     assert!(h.query_all_by_label("Where you live").next().is_some());
 }
@@ -119,7 +119,7 @@ fn read_only_widgets_are_skipped_by_tab_navigation() {
         let locked = doc.form.iter().find(|field| field.name == "locked").unwrap();
         assert!(!locked.read_only(), "the field itself is editable");
         assert!(locked.widgets[0].read_only, "only its widget is read-only");
-        let order = pdfcraft_ui_egui::forms_ui::tab_order(&doc.form, &doc.info)
+        let order = patronuspdf_ui_egui::forms_ui::tab_order(&doc.form, &doc.info)
             .into_iter()
             .filter_map(|(fi, wi)| doc.form.get(fi).map(|field| (field.name.as_str(), wi)))
             .collect::<Vec<_>>();
@@ -138,7 +138,7 @@ fn read_only_widgets_are_skipped_by_tab_navigation() {
 #[test]
 fn a_blank_tooltip_shows_nothing() {
     let mut h = harness();
-    set_city(&mut h, pdfcraft_engine::FieldProps { tooltip: Some("   ".into()), ..Default::default() });
+    set_city(&mut h, patronuspdf_engine::FieldProps { tooltip: Some("   ".into()), ..Default::default() });
     let s = h.state();
     let doc = s.session.get(s.views[0].id).unwrap();
     assert_eq!(doc.form.iter().find(|f| f.name == "city").unwrap().tooltip.as_deref(), Some("   "), "the blank /TU is in the file");
@@ -154,13 +154,17 @@ fn a_field_that_doesnt_scroll_stops_taking_text_when_full() {
     let mut h = harness();
     set_city(
         &mut h,
-        pdfcraft_engine::FieldProps { flags: vec![(pdfcraft_engine::field_flags::DO_NOT_SCROLL, true)], font_size: Some(12.0), ..Default::default() },
+        patronuspdf_engine::FieldProps {
+            flags: vec![(patronuspdf_engine::field_flags::DO_NOT_SCROLL, true)],
+            font_size: Some(12.0),
+            ..Default::default()
+        },
     );
-    let text_box = |h: &Harness<'static, PdfCraftApp>| {
+    let text_box = |h: &Harness<'static, PatronusPdfApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().field_text_box("city", 0).expect("the city field's text box")
     };
-    let typing = |h: &Harness<'static, PdfCraftApp>| h.state().views[0].forms.focus.as_ref().map(|f| f.text.clone()).unwrap_or_default();
+    let typing = |h: &Harness<'static, PatronusPdfApp>| h.state().views[0].forms.focus.as_ref().map(|f| f.text.clone()).unwrap_or_default();
     click_field(&mut h, "city", 0);
     h.event(egui::Event::Text("W".repeat(80)));
     h.run_steps(2);
@@ -190,8 +194,8 @@ fn a_multi_line_auto_sized_field_that_doesnt_scroll_stops_when_full() {
     let mut h = harness();
     set_city(
         &mut h,
-        pdfcraft_engine::FieldProps {
-            flags: vec![(pdfcraft_engine::field_flags::DO_NOT_SCROLL, true)],
+        patronuspdf_engine::FieldProps {
+            flags: vec![(patronuspdf_engine::field_flags::DO_NOT_SCROLL, true)],
             multiline: Some(true),
             font_size: Some(0.0),
             ..Default::default()
@@ -222,9 +226,9 @@ fn a_multi_line_auto_sized_field_that_doesnt_scroll_stops_when_full() {
 fn a_turned_field_places_the_caret_along_its_turned_text() {
     let mut h = harness();
     // Tall and narrow, with room up it for the text.
-    let props = pdfcraft_engine::FieldProps { rect: Some((0, [240.0, 20.0, 260.0, 170.0])), font_size: Some(10.0), ..Default::default() };
+    let props = patronuspdf_engine::FieldProps { rect: Some((0, [240.0, 20.0, 260.0, 170.0])), font_size: Some(10.0), ..Default::default() };
     set_city(&mut h, props);
-    set_city(&mut h, pdfcraft_engine::FieldProps { rotation: Some((0, 90)), ..Default::default() });
+    set_city(&mut h, patronuspdf_engine::FieldProps { rotation: Some((0, 90)), ..Default::default() });
     click_field(&mut h, "city", 0);
     assert_eq!(h.state().views[0].forms.focus.as_ref().map(|f| f.name.as_str()), Some("city"));
     h.event(egui::Event::Text("Paris".into()));
@@ -233,7 +237,7 @@ fn a_turned_field_places_the_caret_along_its_turned_text() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "city").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     click_at(&mut h, field.left_top() + egui::vec2(3.0, 2.0));
     h.event(egui::Event::Text("X".into()));
@@ -291,13 +295,13 @@ fn check_boxes_radios_and_choices() {
     assert_eq!(value(&h, "country"), ["fr"]);
 }
 
-fn focused(h: &Harness<'static, PdfCraftApp>) -> Option<(String, usize)> {
+fn focused(h: &Harness<'static, PatronusPdfApp>) -> Option<(String, usize)> {
     h.state().views[0].forms.focus.as_ref().map(|f| (f.name.clone(), f.widget))
 }
 
 /// A text field, a check box, another text field and a pair of radio buttons, one under the
 /// other, then two empty pages.
-fn check_box_harness() -> Harness<'static, PdfCraftApp> {
+fn check_box_harness() -> Harness<'static, PatronusPdfApp> {
     let bytes = pdf_from_objects(&[
         "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R 5 0 R 6 0 R 10 0 R] /DA (/Helv 0 Tf 0 g) /DR << /Font << /Helv 7 0 R >> >> >> >>",
         "<< /Type /Pages /Kids [3 0 R 9 0 R 13 0 R] /Count 3 /MediaBox [0 0 300 400] >>",
@@ -314,7 +318,7 @@ fn check_box_harness() -> Harness<'static, PdfCraftApp> {
         "<< /Type /Page /Parent 2 0 R >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("agree.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -356,9 +360,9 @@ fn tab_and_space_fill_in_a_check_box_between_text_fields() {
 fn tab_uses_the_first_remaining_widget_when_focus_leaves_the_order() {
     let mut h = check_box_harness();
     click_field(&mut h, "pick", 0);
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "pick".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { rect: Some((0, [320.0, 230.0, 336.0, 246.0])), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { rect: Some((0, [320.0, 230.0, 336.0, 246.0])), ..Default::default() }),
     });
     h.run_steps(3);
 
@@ -371,9 +375,9 @@ fn tab_uses_the_first_remaining_widget_when_focus_leaves_the_order() {
 fn shift_tab_uses_the_previous_remaining_widget_when_focus_leaves_the_order() {
     let mut h = check_box_harness();
     click_field(&mut h, "last", 0);
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "last".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { rect: Some((0, [320.0, 270.0, 340.0, 292.0])), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { rect: Some((0, [320.0, 270.0, 340.0, 292.0])), ..Default::default() }),
     });
     h.run_steps(3);
 
@@ -386,9 +390,9 @@ fn shift_tab_uses_the_previous_remaining_widget_when_focus_leaves_the_order() {
 fn shift_tab_wraps_to_the_last_widget_when_focus_leaves_the_order() {
     let mut h = check_box_harness();
     click_field(&mut h, "first", 0);
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "first".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { rect: Some((0, [320.0, 350.0, 340.0, 372.0])), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { rect: Some((0, [320.0, 350.0, 340.0, 372.0])), ..Default::default() }),
     });
     h.run_steps(3);
 
@@ -400,17 +404,17 @@ fn shift_tab_wraps_to_the_last_widget_when_focus_leaves_the_order() {
 #[test]
 fn tab_and_shift_tab_follow_widget_order_across_pages() {
     let mut h = check_box_harness();
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
         page: 1,
         rect: [20.0, 350.0, 180.0, 372.0],
-        kind: pdfcraft_engine::NewField::Text { multiline: false },
+        kind: patronuspdf_engine::NewField::Text { multiline: false },
         name: Some("second_page".into()),
     });
     h.run_steps(4);
     let order = {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
-        pdfcraft_ui_egui::forms_ui::tab_order(&doc.form, &doc.info)
+        patronuspdf_ui_egui::forms_ui::tab_order(&doc.form, &doc.info)
             .into_iter()
             .filter_map(|(fi, wi)| doc.form.get(fi).map(|field| (field.name.clone(), wi)))
             .collect::<Vec<_>>()
@@ -556,7 +560,7 @@ fn dragging_over_another_fields_text_focuses_it_and_selects_from_the_press() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "name").unwrap();
-        let rect = pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen");
+        let rect = patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen");
         (rect, egui::Id::unique(("form-field", s.views[0].view_key(), "name", 0usize)))
     };
     // From inside the first word ("Ad|a" at the field's auto size, 13.9 pt) to past the end of the text.
@@ -583,10 +587,10 @@ fn dragging_over_another_fields_text_focuses_it_and_selects_from_the_press() {
 fn date_fields_offer_a_calendar() {
     use egui_kittest::kittest::Queryable;
     let mut h = harness();
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
         page: 0,
         rect: [50.0, 40.0, 200.0, 60.0],
-        kind: pdfcraft_engine::NewField::Date,
+        kind: patronuspdf_engine::NewField::Date,
         name: Some("due".into()),
     });
     h.run_steps(4);
@@ -609,10 +613,10 @@ fn date_fields_offer_a_calendar() {
 fn the_calendar_follows_a_complete_date_typed_while_it_is_open() {
     use egui_kittest::kittest::Queryable;
     let mut h = harness();
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
         page: 0,
         rect: [50.0, 40.0, 200.0, 60.0],
-        kind: pdfcraft_engine::NewField::Date,
+        kind: patronuspdf_engine::NewField::Date,
         name: Some("due".into()),
     });
     h.run_steps(4);
@@ -642,16 +646,16 @@ fn the_calendar_follows_a_complete_date_typed_while_it_is_open() {
 fn an_undelimited_date_field_takes_a_typed_date_and_its_calendar_opens_on_it() {
     use egui_kittest::kittest::Queryable;
     let mut h = harness();
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
         page: 0,
         rect: [50.0, 40.0, 200.0, 60.0],
-        kind: pdfcraft_engine::NewField::Date,
+        kind: patronuspdf_engine::NewField::Date,
         name: Some("due".into()),
     });
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "due".into(),
-        props: Box::new(pdfcraft_engine::FieldProps {
-            format: Some(pdfcraft_engine::form_scripts::Format::Date("yyyymmdd".into())),
+        props: Box::new(patronuspdf_engine::FieldProps {
+            format: Some(patronuspdf_engine::form_scripts::Format::Date("yyyymmdd".into())),
             ..Default::default()
         }),
     }));
@@ -679,12 +683,17 @@ fn the_calendar_picks_today_in_the_fields_format_from_any_month() {
     s.session = std::mem::take(&mut s.session).with_clock(|| 1_700_000_000);
     assert_eq!(h.state().session.today(), (2023, 11, 14));
     for (name, rect) in [("due", [50.0, 40.0, 200.0, 60.0]), ("start", [50.0, 80.0, 200.0, 100.0])] {
-        h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField { page: 0, rect, kind: pdfcraft_engine::NewField::Date, name: Some(name.into()) });
+        h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
+            page: 0,
+            rect,
+            kind: patronuspdf_engine::NewField::Date,
+            name: Some(name.into()),
+        });
     }
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "start".into(),
-        props: Box::new(pdfcraft_engine::FieldProps {
-            format: Some(pdfcraft_engine::form_scripts::Format::Date("yyyy-mm-dd".into())),
+        props: Box::new(patronuspdf_engine::FieldProps {
+            format: Some(patronuspdf_engine::form_scripts::Format::Date("yyyy-mm-dd".into())),
             ..Default::default()
         }),
     }));
@@ -698,7 +707,7 @@ fn the_calendar_picks_today_in_the_fields_format_from_any_month() {
             h.run_steps(2);
         }
         h.get_by_label(shown);
-        if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+        if let Ok(dir) = std::env::var("PATRONUSPDF_SHOTS") {
             h.render().unwrap().save(format!("{dir}/calendar-today-{name}.png")).unwrap();
         }
         h.get_by_label("Today").click();
@@ -722,10 +731,10 @@ fn lithuanian_calendar_localizes_months_and_weekdays_without_changing_field_valu
     use egui_kittest::kittest::Queryable;
     let mut h = harness();
     h.state_mut().set_option("language", "lt").unwrap();
-    h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
+    h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
         page: 0,
         rect: [50.0, 40.0, 200.0, 60.0],
-        kind: pdfcraft_engine::NewField::Date,
+        kind: patronuspdf_engine::NewField::Date,
         name: Some("due".into()),
     });
     h.run_steps(4);
@@ -747,7 +756,7 @@ fn lithuanian_calendar_localizes_months_and_weekdays_without_changing_field_valu
 
 /// The value of `name` in a saved PDF, read back by opening it in a fresh app.
 fn saved_value(path: &std::path::Path, name: &str) -> Vec<String> {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.set_option("language", "en").unwrap();
     app.open_bytes("saved.pdf", None, std::fs::read(path).unwrap()).unwrap();
     app.session.get(app.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().value.clone()
@@ -755,7 +764,7 @@ fn saved_value(path: &std::path::Path, name: &str) -> Vec<String> {
 
 /// Step frames until the save has written `path`, instead of assuming it is there after a fixed
 /// number of frames. The write is atomic, so the file appears only when it is complete.
-fn wait_for_file(h: &mut Harness<'static, PdfCraftApp>, path: &std::path::Path) {
+fn wait_for_file(h: &mut Harness<'static, PatronusPdfApp>, path: &std::path::Path) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     while !path.exists() {
         assert!(std::time::Instant::now() < deadline, "the save never wrote {}", path.display());
@@ -772,7 +781,7 @@ fn wait_for_file(h: &mut Harness<'static, PdfCraftApp>, path: &std::path::Path) 
 fn scratch(name: &str) -> std::path::PathBuf {
     static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let dir = std::env::temp_dir().join(format!("pdfcraft-forms-{name}-{}-{n}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-forms-{name}-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
@@ -825,7 +834,7 @@ fn tabbing_back_to_the_same_field_then_saving_keeps_the_committed_value() {
             validated_form()
         };
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("tab.pdf", None, bytes).unwrap();
             app.set_option("left", "closed").unwrap();
@@ -897,13 +906,13 @@ fn key(key: egui::Key, modifiers: egui::Modifiers) -> egui::Event {
 }
 
 /// Deliver `events` together, in one frame.
-fn one_frame(h: &mut Harness<'static, PdfCraftApp>, events: Vec<egui::Event>) {
+fn one_frame(h: &mut Harness<'static, PatronusPdfApp>, events: Vec<egui::Event>) {
     h.input_mut().events.extend(events);
     h.run_steps(1);
 }
 
 /// Type `text` into field `name`, then press ⌘S in the same frame as `last` (more input).
-fn type_then_save_in_one_frame(h: &mut Harness<'static, PdfCraftApp>, name: &str, text: &str, last: egui::Event, out: &std::path::Path) {
+fn type_then_save_in_one_frame(h: &mut Harness<'static, PatronusPdfApp>, name: &str, text: &str, last: egui::Event, out: &std::path::Path) {
     click_field(h, name, 0);
     h.event(egui::Event::Text(text.into()));
     h.run_steps(2);
@@ -976,7 +985,7 @@ fn validated_form() -> Vec<u8> {
 fn pressing_another_text_field_validates_the_refused_value_once() {
     // The press commits `qty`; its release must not commit (and alert) a second time.
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("order.pdf", None, validated_form_with_note()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -991,7 +1000,7 @@ fn pressing_another_text_field_validates_the_refused_value_once() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "note").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen").center()
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen").center()
     };
     h.hover_at(p);
     h.run_steps(1);
@@ -1061,7 +1070,7 @@ fn fields_over_text() -> Vec<u8> {
 #[test]
 fn buttons_over_text_show_the_pointing_hand_not_the_i_beam() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("sheet.pdf", None, fields_over_text()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1074,11 +1083,11 @@ fn buttons_over_text_show_the_pointing_hand_not_the_i_beam() {
         let doc = s.session.get(s.views[0].id).unwrap();
         let at = |name: &str| {
             let f = doc.form.iter().find(|f| f.name == name).unwrap();
-            pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+            patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
         };
         (at("agree"), at("strength"), at("background"))
     };
-    let cursor_at = |h: &mut Harness<'static, PdfCraftApp>, p: egui::Pos2| {
+    let cursor_at = |h: &mut Harness<'static, PatronusPdfApp>, p: egui::Pos2| {
         h.hover_at(p);
         h.run_steps(2);
         h.output().platform_output.cursor_icon
@@ -1111,7 +1120,7 @@ fn a_rejected_value_keeps_the_typing_and_stops_the_save() {
     let dir = scratch("rejected");
     let out = dir.join("saved.pdf");
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("order.pdf", None, validated_form()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1167,7 +1176,7 @@ fn refused_value_stops_save(commit_key: egui::Key, case: &str) {
     let dir = scratch(case);
     let out = dir.join("saved.pdf");
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("order.pdf", None, validated_form()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1202,9 +1211,9 @@ fn flattening_while_typing_flattens_the_typed_text() {
     let s = h.state();
     let doc = s.session.get(s.views[0].id).unwrap();
     assert!(doc.form.iter().all(|f| f.name != "name"), "the field is flattened");
-    let mut r = pdfcraft_render::PageRenderer::new(doc.bytes.clone(), Default::default());
+    let mut r = patronuspdf_render::PageRenderer::new(doc.bytes.clone(), Default::default());
     let text = r
-        .render(pdfcraft_render::RenderRequest { page: 0, kind: pdfcraft_render::RequestKind::Text, scale: 1.0, ..Default::default() })
+        .render(patronuspdf_render::RenderRequest { page: 0, kind: patronuspdf_render::RequestKind::Text, scale: 1.0, ..Default::default() })
         .text
         .map(|t| t.plain_text())
         .unwrap_or_default();
@@ -1223,7 +1232,7 @@ mod revert_tests {
         fn new() -> Self {
             static NEXT: AtomicU64 = AtomicU64::new(0);
             for _ in 0..128 {
-                let path = std::env::temp_dir().join(format!("pdfcraft-revert-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+                let path = std::env::temp_dir().join(format!("patronuspdf-revert-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
                 match std::fs::create_dir(&path) {
                     Ok(()) => return Self(path),
                     Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
@@ -1244,17 +1253,17 @@ mod revert_tests {
         let dir = RevertDir::new();
         let path = dir.0.join("saved.pdf");
         let mut h = harness();
-        assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldValue {
+        assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldValue {
             name: "name".into(),
-            value: pdfcraft_engine::FieldValue::Text("Saved original".into()),
+            value: patronuspdf_engine::FieldValue::Text("Saved original".into()),
         }));
         h.state_mut().save_override = Some(path.to_string_lossy().into_owned());
-        assert!(h.state_mut().save_active(pdfcraft_ui_egui::SaveTarget::InPlace));
+        assert!(h.state_mut().save_active(patronuspdf_ui_egui::SaveTarget::InPlace));
         let saved = std::fs::read(&path).unwrap();
-        assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+        assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
             name: "name".into(),
-            props: Box::new(pdfcraft_engine::FieldProps {
-                validate: Some(pdfcraft_engine::form_scripts::Validate::Range { min: Some(0.0), max: Some(10.0) }),
+            props: Box::new(patronuspdf_engine::FieldProps {
+                validate: Some(patronuspdf_engine::form_scripts::Validate::Range { min: Some(0.0), max: Some(10.0) }),
                 ..Default::default()
             }),
         }));
@@ -1274,12 +1283,13 @@ mod revert_tests {
         assert!(h.state().views[0].forms.focus.is_none() && h.state().views[0].pending_edit.is_none());
         assert_eq!(h.state().first_dirty(), None, "Revert discards rejected typing too");
         assert_eq!(value(&h, "name"), ["Saved original"]);
-        assert!(h.state_mut().save_active(pdfcraft_ui_egui::SaveTarget::InPlace));
+        assert!(h.state_mut().save_active(patronuspdf_ui_egui::SaveTarget::InPlace));
         assert_eq!(saved_value(&path, "name"), ["Saved original"]);
         let bytes = std::fs::read(&path).unwrap();
         assert_eq!(bytes, saved, "later Save cannot resurrect the discarded draft");
-        let mut renderer = pdfcraft_render::PageRenderer::new(std::sync::Arc::new(bytes), Default::default());
-        let output = renderer.render(pdfcraft_render::RenderRequest { page: 0, kind: pdfcraft_render::RequestKind::Text, ..Default::default() });
+        let mut renderer = patronuspdf_render::PageRenderer::new(std::sync::Arc::new(bytes), Default::default());
+        let output =
+            renderer.render(patronuspdf_render::RenderRequest { page: 0, kind: patronuspdf_render::RequestKind::Text, ..Default::default() });
         assert!(output.error.is_none(), "saved appearance is readable: {:?}", output.error);
         assert!(output.text.unwrap().plain_text().contains("Saved original"), "saved AP still draws the original value");
     }
@@ -1288,14 +1298,14 @@ mod revert_tests {
 #[test]
 fn calculated_field_and_script_side_effect_on_another_page_re_render() {
     let mut h = harness();
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::InsertBlankPage { at: 1, width: 300.0, height: 400.0 }));
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::InsertBlankPage { at: 1, width: 300.0, height: 400.0 }));
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::AddField {
         page: 1,
         rect: [20.0, 20.0, 100.0, 40.0],
-        kind: pdfcraft_engine::NewField::Text { multiline: false },
+        kind: patronuspdf_engine::NewField::Text { multiline: false },
         name: Some("page2_field".into()),
     }));
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldScript {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldScript {
         name: "page2_field".into(),
         event: "calculate".into(),
         script: Some("event.value = 'from_' + getField('name').value;".into()),
@@ -1328,7 +1338,7 @@ fn overlay_clears_after_fresh_tiles_zoom_then_edit_and_rejected_edit() {
     assert!(!h.state().views[0].forms.unbaked.contains(&("name".to_string(), 0)));
 
     // 2. Rejected edit: typing rejected by validate script leaves unbaked clean.
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldScript {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldScript {
         name: "city".into(),
         event: "validate".into(),
         script: Some("event.rc = false;".into()),
@@ -1368,7 +1378,7 @@ fn the_fields_panel_lists_a_field_on_a_missing_page_as_unplaced() {
         "<< /Type /Annot /Subtype /Widget /FT /Tx /T (orphan) /Rect [10 10 100 30] /P 99 /F 4 >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("orphan.pdf", None, bytes).unwrap();
         app.set_option("panel", "fields").unwrap();
@@ -1390,7 +1400,7 @@ fn list_box_clicks_select_directly_and_ctrl_click_toggles_multi() {
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("lists.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1404,7 +1414,7 @@ fn list_box_clicks_select_directly_and_ctrl_click_toggles_multi() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "ListOne").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     let zoom_one = r_one.height() / 70.0;
     let p_green = egui::pos2(r_one.center().x, r_one.min.y + 19.0 * zoom_one);
@@ -1422,7 +1432,7 @@ fn list_box_clicks_select_directly_and_ctrl_click_toggles_multi() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "ListMulti").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     let zoom_multi = r_multi.height() / 70.0;
     let p_tue = egui::pos2(r_multi.center().x, r_multi.min.y + 19.0 * zoom_multi);
@@ -1451,7 +1461,7 @@ fn list_box_clicks_select_directly_and_ctrl_click_toggles_multi() {
 }
 
 /// The selected option positions of `name` (`/I`, or `/V` without a usable one).
-fn selected(h: &Harness<'static, PdfCraftApp>, name: &str) -> Vec<usize> {
+fn selected(h: &Harness<'static, PatronusPdfApp>, name: &str) -> Vec<usize> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().selected.clone()
 }
@@ -1469,7 +1479,7 @@ fn a_list_box_click_picks_one_of_two_options_with_the_same_export_value() {
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("dup.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1483,7 +1493,7 @@ fn a_list_box_click_picks_one_of_two_options_with_the_same_export_value() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "dup").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     let zoom = r.height() / 70.0;
     // Row 0 (One-A), then row 1 (One-B): each click changes the selection though /V stays (1).
@@ -1500,7 +1510,7 @@ fn a_list_box_click_picks_one_of_two_options_with_the_same_export_value() {
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::S);
     wait_for_file(&mut h, &out);
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("saved.pdf", None, std::fs::read(&out).unwrap()).unwrap();
     let reopened = app.session.get(app.views[0].id).unwrap().form.iter().find(|f| f.name == "dup").unwrap().clone();
     assert_eq!(reopened.value, ["1"], "/V is the one export value");
@@ -1522,7 +1532,7 @@ fn a_click_in_a_twin_list_box_with_options_in_another_order_picks_the_row_clicke
         "<< /Type /Annot /Subtype /Widget /FT /Ch /T (dup) /Opt [[(1) (One-B)] [(1) (One-A)] [(2) (Two)]] /Rect [50 100 200 170] /P 3 0 R /F 4 >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("twins.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1530,7 +1540,7 @@ fn a_click_in_a_twin_list_box_with_options_in_another_order_picks_the_row_clicke
         app
     });
     h.run_steps(4);
-    let twins = |h: &Harness<'static, PdfCraftApp>| -> Vec<Vec<usize>> {
+    let twins = |h: &Harness<'static, PatronusPdfApp>| -> Vec<Vec<usize>> {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().filter(|f| f.name == "dup").map(|f| f.selected.clone()).collect()
     };
@@ -1538,7 +1548,7 @@ fn a_click_in_a_twin_list_box_with_options_in_another_order_picks_the_row_clicke
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().filter(|f| f.name == "dup").nth(1).unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     let zoom = r.height() / 70.0;
     // Row 0 of the second list box: One-B.
@@ -1567,7 +1577,7 @@ fn a_single_select_list_box_given_two_values_shows_and_takes_one() {
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("pair.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1581,7 +1591,7 @@ fn a_single_select_list_box_given_two_values_shows_and_takes_one() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "pair").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     let zoom = r.height() / 70.0;
     // Row 1 (Japan), which /V also named: clicking it makes it the one value.
@@ -1602,9 +1612,9 @@ fn auto_size_form() -> Vec<u8> {
     ])
 }
 
-fn auto_size_harness() -> Harness<'static, PdfCraftApp> {
+fn auto_size_harness() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("auto.pdf", None, auto_size_form()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1617,15 +1627,15 @@ fn auto_size_harness() -> Harness<'static, PdfCraftApp> {
 
 /// The on-screen size for `text` in the field, and how wide (single-line) or tall (multiline,
 /// wrapped at the box) that text is in the screen font, against the room inside the box (pt).
-fn on_screen_fit(h: &Harness<'static, PdfCraftApp>, name: &str, text: &str) -> (f32, f32, f32) {
+fn on_screen_fit(h: &Harness<'static, PatronusPdfApp>, name: &str, text: &str) -> (f32, f32, f32) {
     let s = h.state();
     let f = s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().clone();
     let w = f.widgets[0].clone();
     let painter = egui::Painter::new(h.ctx.clone(), egui::LayerId::background(), egui::Rect::EVERYTHING);
-    let size = pdfcraft_ui_egui::forms_ui::field_text_size(&painter, &f, &w, text);
+    let size = patronuspdf_ui_egui::forms_ui::field_text_size(&painter, &f, &w, text);
     let (bw, bh) = ((w.rect[2] - w.rect[0]) as f32 - 6.0, (w.rect[3] - w.rect[1]) as f32 - 6.0);
     let font = egui::FontId::proportional(size);
-    if f.has(pdfcraft_engine::field_flags::MULTILINE) {
+    if f.has(patronuspdf_engine::field_flags::MULTILINE) {
         (size, painter.layout(text.to_string(), font, egui::Color32::BLACK, bw).size().y, bh)
     } else {
         (size, painter.layout_no_wrap(text.to_string(), font, egui::Color32::BLACK).size().x, bw)
@@ -1677,7 +1687,7 @@ fn tall_auto_size_form() -> Vec<u8> {
 #[test]
 fn the_field_editor_sizes_auto_size_text_as_the_page_does() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("tall.pdf", None, tall_auto_size_form()).unwrap();
         app
@@ -1689,25 +1699,25 @@ fn the_field_editor_sizes_auto_size_text_as_the_page_does() {
     let painter = egui::Painter::new(h.ctx.clone(), egui::LayerId::background(), egui::Rect::EVERYTHING);
     let screen = |name: &str, zoom: f32| {
         let f = field(name);
-        pdfcraft_ui_egui::forms_ui::field_screen_font(&painter, &f, &f.widgets[0], "Hi", zoom)
+        patronuspdf_ui_egui::forms_ui::field_screen_font(&painter, &f, &f.widgets[0], "Hi", zoom)
     };
     // 100%: 96 screen points per 72 page points.
     let full = 96.0 / 72.0;
 
     let comb = field("comb");
-    let page = pdfcraft_engine::field_comb_auto_text_size(30.0 - 6.0);
+    let page = patronuspdf_engine::field_comb_auto_text_size(30.0 - 6.0);
     assert_eq!(page, 12.0);
-    assert_eq!(pdfcraft_ui_egui::forms_ui::field_text_size(&painter, &comb, &comb.widgets[0], ""), 12.0, "a comb field");
+    assert_eq!(patronuspdf_ui_egui::forms_ui::field_text_size(&painter, &comb, &comb.widgets[0], ""), 12.0, "a comb field");
     assert_eq!(screen("comb", full), 12.0 * full);
 
     let tall = (100.0 - 6.0) / 1.15;
     assert!((screen("tall", full) - tall as f32 * full).abs() < 0.01, "a 100 pt field at 100%: {}", screen("tall", full));
-    assert_eq!(screen("huge", full), pdfcraft_ui_egui::forms_ui::MAX_SCREEN_FONT, "past the screen-font bound");
+    assert_eq!(screen("huge", full), patronuspdf_ui_egui::forms_ui::MAX_SCREEN_FONT, "past the screen-font bound");
     assert_eq!(screen("huge", 0.5), ((400.0 - 6.0) / 1.15) as f32 * 0.5, "below it at 50%");
 }
 
 /// Where a mode bar tab is, by its label.
-fn mode_tab(h: &Harness<'static, PdfCraftApp>, label: &str) -> egui::Rect {
+fn mode_tab(h: &Harness<'static, PatronusPdfApp>, label: &str) -> egui::Rect {
     use egui_kittest::kittest::Queryable;
     h.get_all_by_role_and_label(egui::accesskit::Role::Button, label).map(|n| n.rect()).find(|r| r.bottom() < 120.0).expect("a mode tab")
 }
@@ -1716,10 +1726,10 @@ fn mode_tab(h: &Harness<'static, PdfCraftApp>, label: &str) -> egui::Rect {
 /// tab it lies under: with the All tools panel closed, Edit, Convert and E-Sign (the name field
 /// starts right of All tools).
 fn mode_tab_cursors(
-    h: &mut Harness<'static, PdfCraftApp>,
-    what: impl Fn(&Harness<'static, PdfCraftApp>) -> egui::Rect,
+    h: &mut Harness<'static, PatronusPdfApp>,
+    what: impl Fn(&Harness<'static, PatronusPdfApp>) -> egui::Rect,
 ) -> [(&'static str, egui::CursorIcon); 3] {
-    let page = |h: &Harness<'static, PdfCraftApp>| h.state().views[0].page_screen_rect(0).expect("on screen");
+    let page = |h: &Harness<'static, PatronusPdfApp>| h.state().views[0].page_screen_rect(0).expect("on screen");
     let y = what(h).center().y - page(h).top();
     let tabs = mode_tab(h, "Convert").center().y;
     h.state_mut().views[0].goto = Some((0, 0.0));
@@ -1746,13 +1756,13 @@ const HAND_ON_EVERY_TAB: [(&str, egui::CursorIcon); 3] =
 fn mode_tabs_keep_the_hand_over_a_text_field_scrolled_under_them() {
     let mut h = harness();
     // The page across the window, so the name field reaches under the tabs.
-    h.state_mut().views[0].fit = pdfcraft_ui_egui::canvas::Fit::Width;
+    h.state_mut().views[0].fit = patronuspdf_ui_egui::canvas::Fit::Width;
     h.run_steps(4);
-    let name = |h: &Harness<'static, PdfCraftApp>| {
+    let name = |h: &Harness<'static, PatronusPdfApp>| {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "name").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     assert_eq!(mode_tab_cursors(&mut h, name), HAND_ON_EVERY_TAB, "the field under the tabs");
     // Open it, where it shows.
@@ -1763,7 +1773,7 @@ fn mode_tabs_keep_the_hand_over_a_text_field_scrolled_under_them() {
     assert_eq!(mode_tab_cursors(&mut h, name), HAND_ON_EVERY_TAB, "the open field under the tabs");
     let convert = mode_tab(&h, "Convert").center();
     click_at(&mut h, convert);
-    assert_eq!(h.state().mode, pdfcraft_ui_egui::Mode::Convert, "the tab takes the click, not the field's editor");
+    assert_eq!(h.state().mode, patronuspdf_ui_egui::Mode::Convert, "the tab takes the click, not the field's editor");
 }
 
 /// The one-page PDF `guide_fixture` attaches as `Guide.pdf`.
@@ -1807,7 +1817,7 @@ fn guide_fixture() -> Vec<u8> {
 #[test]
 fn a_form_button_opens_only_a_real_pdf_and_returns_to_the_tab_it_opened() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, guide_fixture()).unwrap();
         // Another document named like the attachment, its bytes the attachment's and an update.
@@ -1816,10 +1826,10 @@ fn a_form_button_opens_only_a_real_pdf_and_returns_to_the_tab_it_opened() {
         app
     });
     h.run_steps(4);
-    let tabs = |h: &Harness<'static, PdfCraftApp>| h.state().views.len();
+    let tabs = |h: &Harness<'static, PatronusPdfApp>| h.state().views.len();
     let id = h.state().views[0].id;
     // A text file named .pdf is offered to save, not opened.
-    let saved = std::env::temp_dir().join(format!("pdfcraft-fake-{}.pdf", std::process::id()));
+    let saved = std::env::temp_dir().join(format!("patronuspdf-fake-{}.pdf", std::process::id()));
     let _ = std::fs::remove_file(&saved);
     h.state_mut().pick_override = Some(vec![saved.to_string_lossy().into_owned()]);
     h.state_mut().run_button_script(id, "go", "this.exportDataObject({cName: 'fake.pdf', nLaunch: 2});");
@@ -1845,13 +1855,13 @@ fn a_form_button_opens_only_a_real_pdf_and_returns_to_the_tab_it_opened() {
 #[test]
 fn a_form_button_opens_its_attached_instructions_in_a_new_tab() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, guide_fixture()).unwrap();
         app
     });
     h.run_steps(4);
-    let tabs = |h: &Harness<'static, PdfCraftApp>| {
+    let tabs = |h: &Harness<'static, PatronusPdfApp>| {
         let s = h.state();
         s.views.iter().filter_map(|v| s.session.get(v.id)).map(|d| d.name.clone()).collect::<Vec<_>>()
     };
@@ -1894,9 +1904,9 @@ fn combo_form() -> Vec<u8> {
     ])
 }
 
-fn combo_harness() -> Harness<'static, PdfCraftApp> {
+fn combo_harness() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("combo.pdf", None, combo_form()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1960,7 +1970,7 @@ fn a_turned_editable_combo_box_places_the_caret_along_its_turned_text() {
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
     ]);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("turned-combo.pdf", None, pdf.clone()).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -1976,7 +1986,7 @@ fn a_turned_editable_combo_box_places_the_caret_along_its_turned_text() {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == "fruit").unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     click_at(&mut h, field.left_top() + egui::vec2(3.0, 2.0));
     h.event(egui::Event::Text("X".into()));
@@ -2018,14 +2028,14 @@ fn a_form_button_shows_and_hides_the_attachments_panel() {
     h.run_steps(2);
     let id = h.state().views[0].id;
     h.state_mut().run_button_script(id, "size", "app.execMenuItem('ShowHideFileAttachment');");
-    crate::support::wait_until(&mut h, "attachments panel to open", |app| app.right == Some(pdfcraft_ui_egui::RightPanel::Attachments));
+    crate::support::wait_until(&mut h, "attachments panel to open", |app| app.right == Some(patronuspdf_ui_egui::RightPanel::Attachments));
     // Show/Hide, as its name says: asked again, it closes.
     h.state_mut().run_button_script(id, "size", "app.execMenuItem('ShowHideFileAttachment');");
     crate::support::wait_until(&mut h, "attachments panel to close", |app| app.right.is_none());
 }
 
 /// Which widgets of field `name` are on (their `/AS` is their on state).
-fn on_widgets(h: &Harness<'static, PdfCraftApp>, name: &str) -> Vec<bool> {
+fn on_widgets(h: &Harness<'static, PatronusPdfApp>, name: &str) -> Vec<bool> {
     let s = h.state();
     let f = s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().clone();
     (0..f.widgets.len()).map(|i| f.widget_on(i)).collect()
@@ -2033,7 +2043,7 @@ fn on_widgets(h: &Harness<'static, PdfCraftApp>, name: &str) -> Vec<bool> {
 
 /// Radio groups whose buttons share an on state: `plain` (Radio | NoToggleToOff, on states Yes,
 /// Yes, No), `unison` (the same with RadiosInUnison) and `free` (Radio alone, S and M).
-fn shared_state_radios() -> Harness<'static, PdfCraftApp> {
+fn shared_state_radios() -> Harness<'static, PatronusPdfApp> {
     let kid = |n: u32, parent: u32, x: u32, state: &str| {
         format!(
             "<< /Type /Annot /Subtype /Widget /Parent {parent} 0 R /AS /Off /Rect [{x} {} {} {}] /P 3 0 R /F 4 /AP << /N << /{state} 5 0 R /Off 5 0 R >> >> >>",
@@ -2063,7 +2073,7 @@ fn shared_state_radios() -> Harness<'static, PdfCraftApp> {
     let objs: Vec<&str> = objs.iter().map(String::as_str).collect();
     let bytes = pdf_from_objects(&objs);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("radios.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -2125,7 +2135,7 @@ fn a_read_only_radio_button_is_focused_but_not_selected() {
     let objs: Vec<&str> = objs.iter().map(String::as_str).collect();
     let bytes = pdf_from_objects(&objs);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("radios.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -2135,7 +2145,7 @@ fn a_read_only_radio_button_is_focused_but_not_selected() {
     h.run_steps(6);
     click_field(&mut h, "size", 0);
     assert_eq!(value(&h, "size"), ["S"]);
-    let toast = |h: &Harness<'static, PdfCraftApp>| h.state().toast.as_ref().map(|(m, _)| m.clone());
+    let toast = |h: &Harness<'static, PatronusPdfApp>| h.state().toast.as_ref().map(|(m, _)| m.clone());
     assert_eq!(toast(&h), None);
     h.key_press(egui::Key::ArrowRight);
     h.run_steps(3);
@@ -2150,7 +2160,7 @@ fn a_read_only_radio_button_is_focused_but_not_selected() {
 }
 
 /// Check box fields of two kids each: `pair` with the on states A and B, `same` with Yes twice.
-fn check_box_kids() -> Harness<'static, PdfCraftApp> {
+fn check_box_kids() -> Harness<'static, PatronusPdfApp> {
     let kid = |parent: u32, y: u32, x: u32, state: &str| {
         format!(
             "<< /Type /Annot /Subtype /Widget /Parent {parent} 0 R /AS /Off /Rect [{x} {y} {} {}] /P 3 0 R /F 4 /AP << /N << /{state} 5 0 R /Off 5 0 R >> >> >>",
@@ -2174,7 +2184,7 @@ fn check_box_kids() -> Harness<'static, PdfCraftApp> {
     let objs: Vec<&str> = objs.iter().map(String::as_str).collect();
     let bytes = pdf_from_objects(&objs);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("kids.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -2213,7 +2223,7 @@ fn clicking_check_box_kids_with_different_on_states() {
 }
 
 /// Click at `p` with `modifiers` held.
-fn click_with(h: &mut Harness<'static, PdfCraftApp>, p: egui::Pos2, modifiers: egui::Modifiers) {
+fn click_with(h: &mut Harness<'static, PatronusPdfApp>, p: egui::Pos2, modifiers: egui::Modifiers) {
     h.event(egui::Event::ModifiersChanged(modifiers));
     h.hover_at(p);
     h.run_steps(1);
@@ -2226,10 +2236,10 @@ fn click_with(h: &mut Harness<'static, PdfCraftApp>, p: egui::Pos2, modifiers: e
 }
 
 /// A list box opened at 100% zoom on its own page, and its rectangle on screen.
-fn list_box(objects: &[&str], name: &str) -> (Harness<'static, PdfCraftApp>, egui::Rect) {
+fn list_box(objects: &[&str], name: &str) -> (Harness<'static, PatronusPdfApp>, egui::Rect) {
     let bytes = pdf_from_objects(objects);
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("list.pdf", None, bytes).unwrap();
         app.set_option("left", "closed").unwrap();
@@ -2241,7 +2251,7 @@ fn list_box(objects: &[&str], name: &str) -> (Harness<'static, PdfCraftApp>, egu
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
         let f = doc.form.iter().find(|f| f.name == name).unwrap();
-        pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+        patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
     };
     (h, r)
 }
@@ -2284,7 +2294,7 @@ fn clicking_the_shown_row_of_a_single_select_list_holding_an_array_writes_one_va
         ],
         "pair",
     );
-    let field = |h: &Harness<'static, PdfCraftApp>| {
+    let field = |h: &Harness<'static, PatronusPdfApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "pair").unwrap().clone()
     };
@@ -2296,15 +2306,15 @@ fn clicking_the_shown_row_of_a_single_select_list_holding_an_array_writes_one_va
 }
 
 /// Where the first widget of field `name` is on screen in the first view.
-fn field_rect(h: &Harness<'static, PdfCraftApp>, name: &str) -> egui::Rect {
+fn field_rect(h: &Harness<'static, PatronusPdfApp>, name: &str) -> egui::Rect {
     let s = h.state();
     let doc = s.session.get(s.views[0].id).unwrap();
     let f = doc.form.iter().find(|f| f.name == name).unwrap();
-    pdfcraft_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
+    patronuspdf_ui_egui::forms_ui::field_screen_rect(&s.views[0], &doc.info, f, 0).expect("on screen")
 }
 
 /// Filled triangles painted inside `within`, at any depth of the frame's shapes.
-fn triangles_in(h: &Harness<'static, PdfCraftApp>, within: egui::Rect) -> Vec<Vec<egui::Pos2>> {
+fn triangles_in(h: &Harness<'static, PatronusPdfApp>, within: egui::Rect) -> Vec<Vec<egui::Pos2>> {
     /// Collects the filled three-point paths of `shape` that lie inside `within`, descending into
     /// nested shape lists.
     fn walk(shape: &egui::Shape, within: egui::Rect, out: &mut Vec<Vec<egui::Pos2>>) {
@@ -2357,9 +2367,9 @@ fn a_drop_downs_list_opens_as_wide_as_the_field_without_its_internal_name() {
 fn a_long_drop_down_list_keeps_its_scroll_bar_beside_the_items() {
     let mut h = harness();
     let options: Vec<String> = (0..30).map(|i| format!("{i:02}00")).collect();
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "country".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { options: Some(options), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { options: Some(options), ..Default::default() }),
     }));
     h.run_steps(3);
     click_field(&mut h, "country", 0);
@@ -2370,7 +2380,7 @@ fn a_long_drop_down_list_keeps_its_scroll_bar_beside_the_items() {
 }
 
 /// Where `text` is drawn in the last frame, if anywhere.
-fn text_rect(h: &Harness<'static, PdfCraftApp>, text: &str) -> Option<egui::Rect> {
+fn text_rect(h: &Harness<'static, PatronusPdfApp>, text: &str) -> Option<egui::Rect> {
     /// The rectangle of the text shape in `shape` that reads exactly `text`, searching nested
     /// shape lists.
     fn walk(shape: &egui::Shape, text: &str) -> Option<egui::Rect> {
@@ -2384,11 +2394,11 @@ fn text_rect(h: &Harness<'static, PdfCraftApp>, text: &str) -> Option<egui::Rect
 }
 
 /// Gives the "country" drop-down 30 options, "0000" to "2900", more than its list shows at once.
-fn long_country(h: &mut Harness<'static, PdfCraftApp>) {
+fn long_country(h: &mut Harness<'static, PatronusPdfApp>) {
     let options: Vec<String> = (0..30).map(|i| format!("{i:02}00")).collect();
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "country".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { options: Some(options), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { options: Some(options), ..Default::default() }),
     }));
     h.run_steps(3);
 }
@@ -2397,9 +2407,9 @@ fn long_country(h: &mut Harness<'static, PdfCraftApp>) {
 #[test]
 fn a_drop_downs_list_aligns_its_items_as_the_field_does() {
     let mut h = harness();
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "country".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { quadding: Some(1), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { quadding: Some(1), ..Default::default() }),
     }));
     h.run_steps(3);
     click_field(&mut h, "country", 0);
@@ -2510,16 +2520,14 @@ fn escape_closes_an_open_drop_downs_list_and_leaves_the_page_alone() {
 fn an_auto_sized_drop_downs_list_shows_its_items_at_the_fields_text_size() {
     let mut h = harness();
     let long = "The Commonwealth of the Northern Mariana Islands";
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldProps {
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldProps {
         name: "country".into(),
-        props: Box::new(pdfcraft_engine::FieldProps { options: Some(vec!["Canada".into(), long.into()]), ..Default::default() }),
+        props: Box::new(patronuspdf_engine::FieldProps { options: Some(vec!["Canada".into(), long.into()]), ..Default::default() }),
     }));
-    assert!(
-        h.state_mut().apply_edit(pdfcraft_engine::Edit::SetFieldValue {
-            name: "country".into(),
-            value: pdfcraft_engine::FieldValue::Choice(vec![long.into()])
-        })
-    );
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::SetFieldValue {
+        name: "country".into(),
+        value: patronuspdf_engine::FieldValue::Choice(vec![long.into()])
+    }));
     h.run_steps(3);
     click_field(&mut h, "country", 0);
     let field = field_rect(&h, "country");
@@ -2533,7 +2541,7 @@ fn an_auto_sized_drop_downs_list_shows_its_items_at_the_fields_text_size() {
 fn in_single_page_view_the_wheel_over_an_open_list_scrolls_the_list_not_the_page() {
     let mut h = harness();
     long_country(&mut h);
-    assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::InsertBlankPage { at: 1, width: 300.0, height: 400.0 }));
+    assert!(h.state_mut().apply_edit(patronuspdf_engine::Edit::InsertBlankPage { at: 1, width: 300.0, height: 400.0 }));
     h.state_mut().set_option("continuous", "off").unwrap();
     h.key_press(egui::Key::Home);
     for _ in 0..60 {
@@ -2542,7 +2550,7 @@ fn in_single_page_view_the_wheel_over_an_open_list_scrolls_the_list_not_the_page
             break;
         }
     }
-    let wheel = |h: &mut Harness<'static, PdfCraftApp>, at: egui::Pos2| {
+    let wheel = |h: &mut Harness<'static, PatronusPdfApp>, at: egui::Pos2| {
         h.hover_at(at);
         h.run_steps(1);
         for _ in 0..3 {

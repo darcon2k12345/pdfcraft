@@ -3,17 +3,17 @@
 use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use pdfcraft_ui_egui::{Dialog, PdfCraftApp};
+use patronuspdf_ui_egui::{Dialog, PatronusPdfApp};
 
 /// Open a bundled synthetic form with the default print settings.
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, PatronusPdfApp> {
     harness_with_settings(None)
 }
 
 /// Restore optional settings before opening the form and settling the shell frames.
-fn harness_with_settings(settings: Option<String>) -> Harness<'static, PdfCraftApp> {
+fn harness_with_settings(settings: Option<String>) -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         if let Some(json) = &settings {
             app.restore(json);
@@ -26,8 +26,8 @@ fn harness_with_settings(settings: Option<String>) -> Harness<'static, PdfCraftA
 }
 
 /// A large synthetic fleet, independent of the host's installed printers.
-fn harness_with_printers() -> (Harness<'static, PdfCraftApp>, String) {
-    use pdfcraft_engine::print::spool::Printer;
+fn harness_with_printers() -> (Harness<'static, PatronusPdfApp>, String) {
+    use patronuspdf_engine::print::spool::Printer;
     let mut h = harness();
     let last = "München Satellite 119 - Engineering floor 4 (network queue) - colour duplex device, Building North".to_string();
     let mut printers: Vec<_> = (0..119)
@@ -175,7 +175,7 @@ fn current_print_page_saves_the_viewed_page_when_labels_restart() {
     }
     bytes.extend_from_slice(format!("trailer << /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objects.len() + 1).as_bytes());
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("labelled.pdf", None, bytes).unwrap();
         app
@@ -193,7 +193,7 @@ fn current_print_page_saves_the_viewed_page_when_labels_restart() {
         h.run_steps(3);
         assert_eq!(h.state().print_draft.current_page, current);
         h.get_by_label("Sheet 1 of 1");
-        let out = std::env::temp_dir().join(format!("pdfcraft-print-current-{}-{current}.pdf", std::process::id()));
+        let out = std::env::temp_dir().join(format!("patronuspdf-print-current-{}-{current}.pdf", std::process::id()));
         h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
         h.state_mut().print_draft.printer = None;
         h.run_steps(1);
@@ -202,10 +202,10 @@ fn current_print_page_saves_the_viewed_page_when_labels_restart() {
         assert_eq!(h.state().dialog, None);
         let saved = std::sync::Arc::new(std::fs::read(&out).unwrap());
         std::fs::remove_file(out).unwrap();
-        let doc = pdfcraft_cos::Document::open(saved.clone()).unwrap();
-        assert_eq!(pdfcraft_model::pages(&doc).len(), 1);
-        let mut renderer = pdfcraft_render::PageRenderer::new(saved, Default::default());
-        let shot = renderer.render(pdfcraft_render::RenderRequest { page: 0, scale: 1.0, ..Default::default() });
+        let doc = patronuspdf_cos::Document::open(saved.clone()).unwrap();
+        assert_eq!(patronuspdf_model::pages(&doc).len(), 1);
+        let mut renderer = patronuspdf_render::PageRenderer::new(saved, Default::default());
+        let shot = renderer.render(patronuspdf_render::RenderRequest { page: 0, scale: 1.0, ..Default::default() });
         assert!(shot.error.is_none(), "{:?}", shot.error);
         let center = ((shot.height / 2 * shot.width + shot.width / 2) * 4) as usize;
         assert_eq!(&shot.rgba[center..center + 3], &expected, "saved the wrong physical page for {current}");
@@ -225,7 +225,7 @@ fn print_dialog_lays_out_sheets_and_saves_a_pdf() {
     h.run_steps(2);
     h.get_by_label("Sheet 1 of 1");
     // No printer on a test machine: Save as PDF.
-    let out = std::env::temp_dir().join(format!("pdfcraft-print-test-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("patronuspdf-print-test-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.state_mut().print_draft.printer = None;
     h.run_steps(1);
@@ -233,15 +233,15 @@ fn print_dialog_lays_out_sheets_and_saves_a_pdf() {
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
     let bytes = std::fs::read(&out).expect("saved");
-    let doc = pdfcraft_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
-    assert_eq!(pdfcraft_model::pages(&doc).len(), 1);
+    let doc = patronuspdf_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
+    assert_eq!(patronuspdf_model::pages(&doc).len(), 1);
     let _ = std::fs::remove_file(out);
 }
 
 /// Pages picked beforehand are what the dialog offers to print (Acrobat's "Selected pages").
 #[test]
 fn print_dialog_prints_the_selected_pages() {
-    use pdfcraft_ui_egui::PrintWhich;
+    use patronuspdf_ui_egui::PrintWhich;
     let mut h = harness();
     let bytes = h.state().session.create_blank(200.0, 300.0, 5).unwrap();
     h.state_mut().open_bytes("five.pdf", None, bytes.as_ref().clone()).unwrap();
@@ -262,7 +262,7 @@ fn print_dialog_prints_the_selected_pages() {
     assert_eq!(h.state().print_draft.which, PrintWhich::Selected);
     h.get_by_label("Selected pages (2)");
     h.get_by_label("Sheet 1 of 2");
-    let out = std::env::temp_dir().join(format!("pdfcraft-print-selected-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("patronuspdf-print-selected-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.state_mut().print_draft.printer = None;
     h.run_steps(1);
@@ -270,8 +270,8 @@ fn print_dialog_prints_the_selected_pages() {
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
     let saved = std::fs::read(&out).expect("saved");
-    let doc = pdfcraft_cos::Document::open(std::sync::Arc::new(saved)).unwrap();
-    assert_eq!(pdfcraft_model::pages(&doc).len(), 2);
+    let doc = patronuspdf_cos::Document::open(std::sync::Arc::new(saved)).unwrap();
+    assert_eq!(patronuspdf_model::pages(&doc).len(), 2);
     let _ = std::fs::remove_file(out);
     // The selection gone, the remembered choice falls back to the whole document.
     h.state_mut().views[tab].select_pages(&[]);
@@ -286,7 +286,7 @@ fn invalid_ranges_are_explained_in_the_preview() {
     let mut h = harness();
     h.state_mut().execute("print.dialog");
     h.run_steps(2);
-    h.state_mut().print_draft.which = pdfcraft_ui_egui::PrintWhich::Range;
+    h.state_mut().print_draft.which = patronuspdf_ui_egui::PrintWhich::Range;
     h.state_mut().print_draft.range = "7".into();
     h.run_steps(2);
     h.get_by_label_contains("out of range");
@@ -294,7 +294,7 @@ fn invalid_ranges_are_explained_in_the_preview() {
 
 #[test]
 fn cut_stack_dialog_previews_saves_and_refuses_duplex() {
-    use pdfcraft_engine::print::{PageOrder, spool::Duplex};
+    use patronuspdf_engine::print::{PageOrder, spool::Duplex};
     let mut h = harness();
     // Ten source pages, generated using the headless engine.
     let bytes = h.state().session.create_blank(200.0, 300.0, 10).unwrap();
@@ -322,20 +322,20 @@ fn cut_stack_dialog_previews_saves_and_refuses_duplex() {
     assert!(!h.state_mut().print_now());
     h.state_mut().print_draft.duplex = Some(Duplex::Off);
     h.state_mut().print_draft.printer = None;
-    let out = std::env::temp_dir().join(format!("pdfcraft-cut-stack-ui-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("patronuspdf-cut-stack-ui-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.run_steps(2);
     h.get_by_label("Save as PDF").click();
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
-    let printed = pdfcraft_cos::Document::open(std::sync::Arc::new(std::fs::read(&out).unwrap())).unwrap();
-    assert_eq!(pdfcraft_model::pages(&printed).len(), 3);
+    let printed = patronuspdf_cos::Document::open(std::sync::Arc::new(std::fs::read(&out).unwrap())).unwrap();
+    assert_eq!(patronuspdf_model::pages(&printed).len(), 3);
     let _ = std::fs::remove_file(out);
 }
 
 #[test]
 fn custom_pages_per_sheet_takes_columns_by_rows() {
-    use pdfcraft_engine::print::{Layout, PageOrder};
+    use patronuspdf_engine::print::{Layout, PageOrder};
     let mut h = harness();
     let bytes = h.state().session.create_blank(200.0, 300.0, 4).unwrap();
     h.state_mut().open_bytes("narrow.pdf", None, bytes.as_ref().clone()).unwrap();
@@ -372,7 +372,7 @@ fn a_failed_save_as_pdf_keeps_the_dialog_open() {
     h.run_steps(3);
     h.state_mut().print_draft.printer = None;
     // A folder that doesn't exist: the write fails.
-    let out = std::env::temp_dir().join(format!("pdfcraft-missing-{}", std::process::id())).join("x.pdf");
+    let out = std::env::temp_dir().join(format!("patronuspdf-missing-{}", std::process::id())).join("x.pdf");
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.run_steps(2);
     h.get_by_label("Save as PDF").click();
@@ -388,12 +388,12 @@ fn a_failed_save_as_pdf_keeps_the_dialog_open() {
 /// driver choice for the orientation stands and isn't sent twice.
 #[test]
 fn printing_landscape_sheets_tells_cups_to_turn_them() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::{Arc, Mutex};
-    let s = pdfcraft_engine::Session::new();
+    let s = patronuspdf_engine::Session::new();
     let bytes = s.create_blank(842.0, 595.0, 2).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("landscape.pdf", None, bytes.to_vec()).unwrap();
         app
@@ -406,7 +406,7 @@ fn printing_landscape_sheets_tells_cups_to_turn_them() {
         Ok(String::new())
     }));
     // Print to the queue; `choose` sets the driver's choices once the dialog has its printer.
-    let print = |h: &mut Harness<'static, PdfCraftApp>, choose: &dyn Fn(&mut pdfcraft_ui_egui::PrintDraft)| -> spool::Job {
+    let print = |h: &mut Harness<'static, PatronusPdfApp>, choose: &dyn Fn(&mut patronuspdf_ui_egui::PrintDraft)| -> spool::Job {
         let before = jobs.lock().unwrap().len();
         assert!(h.state_mut().execute("print.dialog"));
         h.run_steps(3);
@@ -446,7 +446,7 @@ fn printing_landscape_sheets_tells_cups_to_turn_them() {
 /// Properties… shows the printer driver's own options (CUPS) and sends only those changed.
 #[test]
 fn print_dialog_shows_the_printer_driver_options() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     let mut h = harness();
     assert!(h.state_mut().execute("print.dialog"));
     h.run_steps(3);
@@ -488,7 +488,7 @@ fn print_dialog_shows_the_printer_driver_options() {
 /// the user has already picked a printer.
 #[test]
 fn printers_listed_in_the_background_preselect_the_default_unless_one_was_picked() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     use std::sync::{Arc, Mutex};
     let mut h = harness();
     // The source waits until the test lets it answer, so the dialog is seen while it looks.
@@ -548,7 +548,7 @@ fn printers_listed_in_the_background_preselect_the_default_unless_one_was_picked
 /// opens (#3537), until a fresh list no longer has it.
 #[test]
 fn the_picked_printer_is_kept_for_the_next_print_while_it_is_listed() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     use std::sync::{Arc, Mutex};
     let mut h = harness();
     let listed = Arc::new(Mutex::new(vec!["Office", "Front Desk"]));
@@ -560,7 +560,7 @@ fn the_picked_printer_is_kept_for_the_next_print_while_it_is_listed() {
             .map(|name| Printer { name: name.into(), default: name == "Front Desk", two_sided: None, description: String::new() })
             .collect()
     }));
-    let open = |h: &mut Harness<'static, PdfCraftApp>| {
+    let open = |h: &mut Harness<'static, PatronusPdfApp>| {
         h.state_mut().dialog = None;
         assert!(h.state_mut().execute("print.dialog"));
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
@@ -601,7 +601,7 @@ fn the_picked_printer_is_kept_for_the_next_print_while_it_is_listed() {
 #[test]
 fn architectural_page_can_be_matched_at_100_percent() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1000.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         let bytes = app.session.create_blank(2592.0, 1728.0, 1).unwrap();
         app.open_bytes("architectural.pdf", None, bytes.as_ref().clone()).unwrap();
@@ -619,7 +619,7 @@ fn architectural_page_can_be_matched_at_100_percent() {
     h.get_by_label("Printer paper and scaling may differ. Check driver settings.");
     let settings = h.state().print_draft.settings(1, &[]).unwrap();
     assert_eq!(settings.paper, (1728.0, 2592.0));
-    assert_eq!(settings.layout, pdfcraft_engine::print::Layout::Size(pdfcraft_engine::print::SizeMode::Actual));
+    assert_eq!(settings.layout, patronuspdf_engine::print::Layout::Size(patronuspdf_engine::print::SizeMode::Actual));
 }
 
 #[test]
@@ -628,7 +628,7 @@ fn custom_page_cannot_silently_match_a_standard_paper() {
     assert!(h.state_mut().execute("print.dialog"));
     h.run_steps(3);
     // The 300 x 400 pt fixture is not a standard sheet.
-    assert!(pdfcraft_engine::print::matching_paper((300.0, 400.0)).is_none());
+    assert!(patronuspdf_engine::print::matching_paper((300.0, 400.0)).is_none());
     let before = h.state().print_draft.clone();
     assert!(h.get_by_label("Match page at 100%").accesskit_node().is_disabled());
     h.get_by_label("Match page at 100%").click();
@@ -642,7 +642,7 @@ fn custom_page_cannot_silently_match_a_standard_paper() {
 /// asks only about the one picked, in the background, so a printer nobody picks is never waited on.
 #[test]
 fn two_sided_support_is_read_only_for_the_printer_picked() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     use std::sync::{Arc, Mutex};
     let mut h = harness();
     h.state_mut().printer_source = Some(Arc::new(|| {
@@ -659,7 +659,7 @@ fn two_sided_support_is_read_only_for_the_printer_picked() {
         Some(name != "Office PS")
     }));
     assert!(h.state_mut().execute("print.dialog"));
-    let settle = |h: &mut Harness<'static, PdfCraftApp>, done: &dyn Fn(&PdfCraftApp) -> bool| {
+    let settle = |h: &mut Harness<'static, PatronusPdfApp>, done: &dyn Fn(&PatronusPdfApp) -> bool| {
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         while !done(h.state()) && std::time::Instant::now() < deadline {
             h.run_steps(1);
@@ -681,7 +681,7 @@ fn two_sided_support_is_read_only_for_the_printer_picked() {
 /// says (some print both sides with it Off), so the dialog says where to change it.
 #[test]
 fn a_printer_without_two_sided_printing_points_to_its_properties() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     let mut h = harness();
     h.state_mut().printer_source = Some(std::sync::Arc::new(|| {
         vec![
@@ -707,7 +707,7 @@ fn a_printer_without_two_sided_printing_points_to_its_properties() {
 /// asked again, whichever printer is picked.
 #[test]
 fn a_listed_two_sided_answer_is_not_asked_again() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     use std::sync::{Arc, Mutex};
     let mut h = harness();
     h.state_mut().printer_source = Some(Arc::new(|| {
@@ -739,7 +739,7 @@ fn a_listed_two_sided_answer_is_not_asked_again() {
 /// printer: at most four run at once, and the printer picked is asked once one finishes.
 #[test]
 fn hanging_two_sided_reads_are_capped() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Mutex};
     let names: Vec<String> = (1..=6).map(|i| format!("Away WSD {i}")).collect();
@@ -801,7 +801,7 @@ fn print_as_image_is_an_advanced_choice_that_saves_pictures() {
     h.get_by_label("Print as image").click();
     h.run_steps(2);
     assert!(h.state().print_draft.as_image);
-    let out = std::env::temp_dir().join(format!("pdfcraft-print-image-test-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("patronuspdf-print-image-test-{}.pdf", std::process::id()));
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.state_mut().print_draft.printer = None;
     h.run_steps(1);
@@ -809,10 +809,10 @@ fn print_as_image_is_an_advanced_choice_that_saves_pictures() {
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
     let bytes = std::fs::read(&out).expect("saved");
-    let doc = pdfcraft_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
-    assert_eq!(pdfcraft_model::pages(&doc).len(), 1);
+    let doc = patronuspdf_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
+    assert_eq!(patronuspdf_model::pages(&doc).len(), 1);
     let pictures =
-        doc.scan_objects().filter(|(_, o)| matches!(&**o, pdfcraft_cos::Object::Stream(st) if st.dict.name(b"Subtype") == Some(b"Image"))).count();
+        doc.scan_objects().filter(|(_, o)| matches!(&**o, patronuspdf_cos::Object::Stream(st) if st.dict.name(b"Subtype") == Some(b"Image"))).count();
     assert_eq!(pictures, 1, "the page is one picture");
     let _ = std::fs::remove_file(out);
 }
@@ -836,14 +836,14 @@ fn an_empty_printer_list_says_none_were_found() {
 
 /// `PAPERS` index of the named sheet.
 fn paper(name: &str) -> usize {
-    pdfcraft_engine::print::PAPERS.iter().position(|p| p.0 == name).unwrap()
+    patronuspdf_engine::print::PAPERS.iter().position(|p| p.0 == name).unwrap()
 }
 
 /// Label loads label stock; leaving it gives the paper the person had back (#3564).
 #[test]
 fn leaving_label_gives_back_the_paper_it_replaced() {
-    use pdfcraft_engine::print::LABEL_PAPER;
-    use pdfcraft_ui_egui::PrintHandling;
+    use patronuspdf_engine::print::LABEL_PAPER;
+    use patronuspdf_ui_egui::PrintHandling;
     let a4 = paper("A4");
     let mut h = harness();
     assert!(h.state_mut().execute("print.dialog"));
@@ -875,8 +875,8 @@ fn leaving_label_gives_back_the_paper_it_replaced() {
 /// A paper picked while in Label is the person's choice, and leaving Label keeps it.
 #[test]
 fn a_paper_picked_while_in_label_is_kept_when_leaving_it() {
-    use pdfcraft_engine::print::LABEL_PAPER;
-    use pdfcraft_ui_egui::{PrintDraft, PrintHandling};
+    use patronuspdf_engine::print::LABEL_PAPER;
+    use patronuspdf_ui_egui::{PrintDraft, PrintHandling};
     let (a4, letter) = (paper("A4"), paper("US Letter"));
     let mut d = PrintDraft { paper: a4, ..Default::default() };
     d.set_handling(PrintHandling::Label);
@@ -899,8 +899,8 @@ fn a_paper_picked_while_in_label_is_kept_when_leaving_it() {
 /// Label afterwards gives back the paper picked before it.
 #[test]
 fn label_stock_picked_from_the_paper_menu_is_undone_by_leaving_label() {
-    use pdfcraft_engine::print::{LABEL_PAPER, PAPERS};
-    use pdfcraft_ui_egui::PrintHandling;
+    use patronuspdf_engine::print::{LABEL_PAPER, PAPERS};
+    use patronuspdf_ui_egui::PrintHandling;
     let a4 = paper("A4");
     let mut h = harness();
     assert!(h.state_mut().execute("print.dialog"));
@@ -927,8 +927,8 @@ fn label_stock_picked_from_the_paper_menu_is_undone_by_leaving_label() {
 /// rather than the A4 Label replaced coming back.
 #[test]
 fn a_paper_picked_from_the_menu_while_in_label_is_kept() {
-    use pdfcraft_engine::print::{LABEL_PAPER, PAPERS};
-    use pdfcraft_ui_egui::PrintHandling;
+    use patronuspdf_engine::print::{LABEL_PAPER, PAPERS};
+    use patronuspdf_ui_egui::PrintHandling;
     let (a4, letter) = (paper("A4"), paper("US Letter"));
     let mut h = harness();
     assert!(h.state_mut().execute("print.dialog"));
@@ -965,7 +965,7 @@ fn a_paper_picked_from_the_menu_while_in_label_is_kept() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn printer_options_are_read_off_the_gui_thread_and_a_dead_read_offers_nothing() {
-    use pdfcraft_engine::print::spool::PrinterOption;
+    use patronuspdf_engine::print::spool::PrinterOption;
     use std::sync::{Arc, Mutex};
     let mut h = harness();
     // The source waits until the test lets it answer, so the dialog is seen while it reads.
@@ -985,14 +985,14 @@ fn printer_options_are_read_off_the_gui_thread_and_a_dead_read_offers_nothing() 
     }));
     assert!(h.state_mut().execute("print.dialog"));
     h.run_steps(2);
-    let ask = |h: &mut Harness<'static, PdfCraftApp>, printer: &str| {
+    let ask = |h: &mut Harness<'static, PatronusPdfApp>, printer: &str| {
         let d = &mut h.state_mut().print_draft;
         d.driver_options = None;
         d.driver_options_loading = Some(printer.into());
         d.read_options_for = Some(printer.into());
         d.show_driver_options = true;
     };
-    let settle = |h: &mut Harness<'static, PdfCraftApp>| {
+    let settle = |h: &mut Harness<'static, PatronusPdfApp>| {
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         while h.state().print_draft.driver_options_loading.is_some() && std::time::Instant::now() < deadline {
             h.run_steps(1);
@@ -1072,9 +1072,9 @@ fn a_dead_options_read_wakes_an_idle_dialog() {
 /// top bar's Print button is disabled, instead of the dialog refusing on confirm.
 #[test]
 fn print_restricted_documents_say_so_before_the_dialog() {
-    let mut doc = pdfcraft_cos::Document::open(std::sync::Arc::new(include_bytes!("../data/form.pdf").to_vec())).unwrap();
-    doc.set_encryption(&pdfcraft_cos::NewEncryption {
-        algorithm: pdfcraft_cos::Algorithm::Aes256,
+    let mut doc = patronuspdf_cos::Document::open(std::sync::Arc::new(include_bytes!("../data/form.pdf").to_vec())).unwrap();
+    doc.set_encryption(&patronuspdf_cos::NewEncryption {
+        algorithm: patronuspdf_cos::Algorithm::Aes256,
         user_password: "",
         owner_password: "owner",
         permissions: -1 ^ 0b100,
@@ -1082,9 +1082,9 @@ fn print_restricted_documents_say_so_before_the_dialog() {
         seed: [3; 32],
     })
     .unwrap();
-    let bytes = pdfcraft_cos::write_full(&doc, &Default::default()).unwrap();
+    let bytes = patronuspdf_cos::write_full(&doc, &Default::default()).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("restricted.pdf", None, bytes).unwrap();
         app
@@ -1106,7 +1106,7 @@ fn print_restricted_documents_say_so_before_the_dialog() {
 #[test]
 fn print_without_a_document_does_not_blame_security() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -1120,7 +1120,7 @@ fn print_without_a_document_does_not_blame_security() {
 
 #[test]
 fn paper_choice_survives_cancel_and_settings_restore() {
-    use pdfcraft_engine::print::{Orientation, PAPERS};
+    use patronuspdf_engine::print::{Orientation, PAPERS};
     let a4 = PAPERS.iter().position(|(name, _)| *name == "A4").unwrap();
     let letter = PAPERS.iter().position(|(name, _)| *name == "US Letter").unwrap();
     let mut h = harness();
@@ -1134,7 +1134,7 @@ fn paper_choice_survives_cancel_and_settings_restore() {
     // Paper persists; copies, pages and orientation belong to this job (grayscale is remembered, #2001).
     let draft = &mut h.state_mut().print_draft;
     draft.copies = 5;
-    draft.which = pdfcraft_ui_egui::PrintWhich::Range;
+    draft.which = patronuspdf_ui_egui::PrintWhich::Range;
     draft.range = "1".into();
     draft.orientation = Orientation::Landscape;
     draft.grayscale = true;
@@ -1147,25 +1147,25 @@ fn paper_choice_survives_cancel_and_settings_restore() {
     let json: serde_json::Value = serde_json::from_str(&saved).unwrap();
     assert_eq!(json["print_paper"], "A4", "store the canonical name, not its position");
     assert_eq!(json["print_paper_overridden"], true, "explicitly chosen paper records override flag");
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.restore(&saved);
     // Grayscale is one of the preferences remembered across restarts (#2001); copies, pages and
     // orientation are this job's and are not saved.
-    let expected = pdfcraft_ui_egui::PrintDraft { paper: a4, grayscale: true, paper_overridden: true, ..Default::default() };
+    let expected = patronuspdf_ui_egui::PrintDraft { paper: a4, grayscale: true, paper_overridden: true, ..Default::default() };
     assert_eq!(app.print_draft, expected, "only the paper and the remembered preferences persist");
 
     // Default draft without override round-trips with paper_overridden remaining false.
-    let default_app = PdfCraftApp::new();
+    let default_app = PatronusPdfApp::new();
     let default_saved = default_app.persist();
     let default_json: serde_json::Value = serde_json::from_str(&default_saved).unwrap();
     assert_eq!(default_json["print_paper_overridden"], false);
-    let mut restored_default = PdfCraftApp::new();
+    let mut restored_default = PatronusPdfApp::new();
     restored_default.restore(&default_saved);
     assert!(!restored_default.print_draft.paper_overridden);
 
     // Opening print with a printer default paper selects that paper when paper_overridden is false.
     let mut default_h = harness();
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::Arc;
     default_h.state_mut().printer_source =
         Some(Arc::new(|| vec![spool::Printer { name: "Office Printer".into(), default: true, two_sided: None, description: String::new() }]));
@@ -1204,9 +1204,9 @@ fn paper_choice_survives_cancel_and_settings_restore() {
 
 #[test]
 fn paper_restore_accepts_canonical_names_and_ignores_invalid_settings() {
-    use pdfcraft_engine::print::PAPERS;
+    use patronuspdf_engine::print::PAPERS;
     for (index, (name, _)) in PAPERS.iter().enumerate() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.restore(&serde_json::json!({"print_paper": name}).to_string());
         assert_eq!(app.print_draft.paper, index);
         assert!(!app.print_draft.paper_overridden);
@@ -1227,7 +1227,7 @@ fn paper_restore_accepts_canonical_names_and_ignores_invalid_settings() {
         r#"{"print_paper":18446744073709551615}"#,
         r#"{"print_paper":1e100}"#,
     ] {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let factory = app.print_draft.paper;
         app.restore(invalid);
         assert_eq!(app.print_draft.paper, factory, "{invalid}");
@@ -1236,14 +1236,14 @@ fn paper_restore_accepts_canonical_names_and_ignores_invalid_settings() {
         app.restore(invalid);
         assert_eq!(app.print_draft.paper, selected, "invalid input must not replace a valid choice: {invalid}");
     }
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.print_draft.paper = usize::MAX;
     assert_eq!(serde_json::from_str::<serde_json::Value>(&app.persist()).unwrap()["print_paper"], serde_json::Value::Null);
 }
 
 #[test]
 fn legacy_settings_restore_unsets_override_and_open_selects_printer_default() {
-    use pdfcraft_engine::print::{PAPERS, spool};
+    use patronuspdf_engine::print::{PAPERS, spool};
     use std::sync::Arc;
     let letter = PAPERS.iter().position(|(name, _)| *name == "US Letter").unwrap();
     let a4 = PAPERS.iter().position(|(name, _)| *name == "A4").unwrap();
@@ -1273,34 +1273,34 @@ fn legacy_settings_restore_unsets_override_and_open_selects_printer_default() {
 
 #[test]
 fn auto_select_default_paper_leaves_label_stock_unchanged() {
-    let mut draft = pdfcraft_ui_egui::PrintDraft {
+    let mut draft = patronuspdf_ui_egui::PrintDraft {
         printer: Some("Office Printer".into()),
-        handling: pdfcraft_ui_egui::PrintHandling::Label,
-        paper: pdfcraft_engine::print::LABEL_PAPER,
+        handling: patronuspdf_ui_egui::PrintHandling::Label,
+        paper: patronuspdf_engine::print::LABEL_PAPER,
         ..Default::default()
     };
-    let a4 = pdfcraft_engine::print::PAPERS.iter().position(|(name, _)| *name == "A4").unwrap();
-    let source: pdfcraft_ui_egui::DefaultPaperSource = std::sync::Arc::new(move |_| Some(("A4".into(), (595.28, 841.89))));
+    let a4 = patronuspdf_engine::print::PAPERS.iter().position(|(name, _)| *name == "A4").unwrap();
+    let source: patronuspdf_ui_egui::DefaultPaperSource = std::sync::Arc::new(move |_| Some(("A4".into(), (595.28, 841.89))));
     draft.auto_select_default_paper_with(Some(&source));
-    assert_eq!(draft.paper, pdfcraft_engine::print::LABEL_PAPER);
+    assert_eq!(draft.paper, patronuspdf_engine::print::LABEL_PAPER);
     assert_eq!(draft.paper_before_label, Some(a4));
 }
 
 #[test]
 fn auto_select_default_paper_preserves_user_orientation() {
-    let mut draft = pdfcraft_ui_egui::PrintDraft {
+    let mut draft = patronuspdf_ui_egui::PrintDraft {
         printer: Some("Office Printer".into()),
-        orientation: pdfcraft_engine::print::Orientation::Landscape,
+        orientation: patronuspdf_engine::print::Orientation::Landscape,
         ..Default::default()
     };
-    let source: pdfcraft_ui_egui::DefaultPaperSource = std::sync::Arc::new(move |_| Some(("A4".into(), (595.28, 841.89))));
+    let source: patronuspdf_ui_egui::DefaultPaperSource = std::sync::Arc::new(move |_| Some(("A4".into(), (595.28, 841.89))));
     draft.auto_select_default_paper_with(Some(&source));
-    assert_eq!(draft.orientation, pdfcraft_engine::print::Orientation::Landscape);
+    assert_eq!(draft.orientation, patronuspdf_engine::print::Orientation::Landscape);
 }
 
 #[test]
 fn cached_papers_apply_immediately_and_refresh_in_background() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -1344,8 +1344,8 @@ fn cached_papers_apply_immediately_and_refresh_in_background() {
 /// the remembered paper each time the dialog opened.
 #[test]
 fn a_printers_remembered_paper_wins_over_its_drivers_default() {
-    use pdfcraft_engine::print::{SizeMode, spool};
-    use pdfcraft_ui_egui::PrinterSetup;
+    use patronuspdf_engine::print::{SizeMode, spool};
+    use patronuspdf_ui_egui::PrinterSetup;
     use std::sync::Arc;
 
     let mut h = harness();
@@ -1369,7 +1369,7 @@ fn a_printers_remembered_paper_wins_over_its_drivers_default() {
 
 #[test]
 fn uncached_printer_switch_resets_driver_papers_to_standard_presets() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::Arc;
 
     let mut h = harness();
@@ -1419,7 +1419,7 @@ fn uncached_printer_switch_resets_driver_papers_to_standard_presets() {
 
 #[test]
 fn printer_list_refresh_resets_unoverridden_custom_paper_when_default_printer_changes() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::Arc;
 
     let mut h = harness();
@@ -1465,7 +1465,7 @@ fn printer_list_refresh_resets_unoverridden_custom_paper_when_default_printer_ch
 
 #[test]
 fn print_button_waits_for_automatic_paper_detection_before_submission() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::{Arc, Mutex, mpsc};
 
     let mut h = harness();
@@ -1509,7 +1509,7 @@ fn print_button_waits_for_automatic_paper_detection_before_submission() {
 
 #[test]
 fn gated_paper_detection_enables_print_after_worker_finishes() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::{Arc, Mutex, mpsc};
 
     let mut h = harness();
@@ -1554,7 +1554,7 @@ fn gated_paper_detection_enables_print_after_worker_finishes() {
 
 #[test]
 fn gated_paper_detection_blocks_print_on_printer_switch_reuse_until_resolved() {
-    use pdfcraft_engine::print::spool;
+    use patronuspdf_engine::print::spool;
     use std::sync::{Arc, Mutex, mpsc};
 
     let mut h = harness();
@@ -1642,7 +1642,7 @@ fn gated_paper_detection_blocks_print_on_printer_switch_reuse_until_resolved() {
 
 #[test]
 fn restored_paper_keeps_preview_and_saved_sheet_dimensions() {
-    use pdfcraft_engine::print::{self, PAPERS};
+    use patronuspdf_engine::print::{self, PAPERS};
     let a4 = PAPERS.iter().find(|(name, _)| *name == "A4").unwrap().1;
     let mut h = harness_with_settings(Some(r#"{"print_paper":"A4","print_paper_overridden":true}"#.into()));
     assert!(h.state_mut().execute("print.dialog"));
@@ -1658,15 +1658,15 @@ fn restored_paper_keeps_preview_and_saved_sheet_dimensions() {
     let sheets = print::layout(&sizes, &settings).unwrap();
     assert_eq!(sheets.len(), 1);
     assert_eq!(sheets[0].size, a4, "preview uses the restored paper");
-    let out = std::env::temp_dir().join(format!("pdfcraft-restored-paper-{}.pdf", std::process::id()));
+    let out = std::env::temp_dir().join(format!("patronuspdf-restored-paper-{}.pdf", std::process::id()));
     h.state_mut().print_draft.printer = None;
     h.state_mut().save_override = Some(out.to_string_lossy().into_owned());
     h.run_steps(1);
     h.get_by_label("Save as PDF").click();
     h.run_steps(3);
     assert_eq!(h.state().dialog, None);
-    let printed = pdfcraft_cos::Document::open(std::sync::Arc::new(std::fs::read(&out).unwrap())).unwrap();
-    let pages = pdfcraft_model::pages(&printed);
+    let printed = patronuspdf_cos::Document::open(std::sync::Arc::new(std::fs::read(&out).unwrap())).unwrap();
+    let pages = patronuspdf_model::pages(&printed);
     assert_eq!(pages.len(), sheets.len());
     let size = pages[0].display_size(&printed);
     assert!((size.0 - a4.0).abs() < 0.01 && (size.1 - a4.1).abs() < 0.01, "saved sheet: {size:?}");
@@ -1677,7 +1677,7 @@ fn restored_paper_keeps_preview_and_saved_sheet_dimensions() {
 /// the dialog's rows, even an empty list, which adds the "no printers" line), then a few more so
 /// the dialog has settled where it stays. A click before then can land where a control was
 /// (windows-latest CI).
-fn settle(h: &mut Harness<'static, PdfCraftApp>) {
+fn settle(h: &mut Harness<'static, PatronusPdfApp>) {
     for _ in 0..500 {
         h.run_steps(1);
         if !h.state().print_draft.printers_loading && !h.state().print_draft.papers_loading() {
@@ -1693,7 +1693,7 @@ fn settle(h: &mut Harness<'static, PdfCraftApp>) {
 /// A paper explicitly added while discovery is pending stays selected after its reply and reopen.
 #[test]
 fn adding_custom_paper_overrides_pending_driver_default() {
-    use pdfcraft_engine::print::spool::Printer;
+    use patronuspdf_engine::print::spool::Printer;
     use std::sync::{Arc, Mutex, mpsc};
     let mut h = harness();
     let (release_tx, release_rx) = mpsc::channel();
@@ -1755,7 +1755,7 @@ fn adding_custom_paper_overrides_pending_driver_default() {
 /// A name entered by the user is not a keyword from the printer's media catalog.
 #[test]
 fn a_named_custom_paper_requests_its_dimensions_from_the_spooler() {
-    let mut d = pdfcraft_ui_egui::PrintDraft::default();
+    let mut d = patronuspdf_ui_egui::PrintDraft::default();
     d.add_custom_paper(serde_json::from_value(serde_json::json!({"name": "Card", "width": 300.0, "height": 500.0})).unwrap());
     assert_eq!(d.job("card.pdf").options, [("media".to_string(), "Custom.300x500".to_string())]);
 }
@@ -1765,10 +1765,10 @@ fn a_named_custom_paper_requests_its_dimensions_from_the_spooler() {
 /// off the list; the printer's setup then leaves the paper as it is.
 #[test]
 fn a_custom_paper_prints_at_its_size_and_its_printer_keeps_it() {
-    use pdfcraft_engine::print::spool::{Job, Printer};
+    use patronuspdf_engine::print::spool::{Job, Printer};
     use std::sync::{Arc, Mutex};
     let sent: Arc<Mutex<Vec<Vec<u8>>>> = Arc::default();
-    let attach = |h: &mut Harness<'static, PdfCraftApp>| {
+    let attach = |h: &mut Harness<'static, PatronusPdfApp>| {
         h.state_mut().printer_source =
             Some(Arc::new(|| vec![Printer { name: "Labeller".into(), default: true, two_sided: None, description: String::new() }]));
         h.state_mut().printer_papers_source = Some(Arc::new(|_| Vec::new()));
@@ -1814,8 +1814,8 @@ fn a_custom_paper_prints_at_its_size_and_its_printer_keeps_it() {
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
     let pdf = sent.lock().unwrap().first().cloned().expect("the job reached the spooler");
-    let printed = pdfcraft_cos::Document::open(Arc::new(pdf)).unwrap();
-    let sheet = pdfcraft_model::pages(&printed)[0].display_size(&printed);
+    let printed = patronuspdf_cos::Document::open(Arc::new(pdf)).unwrap();
+    let sheet = patronuspdf_model::pages(&printed)[0].display_size(&printed);
     assert!((sheet.0.min(sheet.1) - 288.0).abs() < 0.5 && (sheet.0.max(sheet.1) - 432.0).abs() < 0.5, "the label paper: {sheet:?}");
     assert_eq!(h.state().print_draft.setups.first().map(|(p, s)| (p.as_str(), s.paper.as_str())), Some(("Labeller", "Label 4×6")));
 
@@ -1823,7 +1823,7 @@ fn a_custom_paper_prints_at_its_size_and_its_printer_keeps_it() {
     let settings = h.state().persist();
     let mut h = harness_with_settings(Some(settings));
     attach(&mut h);
-    assert_eq!(h.state().print_draft.paper_count(), pdfcraft_engine::print::PAPERS.len() + 1);
+    assert_eq!(h.state().print_draft.paper_count(), patronuspdf_engine::print::PAPERS.len() + 1);
     h.state_mut().print_draft.paper = 0;
     h.state_mut().print_draft.printer = None;
     assert!(h.state_mut().execute("print.dialog"));
@@ -1834,7 +1834,7 @@ fn a_custom_paper_prints_at_its_size_and_its_printer_keeps_it() {
     h.get_by_label("Remove").click();
     h.run_steps(2);
     let d = &mut h.state_mut().print_draft;
-    assert_eq!((d.paper_count(), d.paper), (pdfcraft_engine::print::PAPERS.len(), 0));
+    assert_eq!((d.paper_count(), d.paper), (patronuspdf_engine::print::PAPERS.len(), 0));
     d.paper = 3;
     d.apply_setup();
     assert_eq!(d.paper, 3);
@@ -1847,7 +1847,7 @@ fn a_custom_paper_prints_at_its_size_and_its_printer_keeps_it() {
 /// driver's own setting, and the dialog says so.
 #[test]
 fn a_booklet_decides_two_sided_itself() {
-    use pdfcraft_engine::print::{BookletSubset, spool::Duplex, spool::Printer};
+    use patronuspdf_engine::print::{BookletSubset, spool::Duplex, spool::Printer};
     let mut h = harness();
     // Printers of its own, listed as the dialog lists them (drivers unasked, #3554), with what each
     // driver said about two-sided: the machine's would decide what a booklet asks for, and on a
@@ -1873,7 +1873,7 @@ fn a_booklet_decides_two_sided_itself() {
     assert!(h.query_all_by_label("Creep:").next().is_some(), "a Creep field beside Binding");
     h.state_mut().print_draft.creep = 1.5;
     let layout = h.state().print_draft.settings(4, &[]).map(|s| s.layout);
-    assert!(matches!(layout, Ok(pdfcraft_engine::print::Layout::Booklet { creep, .. }) if creep == 1.5), "the creep reaches the booklet (#6777)");
+    assert!(matches!(layout, Ok(patronuspdf_engine::print::Layout::Booklet { creep, .. }) if creep == 1.5), "the creep reaches the booklet (#6777)");
     for subset in [BookletSubset::FrontOnly, BookletSubset::BackOnly] {
         h.state_mut().print_draft.booklet_subset = subset;
         assert_eq!(h.state().print_draft.job("x").duplex, Some(Duplex::Off), "{subset:?} is one pass of a manual duplex");
@@ -1929,12 +1929,12 @@ fn printer_papers_and_properties_selection() {
 
     // Applying driver paper adapts paper selection and orientation
     h.state_mut().print_draft.apply_driver_paper("4 x 6 in label (101.6 x 152.4 mm)".into(), (288.0, 432.0));
-    assert_eq!(h.state().print_draft.paper, pdfcraft_engine::print::LABEL_PAPER);
-    assert_eq!(h.state().print_draft.orientation, pdfcraft_engine::print::Orientation::Portrait);
+    assert_eq!(h.state().print_draft.paper, patronuspdf_engine::print::LABEL_PAPER);
+    assert_eq!(h.state().print_draft.orientation, patronuspdf_engine::print::Orientation::Portrait);
 
     // Landscape driver media adapts orientation to Landscape
     h.state_mut().print_draft.apply_driver_paper("Landscape Custom".into(), (500.0, 300.0));
-    assert_eq!(h.state().print_draft.orientation, pdfcraft_engine::print::Orientation::Landscape);
+    assert_eq!(h.state().print_draft.orientation, patronuspdf_engine::print::Orientation::Landscape);
     assert_eq!(h.state().print_draft.paper_name(), "Landscape Custom");
 }
 
@@ -1943,7 +1943,7 @@ fn printer_papers_and_properties_selection() {
 #[test]
 fn too_much_creep_for_a_thick_booklet_is_explained_in_the_preview() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("thick.pdf", None, crate::support::fixtures::pdf_pages(400)).unwrap();
         app
@@ -1962,8 +1962,8 @@ fn too_much_creep_for_a_thick_booklet_is_explained_in_the_preview() {
 }
 
 /// An app restored from `saved` settings (if any), with a form open and its Print dialog shown.
-fn print_opened_with(saved: Option<&str>) -> PdfCraftApp {
-    let mut app = PdfCraftApp::new();
+fn print_opened_with(saved: Option<&str>) -> PatronusPdfApp {
+    let mut app = PatronusPdfApp::new();
     app.set_option("language", "en").unwrap();
     if let Some(saved) = saved {
         app.restore(saved);
@@ -1980,8 +1980,8 @@ fn print_opened_with(saved: Option<&str>) -> PdfCraftApp {
 /// per document) (#2001, #6392).
 #[test]
 fn print_preferences_survive_a_restart_but_the_jobs_own_choices_reset() {
-    use pdfcraft_engine::print::{Binding, BookletSubset, Content, LABEL_PAPER, Orientation, PAPERS, PageOrder, SizeMode, Subset, spool::Duplex};
-    use pdfcraft_ui_egui::{PrintHandling, PrintWhich};
+    use patronuspdf_engine::print::{Binding, BookletSubset, Content, LABEL_PAPER, Orientation, PAPERS, PageOrder, SizeMode, Subset, spool::Duplex};
+    use patronuspdf_ui_egui::{PrintHandling, PrintWhich};
     let open = print_opened_with;
     let mut app = open(None);
     let d = &mut app.print_draft;
@@ -2014,7 +2014,7 @@ fn print_preferences_survive_a_restart_but_the_jobs_own_choices_reset() {
     assert_eq!((d.copies, d.which, d.range.as_str(), d.subset, d.reverse), (1, PrintWhich::All, "", Subset::All, false));
     assert_eq!((d.handling, d.orientation), (PrintHandling::Size, Orientation::Auto));
     assert_eq!((d.booklet_subset, d.per_sheet, d.order), (BookletSubset::BothSides, 2, PageOrder::Horizontal));
-    let fresh = pdfcraft_ui_egui::PrintDraft::default();
+    let fresh = patronuspdf_ui_egui::PrintDraft::default();
     assert_eq!((d.custom_grid, d.cols, d.rows), (false, fresh.cols, fresh.rows));
     assert_eq!((d.duplex, d.grayscale, d.collate, d.size, d.binding), (Some(Duplex::LongEdge), true, false, SizeMode::Custom(62.5), Binding::Right));
 
@@ -2046,7 +2046,7 @@ fn print_preferences_survive_a_restart_but_the_jobs_own_choices_reset() {
 /// doesn't offer keeps the default (#2001, #6392).
 #[test]
 fn print_preferences_that_dont_parse_keep_the_defaults() {
-    use pdfcraft_engine::print::{Binding, Content, SizeMode, spool::Duplex};
+    use patronuspdf_engine::print::{Binding, Content, SizeMode, spool::Duplex};
     let open = print_opened_with;
     let garbage = r#"{"print": {"duplex": "sideways", "grayscale": "yes", "collate": null, "size": "custom", "custom_scale": 1e9, "comments_forms": 7, "binding": "up", "as_image": 1, "dpi": 72}}"#;
     let d = open(Some(garbage)).print_draft;
@@ -2073,13 +2073,13 @@ fn print_preferences_that_dont_parse_keep_the_defaults() {
 /// at Actual size, single-sided, while the office printer keeps A4 at Fit, two-sided.
 #[test]
 fn each_printer_keeps_what_it_last_printed_with_across_a_restart() {
-    use pdfcraft_engine::print::spool::{Duplex, Job, Printer};
-    use pdfcraft_engine::print::{LABEL_PAPER, PAPERS, SizeMode};
+    use patronuspdf_engine::print::spool::{Duplex, Job, Printer};
+    use patronuspdf_engine::print::{LABEL_PAPER, PAPERS, SizeMode};
     use std::sync::{Arc, Mutex};
     let a4 = PAPERS.iter().position(|(name, _)| *name == "A4").unwrap();
     let listed = Arc::new(Mutex::new(vec!["Office", "D520BT_Z"]));
     let jobs: Arc<Mutex<Vec<Job>>> = Arc::default();
-    let attach = |h: &mut Harness<'static, PdfCraftApp>| {
+    let attach = |h: &mut Harness<'static, PatronusPdfApp>| {
         let source = listed.clone();
         h.state_mut().printer_source = Some(Arc::new(move || {
             let names = source.lock().map(|n| n.clone()).unwrap_or_default();
@@ -2096,7 +2096,7 @@ fn each_printer_keeps_what_it_last_printed_with_across_a_restart() {
             Ok(String::new())
         }));
     };
-    let open = |h: &mut Harness<'static, PdfCraftApp>| {
+    let open = |h: &mut Harness<'static, PatronusPdfApp>| {
         h.state_mut().dialog = None;
         assert!(h.state_mut().execute("print.dialog"));
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
@@ -2108,7 +2108,7 @@ fn each_printer_keeps_what_it_last_printed_with_across_a_restart() {
         assert!(!h.state().print_draft.papers_loading());
         h.run_steps(2);
     };
-    let print = |h: &mut Harness<'static, PdfCraftApp>| -> Job {
+    let print = |h: &mut Harness<'static, PatronusPdfApp>| -> Job {
         let before = jobs.lock().unwrap().len();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         while h.state().print_draft.papers_loading() && std::time::Instant::now() < deadline {
@@ -2126,7 +2126,7 @@ fn each_printer_keeps_what_it_last_printed_with_across_a_restart() {
         }
         jobs.lock().unwrap().last().cloned().expect("the job reached the spooler")
     };
-    let setup = |h: &Harness<'static, PdfCraftApp>| {
+    let setup = |h: &Harness<'static, PatronusPdfApp>| {
         let d = &h.state().print_draft;
         (d.printer.clone(), d.paper, d.size, d.duplex)
     };

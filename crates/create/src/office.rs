@@ -1,6 +1,6 @@
 //! Office documents (Word, Excel, PowerPoint, OpenDocument, RTF) to PDF through an installed
 //! LibreOffice, run as a separate process: the "LibreOffice sidecar" of
-//! `docs/file-format-parity.md`. PdfCraft never parses these formats itself.
+//! `docs/file-format-parity.md`. Patronus PDF never parses these formats itself.
 //!
 //! Detection ([`is_office`]) is pure and works everywhere. Conversion ([`office_to_pdf`]) runs
 //! only on desktop builds: each run gets its own temporary folder and a fresh LibreOffice
@@ -59,7 +59,7 @@ pub fn office_to_pdf(name: &str, bytes: &[u8]) -> Result<Vec<u8>, CreateError> {
     native::convert_with(&program, name, bytes, TIMEOUT)
 }
 
-/// Where LibreOffice is installed, if it is: `PDFCRAFT_SOFFICE`, then the `PATH`, then the
+/// Where LibreOffice is installed, if it is: `PATRONUSPDF_SOFFICE`, then the `PATH`, then the
 /// usual install folders.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn libreoffice() -> Option<std::path::PathBuf> {
@@ -83,7 +83,7 @@ mod native {
 
     pub(super) fn libreoffice() -> Option<PathBuf> {
         let defaults = default_locations(&|key| std::env::var_os(key));
-        candidates(std::env::var_os("PDFCRAFT_SOFFICE"), std::env::var_os("PATH"), defaults).into_iter().find(|p| p.is_file())
+        candidates(std::env::var_os("PATRONUSPDF_SOFFICE"), std::env::var_os("PATH"), defaults).into_iter().find(|p| p.is_file())
     }
 
     /// Where to look, in order: the override, each `PATH` folder, then `defaults`.
@@ -156,7 +156,7 @@ mod native {
             static NEXT: AtomicU64 = AtomicU64::new(0);
             let n = NEXT.fetch_add(1, Ordering::Relaxed);
             let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_nanos());
-            let dir = std::env::temp_dir().join(format!("pdfcraft-office-{}-{n}-{nanos}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("patronuspdf-office-{}-{n}-{nanos}", std::process::id()));
             // Not recursive: a folder that already exists is not ours. Owner-only on Unix, where the
             // temporary folder is shared: the document and its PDF are not for other users.
             #[cfg_attr(not(unix), allow(unused_mut))]
@@ -433,7 +433,7 @@ mod tests {
 
         #[test]
         fn a_missing_converter_is_an_error_not_a_crash() {
-            let missing = std::env::temp_dir().join("pdfcraft-no-such-soffice").join("soffice");
+            let missing = std::env::temp_dir().join("patronuspdf-no-such-soffice").join("soffice");
             let error = convert_with(&missing, "Report.docx", DOCX_HEAD, Duration::from_secs(5)).unwrap_err();
             assert!(error.to_string().contains("couldn't start LibreOffice"), "{error}");
         }
@@ -465,7 +465,7 @@ mod tests {
         }
 
         /// Where the stand-ins below write their heartbeat.
-        const HEARTBEAT: &str = "PDFCRAFT_TEST_OFFICE_HEARTBEAT";
+        const HEARTBEAT: &str = "PATRONUSPDF_TEST_OFFICE_HEARTBEAT";
 
         /// This test binary run as one of its own ignored tests, with the heartbeat file set.
         fn stand_in(test: &str, heartbeat: &Path) -> std::process::Command {
@@ -518,7 +518,7 @@ mod tests {
         }
 
         /// Where the stand-in below writes.
-        const FILL_DIR: &str = "PDFCRAFT_TEST_OFFICE_FILL_DIR";
+        const FILL_DIR: &str = "PATRONUSPDF_TEST_OFFICE_FILL_DIR";
 
         /// A converter that writes without end is stopped as soon as its output passes the
         /// limit, not after it has run out its time.
@@ -558,7 +558,7 @@ mod tests {
 
         #[test]
         fn a_folder_that_cannot_be_read_counts_as_empty() {
-            assert_eq!(folder_size(&std::env::temp_dir().join("pdfcraft-no-such-folder")), 0);
+            assert_eq!(folder_size(&std::env::temp_dir().join("patronuspdf-no-such-folder")), 0);
         }
 
         /// The temporary folder holds a confidential document and its PDF: on Unix only the owner
@@ -591,7 +591,7 @@ mod tests {
                 eprintln!("skipped: LibreOffice isn't installed");
                 return;
             };
-            let rtf = b"{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard Hello from PdfCraft.\\par}";
+            let rtf = b"{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard Hello from Patronus PDF.\\par}";
             let pdf = convert_with(&program, "hello.rtf", rtf, super::super::TIMEOUT).unwrap();
             assert!(pdf.starts_with(b"%PDF-"));
         }

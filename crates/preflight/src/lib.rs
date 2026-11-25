@@ -1,4 +1,4 @@
-//! pdfcraft-preflight — Standards: PDF/A (L4).
+//! patronuspdf-preflight — Standards: PDF/A (L4).
 //!
 //! [`verify`] checks a document against the parts of ISO 19005-2/-3 (PDF/A-2b, PDF/A-3b) that can
 //! be decided from the object graph:
@@ -34,7 +34,7 @@ mod xmp;
 mod xmp_extension;
 mod xmp_types;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString, Stream};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object, PdfString, Stream};
 
 /// The PDF/A part and conformance level.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -294,7 +294,7 @@ pub fn declared(doc: &Document) -> Declared {
                                 s.to_text()
                             } else {
                                 // An even cut keeps UTF-16 text whole code units.
-                                pdfcraft_cos::PdfString { bytes: s.bytes[..MAX_IDENTIFIER_BYTES & !1].to_vec(), hex: s.hex }.to_text()
+                                patronuspdf_cos::PdfString { bytes: s.bytes[..MAX_IDENTIFIER_BYTES & !1].to_vec(), hex: s.hex }.to_text()
                             }
                         })
                     })
@@ -457,7 +457,7 @@ fn type3_procs_within(
 /// pages' `/Contents` and Type 3 glyph procedures.
 fn referenced_content(doc: &Document, objs: &[(ObjRef, std::sync::Arc<Object>)]) -> std::collections::HashSet<ObjRef> {
     let mut out = std::collections::HashSet::new();
-    for p in pdfcraft_model::pages(doc) {
+    for p in patronuspdf_model::pages(doc) {
         let contents = match p.dict.get(b"Contents") {
             Some(Object::Ref(r)) => match &*doc.get(*r) {
                 Object::Array(a) => a.clone(),
@@ -527,7 +527,7 @@ fn is_content(d: &Dict) -> bool {
 /// Returns how many operators it read.
 fn content_colour(data: &[u8], used: &mut DeviceColour) -> usize {
     let mut read = 0;
-    for op in pdfcraft_content::ops(data) {
+    for op in patronuspdf_content::ops(data) {
         if used.gray && used.rgb && used.cmyk {
             break;
         }
@@ -599,7 +599,7 @@ fn mark_cs_object(doc: &Document, cs: &Object, used: &mut DeviceColour, depth: u
 fn uses_device_colour(doc: &Document, objs: &[(ObjRef, std::sync::Arc<Object>)]) -> DeviceColour {
     let mut used = DeviceColour::default();
     let referenced = referenced_content(doc, objs);
-    let mut budget = pdfcraft_cos::DecodeBudget::new(MAX_COLOUR_DECODED, usize::MAX);
+    let mut budget = patronuspdf_cos::DecodeBudget::new(MAX_COLOUR_DECODED, usize::MAX);
     for (r, o) in objs {
         let Some(d) = dict_of(o) else { continue };
         // A resource dictionary's /ColorSpace, whether it is this object or the page's inline
@@ -672,7 +672,7 @@ pub fn verify(doc: &Document, level: Level) -> Vec<Issue> {
     check_output_intent(doc, &objs, &mut issue);
     check_catalog_actions(doc, &mut issue);
     // Pages: annotations and page actions.
-    let pages = pdfcraft_model::pages(doc);
+    let pages = patronuspdf_model::pages(doc);
     // Each annotation's page: the first page that lists it.
     let mut annot_pages: std::collections::HashMap<ObjRef, usize> = std::collections::HashMap::new();
     for (i, p) in pages.iter().enumerate() {
@@ -919,7 +919,7 @@ fn check_catalog_actions(doc: &Document, issue: &mut impl FnMut(&'static str, &'
 /// Whether something the page `page` paints with can paint transparently: a graphics state with
 /// a soft mask, a constant alpha (`/CA`, `/ca`) below 1 or a blend mode other than `Normal` or
 /// `Compatible`, or an image with a soft mask. `page` is a page dictionary with its inherited
-/// attributes filled in, as [`pdfcraft_model::pages`] lists it.
+/// attributes filled in, as [`patronuspdf_model::pages`] lists it.
 ///
 /// The search is the one PDF/A verification makes (ISO 32000-1 11.6.4.4 to 11.6.6): through the
 /// page's resources, the form XObjects, tiling patterns and Type 3 fonts they hold, and its
@@ -934,7 +934,7 @@ pub fn page_uses_transparency(doc: &Document, page: &Dict) -> bool {
 
 fn check_transparency(
     doc: &Document,
-    pages: &[pdfcraft_model::Page],
+    pages: &[patronuspdf_model::Page],
     issue: &mut impl FnMut(&'static str, &'static str, Option<String>, Option<usize>, bool),
 ) {
     // 6.2.10: blend modes are those ISO 32000-1 defines, and without a PDF/A output intent (one with
@@ -957,7 +957,7 @@ fn check_transparency(
 fn check_limits(
     doc: &Document,
     objs: &[(ObjRef, std::sync::Arc<Object>)],
-    pages: &[pdfcraft_model::Page],
+    pages: &[patronuspdf_model::Page],
     issue: &mut impl FnMut(&'static str, &'static str, Option<String>, Option<usize>, bool),
 ) {
     // 6.1.13: the implementation limits of ISO 32000-1 Annex C.
@@ -1046,7 +1046,7 @@ fn check_objects(
         let Some(d) = dict_of(o) else { continue };
         check_one_object(doc, level, d, o, drawing.contains(r), page_of(*r), issue);
     }
-    for (i, p) in pdfcraft_model::pages(doc).into_iter().enumerate() {
+    for (i, p) in patronuspdf_model::pages(doc).into_iter().enumerate() {
         if let Some(a) = p.dict.get(b"Annots").map(|a| doc.resolve(a))
             && let Some(a) = a.as_array()
         {
@@ -1162,7 +1162,7 @@ fn check_annotation_appearance(
 /// Checks a stream's compression filters, external file keys, and image/PostScript subtype rules.
 fn check_stream(
     doc: &Document,
-    stream: &pdfcraft_cos::Stream,
+    stream: &patronuspdf_cos::Stream,
     subtype: Option<&[u8]>,
     issue: &mut impl FnMut(&'static str, &'static str, Option<String>, Option<usize>, bool),
 ) {
@@ -1378,11 +1378,11 @@ fn strip_actions(doc: &Document, d: &mut Dict) -> bool {
 
 /// Take the annotations `gone` off every page that lists them, each page's list rewritten once, and
 /// replace their indirect objects with `Null`.
-fn remove_from_pages(doc: &mut Document, gone: &std::collections::HashSet<ObjRef>) -> Result<(), pdfcraft_cos::CosError> {
+fn remove_from_pages(doc: &mut Document, gone: &std::collections::HashSet<ObjRef>) -> Result<(), patronuspdf_cos::CosError> {
     if gone.is_empty() {
         return Ok(());
     }
-    for p in pdfcraft_model::pages(doc) {
+    for p in patronuspdf_model::pages(doc) {
         let annots = p.dict.get(b"Annots").map(|a| doc.resolve(a)).and_then(|a| a.as_array().cloned()).unwrap_or_default();
         let listed = |a: &Object| a.as_ref().is_some_and(|r| gone.contains(&r));
         if annots.iter().any(listed) {
@@ -1399,7 +1399,7 @@ fn remove_from_pages(doc: &mut Document, gone: &std::collections::HashSet<ObjRef
 /// Collects every indirect annotation reference listed in any page's `/Annots` array.
 fn page_annot_refs(doc: &Document) -> std::collections::HashSet<ObjRef> {
     let mut refs = std::collections::HashSet::new();
-    for p in pdfcraft_model::pages(doc) {
+    for p in patronuspdf_model::pages(doc) {
         if let Some(a) = p.dict.get(b"Annots").map(|a| doc.resolve(a))
             && let Some(a) = a.as_array()
         {
@@ -1426,11 +1426,11 @@ fn fix_annot_or_field(doc: &Document, nd: &mut Dict, is_annot: bool, sub: Option
 
 fn convert_direct_page_annots(
     doc: &mut Document,
-    page: &pdfcraft_model::Page,
+    page: &patronuspdf_model::Page,
     actions: &mut usize,
     flags: &mut usize,
     removed: &mut usize,
-) -> Result<(), pdfcraft_cos::CosError> {
+) -> Result<(), patronuspdf_cos::CosError> {
     let Some(annots) = page.dict.get(b"Annots").map(|a| doc.resolve(a)).and_then(|a| a.as_array().cloned()) else {
         return Ok(());
     };
@@ -1464,7 +1464,7 @@ fn convert_direct_page_annots(
 }
 
 /// Make `doc` conform to `level` as far as possible, then re-check it.
-pub fn convert(doc: &mut Document, level: Level) -> Result<Report, pdfcraft_cos::CosError> {
+pub fn convert(doc: &mut Document, level: Level) -> Result<Report, patronuspdf_cos::CosError> {
     let mut fixed = Vec::new();
     if doc.trailer().get(b"Encrypt").is_some() {
         doc.remove_encryption();
@@ -1473,7 +1473,7 @@ pub fn convert(doc: &mut Document, level: Level) -> Result<Report, pdfcraft_cos:
     // A full save writes the header afresh, with the version it keeps and a binary comment.
     fixed.extend(header::rewrite(doc));
     fixed.extend(trailer::fix(doc));
-    let root = doc.root().ok_or(pdfcraft_cos::CosError::Syntax { offset: 0, detail: "no catalog".into() })?;
+    let root = doc.root().ok_or(patronuspdf_cos::CosError::Syntax { offset: 0, detail: "no catalog".into() })?;
     // Catalog: actions, JavaScript, NeedAppearances, output intent, metadata.
     let mut cat = catalog(doc);
     if cat.remove(b"AA").is_some() {
@@ -1536,7 +1536,7 @@ pub fn convert(doc: &mut Document, level: Level) -> Result<Report, pdfcraft_cos:
     // Pages, annotations, fields, images, embedded files.
     let (mut actions, mut flags, mut images, mut removed, mut files) = (0, 0, 0, 0, 0);
     let page_annots = page_annot_refs(doc);
-    for p in pdfcraft_model::pages(doc) {
+    for p in patronuspdf_model::pages(doc) {
         let mut changed = false;
         doc.update_dict(p.obj, |d| changed = d.remove(b"AA").is_some())?;
         actions += changed as usize;

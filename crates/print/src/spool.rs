@@ -1,5 +1,5 @@
 //! System print spooler supplied by craft-print. PDF composition and permission checks
-//! stay in PdfCraft; these adapters retain the application's print-error surface.
+//! stay in Patronus PDF; these adapters retain the application's print-error surface.
 
 pub use craft_print::{
     AUTO_SELECT, Duplex, HANDLED_OPTIONS, HAS_PRINTER_PREFERENCES, Job, Printer, PrinterOption, Scaling, apply_queue_defaults, lp_args,
@@ -10,7 +10,7 @@ pub use craft_print::{
 mod windows_duplex;
 
 /// Windows: the in-box DLLs printing draws and describes jobs with. The executables delay-load
-/// them (`apps/pdfcraft{,-cli}/build.rs`, and `build.rs` for this crate's tests: the same list)
+/// them (`apps/patronuspdf{,-cli}/build.rs`, and `build.rs` for this crate's tests: the same list)
 /// so a Windows installation without them still starts (#2630); a call into a missing
 /// delay-loaded DLL would end the process, so printing checks for them first.
 #[cfg(windows)]
@@ -104,7 +104,7 @@ pub fn xps_driver(printer: &str) -> Option<bool> {
 /// Whether `printer`'s driver is a GDI (v3) one, which the XPS print API reaches through Windows'
 /// XPS-to-GDI conversion: a page with transparency prints there with halos, as black boxes or not
 /// at all (#5838, #5940, #6155), so the copy for it has its transparent sheets flattened first
-/// (`pdfcraft_engine::spooler::spooler_copy`). False when that can't be told.
+/// (`patronuspdf_engine::spooler::spooler_copy`). False when that can't be told.
 pub fn gdi_driver(printer: &str) -> bool {
     xps_driver(printer) == Some(false)
 }
@@ -411,7 +411,7 @@ pub(crate) fn with_job_info(job: &Job, owner: Option<&str>) -> Job {
     let mut named = job.clone();
     for (key, value) in [(JOB_NAME_KEY, job.title.as_str()), (JOB_OWNER_KEY, owner.unwrap_or_default())] {
         if !job.options.iter().any(|(k, _)| k.eq_ignore_ascii_case(key)) {
-            named.options.push((key.to_string(), job_option_value(value, "PdfCraft")));
+            named.options.push((key.to_string(), job_option_value(value, "Patronus PDF")));
         }
     }
     named
@@ -699,7 +699,7 @@ pub(crate) fn nominal_media_size(media: &str) -> Option<(f64, f64)> {
 /// CUPS: the job with its `media` named by the printer's own PPD keyword when it names one of
 /// the PPD's papers by its label (as [`printer_papers`] lists them), as `Custom.<w>x<h>` points
 /// of one of their sizes ([`crate::custom_media`]), or by a standard name of one of their sizes
-/// ([`nominal_media_size`], such as the `w288h432` of PdfCraft's 4 × 6 in label). Fed under the
+/// ([`nominal_media_size`], such as the `w288h432` of Patronus PDF's 4 × 6 in label). Fed under the
 /// PPD's keyword, the paper is the driver's own: a driver may take no custom sizes, and a label
 /// printer's stock is set up under its keyword. A keyword the PPD has, any other value, a job
 /// without `media` and one for the default destination go as they are.

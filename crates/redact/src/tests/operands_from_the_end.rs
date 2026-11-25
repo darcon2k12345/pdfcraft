@@ -75,7 +75,7 @@ fn a_property_list_named_after_a_surplus_operand_is_kept() {
     );
     mark(&mut doc, 0, &[[0.0, 200.0, 300.0, 300.0]], "");
     assert_eq!(apply(&mut doc, None).unwrap().glyphs, 6);
-    let page = pdfcraft_model::pages(&doc).swap_remove(0);
+    let page = patronuspdf_model::pages(&doc).swap_remove(0);
     let res = page.dict.get(b"Resources").map(|r| doc.resolve(r)).and_then(|r| r.as_dict().cloned()).unwrap_or_default();
     let props = res.get(b"Properties").map(|p| doc.resolve(p)).and_then(|p| p.as_dict().cloned()).unwrap_or_default();
     assert!(props.contains(b"Pr1"), "{res:?}");
@@ -130,7 +130,7 @@ fn a_type3_font_and_its_glyphs_resources_named_after_a_surplus_operand_are_kept(
     ]);
     mark(&mut doc, 0, &[[0.0, 200.0, 300.0, 300.0]], "");
     assert_eq!(apply(&mut doc, None).unwrap().glyphs, 6);
-    let page = pdfcraft_model::pages(&doc).swap_remove(0);
+    let page = patronuspdf_model::pages(&doc).swap_remove(0);
     let res = page.dict.get(b"Resources").map(|r| doc.resolve(r)).and_then(|r| r.as_dict().cloned()).unwrap_or_default();
     let fonts = res.get(b"Font").map(|f| doc.resolve(f)).and_then(|f| f.as_dict().cloned()).unwrap_or_default();
     let font = fonts.get(b"T3").map(|f| doc.resolve(f)).and_then(|f| f.as_dict().cloned());
@@ -252,7 +252,7 @@ fn an_mcid_given_by_reference_loses_what_redaction_removed() {
 
 /// The resources of page `page`, resolved.
 fn resources_of(doc: &Document, page: usize) -> Dict {
-    let page = pdfcraft_model::pages(doc).swap_remove(page);
+    let page = patronuspdf_model::pages(doc).swap_remove(page);
     page.dict.get(b"Resources").map(|r| doc.resolve(r)).and_then(|r| r.as_dict().cloned()).unwrap_or_default()
 }
 
@@ -266,7 +266,7 @@ fn dict_in(doc: &Document, dict: &Dict, key: &[u8]) -> Dict {
 /// unseen and the list was retired from under it.
 #[test]
 fn a_property_list_another_page_names_after_a_surplus_operand_is_kept() {
-    use pdfcraft_cos::Stream;
+    use patronuspdf_cos::Stream;
     let mut doc = one_page(
         b"/Span /P0 BDC BT /F1 10 Tf 10 200 Td (SECRET) Tj ET EMC",
         "/Properties << /P0 7 0 R >>",

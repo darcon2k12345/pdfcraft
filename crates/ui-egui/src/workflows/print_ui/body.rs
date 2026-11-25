@@ -132,7 +132,7 @@ fn printer_picker(ui: &mut egui::Ui, d: &mut PrintDraft) -> egui::Response {
             if opening {
                 search.request_focus();
             }
-            let query = pdfcraft_render::text::fold_case(filter.trim());
+            let query = patronuspdf_render::text::fold_case(filter.trim());
             if d.printers_loading {
                 ui.add_enabled(false, egui::Label::new(tl!("Looking for printers…")));
             }
@@ -148,7 +148,7 @@ fn printer_picker(ui: &mut egui::Ui, d: &mut PrintDraft) -> egui::Response {
                 let mut matched = false;
                 for p in &d.printers {
                     let name = printer_label(&p.name);
-                    if !query.is_empty() && !pdfcraft_render::text::fold_case(&name).contains(&query) {
+                    if !query.is_empty() && !patronuspdf_render::text::fold_case(&name).contains(&query) {
                         continue;
                     }
                     matched = true;
@@ -269,7 +269,7 @@ pub(crate) fn body(
                 }
                 ui.end_row();
                 // The spooler answered with no printer at all (#160): say so, rather than
-                // leaving Save as PDF looking like the only thing PdfCraft can do.
+                // leaving Save as PDF looking like the only thing Patronus PDF can do.
                 if !d.printers_loading && d.printers.is_empty() {
                     ui.label("");
                     ui.label(
@@ -805,7 +805,7 @@ mod tests {
 
     use super::*;
     use crate::i18n::Lang;
-    use crate::{Dialog, PdfCraftApp};
+    use crate::{Dialog, PatronusPdfApp};
 
     /// The row the settings column really gives the header: `body` sets it to 470 px, less the
     /// frame's 10 px margins.
@@ -927,7 +927,7 @@ mod tests {
     fn the_print_dialog_keeps_its_buttons_within_a_short_screen() {
         let screen = egui::vec2(1000.0, 480.0); // shorter than the settings+preview column alone
         let mut h = Harness::builder().with_size(screen).build_eframe(|_cc| {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.set_option("language", "en").unwrap();
             let bytes = app.session.create_blank(612.0, 792.0, 1).unwrap();
             app.open_bytes("one-page.pdf", None, bytes.as_ref().clone()).unwrap();

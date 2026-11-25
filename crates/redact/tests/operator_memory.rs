@@ -5,10 +5,10 @@
 
 use std::sync::Arc;
 
-use pdfcraft_annot::{Meta, NewAnnotation, Shape, Style, add_annotation, rect_quad};
-use pdfcraft_cos::{Document, ObjRef, Object, Stream};
-use pdfcraft_redact::apply;
-use pdfcraft_testkit::{Pdf, stream_obj};
+use patronuspdf_annot::{Meta, NewAnnotation, Shape, Style, add_annotation, rect_quad};
+use patronuspdf_cos::{Document, ObjRef, Object, Stream};
+use patronuspdf_redact::apply;
+use patronuspdf_testkit::{Pdf, stream_obj};
 
 const IMAGE: &str = "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8";
 

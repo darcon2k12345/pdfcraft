@@ -451,7 +451,7 @@ pub(crate) fn page_after_text(resp: &egui::Response, cx: &PageCx<'_>, view: &mut
     if let crate::canvas::ToolMarks::Marks(marks, head) = view.tool_marks(cx.tool, finished, Some(cx.page), false, cx.info) {
         view.clear_selection();
         let edits = marks.into_iter().map(|(page, quads)| {
-            Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
+            Edit::AddAnnotation(patronuspdf_engine::NewAnnotation {
                 page,
                 shape: Shape::TextMarkup { kind, quads },
                 style: cx.prefs.style(tool),
@@ -680,7 +680,7 @@ impl Gestures<'_> {
         true
     }
 
-    fn caret(&self, view: &mut DocView, caret_text: Option<&pdfcraft_render::PageText>) -> bool {
+    fn caret(&self, view: &mut DocView, caret_text: Option<&patronuspdf_render::PageText>) -> bool {
         let Self { cx, pointer, over_page, .. } = *self;
         let cv = &mut view.comments;
         if !cx.allowed {
@@ -876,7 +876,7 @@ pub(crate) fn nudge_keys(ctx: &egui::Context, keys: PageKeys, view: &mut DocView
 fn point_cursor(selected: Option<&Annotation>, i: usize) -> egui::CursorIcon {
     let knee_side = selected.filter(|a| i == 1 && is_callout(a)).and_then(|a| {
         let (tb, knee) = (a.text_box?, a.points.get(1)?);
-        Some(pdfcraft_engine::callout_side(tb.map(f64::from), [f64::from(knee[0]), f64::from(knee[1])]))
+        Some(patronuspdf_engine::callout_side(tb.map(f64::from), [f64::from(knee[0]), f64::from(knee[1])]))
     });
     match knee_side {
         Some(side) if side.horizontal() => egui::CursorIcon::ResizeHorizontal,

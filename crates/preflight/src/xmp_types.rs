@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 
 use crate::xmp::NsScope;
 use craft_xml::El;
-use pdfcraft_cos::{DecodeBudget, ObjRef, Object};
+use patronuspdf_cos::{DecodeBudget, ObjRef, Object};
 
 /// How deep arrays, structures and qualifiers are followed. No type nests nearly this deep, so a
 /// value nested deeper doesn't have its type.

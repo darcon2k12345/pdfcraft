@@ -27,12 +27,12 @@
       "expect": {"error": null}
     },
     {
-      "event": {"op": "type", "field": "Value:", "value": "PdfCraft"},
+      "event": {"op": "type", "field": "Value:", "value": "Patronus PDF"},
       "expect": {"error": null}
     },
     {
       "event": {"op": "click", "label": "Add"},
-      "expect": {"error": null, "draft": {"custom": {"Project": "PdfCraft", "Untouched": "Keep me"}}, "document": {"title": "Original", "author": "Original author", "custom": {"Untouched": "Keep me"}, "display_title": false, "dirty": false, "undo": null, "redo": null, "pages": 2, "custom_count": 1}, "original_bytes": true}
+      "expect": {"error": null, "draft": {"custom": {"Project": "Patronus PDF", "Untouched": "Keep me"}}, "document": {"title": "Original", "author": "Original author", "custom": {"Untouched": "Keep me"}, "display_title": false, "dirty": false, "undo": null, "redo": null, "pages": 2, "custom_count": 1}, "original_bytes": true}
     },
     {
       "event": {"op": "click", "label": "Initial View"},
@@ -44,7 +44,7 @@
     },
     {
       "event": {"op": "click", "label": "OK"},
-      "expect": {"error": null, "properties_open": false, "draft": null, "document": {"title": "Published title", "author": "Review team", "custom": {"Project": "PdfCraft", "Untouched": "Keep me"}, "display_title": true, "dirty": true, "undo": "Change document properties", "redo": null, "custom_count": 2}}
+      "expect": {"error": null, "properties_open": false, "draft": null, "document": {"title": "Published title", "author": "Review team", "custom": {"Project": "Patronus PDF", "Untouched": "Keep me"}, "display_title": true, "dirty": true, "undo": "Change document properties", "redo": null, "custom_count": 2}}
     },
     {
       "event": {"op": "undo"},
@@ -56,7 +56,7 @@
     },
     {
       "event": {"op": "save_reopen"},
-      "expect": {"error": null, "reopened": {"title": "Published title", "author": "Review team", "custom": {"Project": "PdfCraft", "Untouched": "Keep me"}, "display_title": true, "dirty": false, "pages": 2, "undo": null, "redo": null, "custom_count": 2}}
+      "expect": {"error": null, "reopened": {"title": "Published title", "author": "Review team", "custom": {"Project": "Patronus PDF", "Untouched": "Keep me"}, "display_title": true, "dirty": false, "pages": 2, "undo": null, "redo": null, "custom_count": 2}}
     }
   ]
 }

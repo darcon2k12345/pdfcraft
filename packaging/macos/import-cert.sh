@@ -19,9 +19,9 @@ fi
 
 # A new, owner-only folder of its own (umask 077): the certificate and keychain are never
 # written through a path someone else could have made first in a shared temporary folder.
-TMP="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/pdfcraft-signing.XXXXXXXX")"
-KEYCHAIN="$TMP/pdfcraft-signing.keychain-db"
-CERT="$TMP/pdfcraft-signing.p12"
+TMP="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/patronuspdf-signing.XXXXXXXX")"
+KEYCHAIN="$TMP/patronuspdf-signing.keychain-db"
+CERT="$TMP/patronuspdf-signing.p12"
 KC_PASS="${KEYCHAIN_PASSWORD:-$(openssl rand -hex 24)}"
 
 # Every exit path removes the keychain and the folder holding it: the keychain keeps the signing

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use pdfcraft_engine::{DocId, Edit, FieldValue, Session};
+use patronuspdf_engine::{DocId, Edit, FieldValue, Session};
 
 /// One visible page with a text field `Name` (whose validate script tries to show the template),
 /// and a hidden template `More` holding the text field `Extra`.

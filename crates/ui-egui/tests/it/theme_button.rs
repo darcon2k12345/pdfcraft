@@ -3,11 +3,11 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::PdfCraftApp;
+use patronuspdf_ui_egui::PatronusPdfApp;
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -15,7 +15,7 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn preference(h: &Harness<'static, PdfCraftApp>) -> String {
+fn preference(h: &Harness<'static, PatronusPdfApp>) -> String {
     format!("{:?}", h.state().theme_preference)
 }
 

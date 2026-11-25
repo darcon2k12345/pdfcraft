@@ -3,7 +3,7 @@
 
 use egui::{Event, Modifiers, MouseWheelUnit, PointerButton, Pos2, TouchPhase};
 use egui_kittest::Harness;
-use pdfcraft_ui_egui::PdfCraftApp;
+use patronuspdf_ui_egui::PatronusPdfApp;
 
 /// One 300×200 page with two lines of Helvetica text.
 fn two_lines() -> Vec<u8> {
@@ -29,14 +29,14 @@ trailer << /Root 1 0 R >>
 
 /// The page on screen and the pointer over the "u" of "quick". Frames are 1/60 s: a click takes
 /// two frames (press, release), and egui counts a double-click only within 0.3 s.
-fn harness(setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> (Harness<'static, PdfCraftApp>, Pos2) {
+fn harness(setup: impl FnOnce(&mut PatronusPdfApp) + 'static) -> (Harness<'static, PatronusPdfApp>, Pos2) {
     harness_with(two_lines(), setup)
 }
 
 /// `harness` with another document; the pointer ends over glyph 5 of its first page.
-fn harness_with(pdf: Vec<u8>, setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> (Harness<'static, PdfCraftApp>, Pos2) {
+fn harness_with(pdf: Vec<u8>, setup: impl FnOnce(&mut PatronusPdfApp) + 'static) -> (Harness<'static, PatronusPdfApp>, Pos2) {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("lines.pdf", None, pdf).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -53,7 +53,7 @@ fn harness_with(pdf: Vec<u8>, setup: impl FnOnce(&mut PdfCraftApp) + 'static) ->
 }
 
 /// Press and release without moving or leaving the page.
-fn click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
+fn click(h: &mut Harness<'static, PatronusPdfApp>, pos: Pos2) {
     for pressed in [true, false] {
         h.event(Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE });
     }
@@ -108,7 +108,7 @@ fn quick_clicks_with_the_highlighter_mark_only_the_word() {
 /// Wait for the page a mark just re-rendered to have its text layer back, glyph `g` of page 1
 /// on screen, within the multi-click window: at most 12 frames of 1/60 s, with real time between
 /// them for the render to finish.
-fn text_back(h: &mut Harness<'static, PdfCraftApp>, g: usize) {
+fn text_back(h: &mut Harness<'static, PatronusPdfApp>, g: usize) {
     for _ in 0..12 {
         if !h.state().render_pending() && h.state().views[0].glyph_screen_pos(0, g).is_some() {
             return;
@@ -143,7 +143,7 @@ fn a_markup_drag_right_after_a_double_click_marks_what_it_drags_over() {
 }
 
 /// Press at `from`, move to `to` and release there.
-fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'static, PatronusPdfApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
     h.run_steps(1);
     for k in 1..=4 {
@@ -155,7 +155,7 @@ fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
 }
 
 /// Click at `pos` with Shift held.
-fn shift_click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
+fn shift_click(h: &mut Harness<'static, PatronusPdfApp>, pos: Pos2) {
     h.event(Event::ModifiersChanged(Modifiers::SHIFT));
     h.hover_at(pos);
     h.run_steps(1);
@@ -171,7 +171,7 @@ fn shift_click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
 #[test]
 fn shift_click_extends_the_selection_from_its_anchor() {
     let (mut h, _) = harness(|_| {});
-    let glyph = |h: &Harness<'static, PdfCraftApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
+    let glyph = |h: &Harness<'static, PatronusPdfApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
     // Drag over "quick" (glyphs 4..=8).
     let (q, k) = (glyph(&h, 4), glyph(&h, 8));
     drag(&mut h, q, k);
@@ -222,7 +222,7 @@ fn multiclick_selects_on_pointer_press_before_release() {
 }
 
 // Issue #1225: page-text Copy belongs in both menus and observes PDF permissions.
-fn copied(h: &Harness<'static, PdfCraftApp>, want: &str) -> bool {
+fn copied(h: &Harness<'static, PatronusPdfApp>, want: &str) -> bool {
     h.output().platform_output.commands.iter().any(|c| matches!(c, egui::OutputCommand::CopyText(t) if t == want))
 }
 
@@ -233,7 +233,7 @@ fn selected_text_copy_edit_and_context_menus() {
     let (mut h, at) = harness(|app| app.system_clipboard = false);
     click(&mut h, at);
     click(&mut h, at);
-    h.state_mut().quick_tool = pdfcraft_ui_egui::QuickTool::Hand;
+    h.state_mut().quick_tool = patronuspdf_ui_egui::QuickTool::Hand;
     h.run_steps(2); // Hide floating Copy so this test can only reach menu entries.
     crate::support::open_menu(&mut h, "Edit");
     crate::support::menu_row(&h, "Copy").click();
@@ -243,7 +243,7 @@ fn selected_text_copy_edit_and_context_menus() {
         did_copy |= copied(&h, "quick");
     }
     assert!(did_copy, "Edit Copy emits the selected text");
-    h.state_mut().quick_tool = pdfcraft_ui_egui::QuickTool::Hand;
+    h.state_mut().quick_tool = patronuspdf_ui_egui::QuickTool::Hand;
     h.run_steps(2); // Hide the floating bar: the remaining Copy must be in the context menu.
     h.event(Event::PointerMoved(at));
     for pressed in [true, false] {
@@ -289,7 +289,7 @@ fn selected_text_copy_command_requires_selection() {
     assert!(h.state_mut().execute("edit.copy"));
     h.step();
     assert!(copied(&h, "quick"));
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     assert!(!app.execute("edit.copy"));
 }
 
@@ -297,9 +297,9 @@ fn selected_text_copy_command_requires_selection() {
 fn selected_text_copy_floating_button_honours_permissions() {
     use egui_kittest::kittest::Queryable;
     for password in ["pw", "owner"] {
-        let mut doc = pdfcraft_cos::Document::open(std::sync::Arc::new(two_lines())).unwrap();
-        doc.set_encryption(&pdfcraft_cos::NewEncryption {
-            algorithm: pdfcraft_cos::Algorithm::Aes256,
+        let mut doc = patronuspdf_cos::Document::open(std::sync::Arc::new(two_lines())).unwrap();
+        doc.set_encryption(&patronuspdf_cos::NewEncryption {
+            algorithm: patronuspdf_cos::Algorithm::Aes256,
             user_password: "pw",
             owner_password: "owner",
             permissions: -1 ^ 0b1_0000,
@@ -307,9 +307,9 @@ fn selected_text_copy_floating_button_honours_permissions() {
             seed: [4; 32],
         })
         .unwrap();
-        let bytes = pdfcraft_cos::write_full(&doc, &Default::default()).unwrap();
+        let bytes = patronuspdf_cos::write_full(&doc, &Default::default()).unwrap();
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("no-copy.pdf", None, bytes).unwrap();
             app.submit_password(Some(password.into()));
@@ -343,7 +343,7 @@ fn selected_text_copy_floating_button_honours_permissions() {
 type HtmlSets = std::sync::Arc<std::sync::Mutex<Vec<(String, String)>>>;
 
 /// The system clipboard on, through a stand-in that takes or refuses Copy with formatting.
-fn html_clipboard(app: &mut PdfCraftApp, takes: bool) -> HtmlSets {
+fn html_clipboard(app: &mut PatronusPdfApp, takes: bool) -> HtmlSets {
     let sets = HtmlSets::default();
     let seen = sets.clone();
     app.system_clipboard = true;
@@ -354,7 +354,7 @@ fn html_clipboard(app: &mut PdfCraftApp, takes: bool) -> HtmlSets {
     sets
 }
 
-fn any_copy_text(h: &Harness<'static, PdfCraftApp>) -> bool {
+fn any_copy_text(h: &Harness<'static, PatronusPdfApp>) -> bool {
     h.output().platform_output.commands.iter().any(|c| matches!(c, egui::OutputCommand::CopyText(_)))
 }
 
@@ -415,9 +415,9 @@ fn selected_text_copy_without_system_clipboard_builds_no_html() {
 /// A document that withholds copying gives neither the text nor its HTML.
 #[test]
 fn selected_text_copy_with_formatting_honours_permissions() {
-    let mut doc = pdfcraft_cos::Document::open(std::sync::Arc::new(two_lines())).unwrap();
-    doc.set_encryption(&pdfcraft_cos::NewEncryption {
-        algorithm: pdfcraft_cos::Algorithm::Aes256,
+    let mut doc = patronuspdf_cos::Document::open(std::sync::Arc::new(two_lines())).unwrap();
+    doc.set_encryption(&patronuspdf_cos::NewEncryption {
+        algorithm: patronuspdf_cos::Algorithm::Aes256,
         user_password: "pw",
         owner_password: "owner",
         permissions: -1 ^ 0b1_0000,
@@ -425,7 +425,7 @@ fn selected_text_copy_with_formatting_honours_permissions() {
         seed: [4; 32],
     })
     .unwrap();
-    let bytes = pdfcraft_cos::write_full(&doc, &Default::default()).unwrap();
+    let bytes = patronuspdf_cos::write_full(&doc, &Default::default()).unwrap();
     let (mut h, at) = harness_with(bytes, |app| app.submit_password(Some("pw".into())));
     let sets = html_clipboard(h.state_mut(), true);
     click(&mut h, at);
@@ -440,7 +440,7 @@ fn selected_text_copy_with_formatting_honours_permissions() {
 #[test]
 fn selected_text_copy_preserves_unicode_and_page_clipboard() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.system_clipboard = false;
         app.open_bytes("unicode.pdf", None, text_pdf(r"BT /F1 14 Tf 20 150 Td (caf\351) Tj ET")).unwrap();
@@ -517,7 +517,7 @@ fn bottom_lines(n: usize) -> Vec<u8> {
 }
 
 /// Press at `from` and move to `to`, keeping the button down.
-fn press_and_move(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
+fn press_and_move(h: &mut Harness<'static, PatronusPdfApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
     h.run_steps(1);
     for k in 1..=4 {
@@ -527,7 +527,7 @@ fn press_and_move(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
 }
 
 /// One wheel event, with time to scroll (egui spreads a wheel line over a few frames).
-fn wheel(h: &mut Harness<'static, PdfCraftApp>, unit: MouseWheelUnit, dy: f32) {
+fn wheel(h: &mut Harness<'static, PatronusPdfApp>, unit: MouseWheelUnit, dy: f32) {
     h.event(Event::MouseWheel {
         unit,
         delta: egui::vec2(0.0, dy),
@@ -539,7 +539,7 @@ fn wheel(h: &mut Harness<'static, PdfCraftApp>, unit: MouseWheelUnit, dy: f32) {
 }
 
 /// The top edge of `page` on screen.
-fn page_top(h: &Harness<'static, PdfCraftApp>, page: usize) -> f32 {
+fn page_top(h: &Harness<'static, PatronusPdfApp>, page: usize) -> f32 {
     h.state().views[0].page_screen_rect(page).expect("page on screen").min.y
 }
 
@@ -552,7 +552,7 @@ fn a_selection_drag_keeps_scrolling_over_the_gap_and_the_next_page() {
         app.set_option("layout", "continuous").unwrap();
         app.set_option("zoom", "200").unwrap();
     });
-    let glyph = |h: &Harness<'static, PdfCraftApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
+    let glyph = |h: &Harness<'static, PatronusPdfApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
     // "ends" (glyphs 7..=10) in "Page 1 ends with this line".
     let (from, to) = (glyph(&h, 7), glyph(&h, 10));
     press_and_move(&mut h, from, to);
@@ -583,7 +583,7 @@ fn a_selection_drag_keeps_scrolling_over_the_gap_and_the_next_page() {
 }
 
 /// `bottom_lines(3)` at 75 %, every page on screen with its text layer read.
-fn three_pages() -> Harness<'static, PdfCraftApp> {
+fn three_pages() -> Harness<'static, PatronusPdfApp> {
     let (mut h, _) = harness_with(bottom_lines(3), |app| {
         app.set_option("layout", "continuous").unwrap();
         app.set_option("zoom", "75").unwrap();
@@ -596,7 +596,7 @@ fn three_pages() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn glyph_on(h: &Harness<'static, PdfCraftApp>, page: usize, g: usize) -> Pos2 {
+fn glyph_on(h: &Harness<'static, PatronusPdfApp>, page: usize, g: usize) -> Pos2 {
     h.state().views[0].glyph_screen_pos(page, g).expect("glyph on screen")
 }
 
@@ -659,7 +659,7 @@ fn a_selection_across_pages_is_marked_on_every_page_in_one_step() {
     h.run_steps(3);
     h.get_by_label("Underline").click();
     h.run_steps(3);
-    let marks = |h: &Harness<'static, PdfCraftApp>| {
+    let marks = |h: &Harness<'static, PatronusPdfApp>| {
         let app = h.state();
         let doc = app.session.get(app.views[0].id).unwrap();
         doc.info.annotations.iter().map(|a| (a.page, a.subtype.clone())).collect::<Vec<_>>()
@@ -720,7 +720,7 @@ fn a_selection_drag_held_at_the_bottom_edge_scrolls_the_view() {
 }
 
 /// Click at `at`, then press there again and drag to `to` before releasing: a double-click drag.
-fn double_click_drag(h: &mut Harness<'static, PdfCraftApp>, at: Pos2, to: Pos2) {
+fn double_click_drag(h: &mut Harness<'static, PatronusPdfApp>, at: Pos2, to: Pos2) {
     click(h, at);
     press_and_move(h, at, to);
     h.event(Event::PointerButton { pos: to, button: PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
@@ -732,7 +732,7 @@ fn double_click_drag(h: &mut Harness<'static, PdfCraftApp>, at: Pos2, to: Pos2) 
 #[test]
 fn a_double_click_drag_extends_by_whole_words_both_ways() {
     let (mut h, _) = harness(|_| {});
-    let glyph = |h: &Harness<'static, PdfCraftApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
+    let glyph = |h: &Harness<'static, PatronusPdfApp>, g: usize| h.state().views[0].glyph_screen_pos(0, g).expect("glyph on screen");
     // "The quick brown fox": the "u" of "quick" is glyph 5, the "o" of "brown" glyph 12.
     let (u, o) = (glyph(&h, 5), glyph(&h, 12));
     double_click_drag(&mut h, u, o);
@@ -921,7 +921,7 @@ fn a_flick_back_onto_the_page_before_selects_to_the_release() {
 /// and so does picking a markup tool with such a selection already made.
 #[test]
 fn markup_tools_mark_a_selection_across_pages_on_every_page() {
-    let marks = |h: &Harness<'static, PdfCraftApp>| {
+    let marks = |h: &Harness<'static, PatronusPdfApp>| {
         let app = h.state();
         let doc = app.session.get(app.views[0].id).unwrap();
         doc.info.annotations.iter().map(|a| (a.page, a.subtype.clone())).collect::<Vec<_>>()
@@ -1021,7 +1021,7 @@ fn a_highlight_dragged_back_across_pages_selects_its_part_where_the_drag_ended()
 #[test]
 fn a_page_range_redaction_is_not_followed_up_as_a_selection() {
     let mut h = three_pages();
-    h.state_mut().redact_pages_draft = pdfcraft_ui_egui::RedactPagesDraft { current: false, from: 1, to: 3 };
+    h.state_mut().redact_pages_draft = patronuspdf_ui_egui::RedactPagesDraft { current: false, from: 1, to: 3 };
     h.state_mut().redact_pages();
     h.run_steps(3);
     let app = h.state();

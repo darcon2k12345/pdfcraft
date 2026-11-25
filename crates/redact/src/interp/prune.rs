@@ -59,7 +59,7 @@ fn names_content_draws(doc: &Document, content: &[Vec<u8>], xo: &Dict) -> (HashS
                 }
             }
         };
-        for op in pdfcraft_content::ops(&data).filter(|op| op.is("Do")) {
+        for op in patronuspdf_content::ops(&data).filter(|op| op.is("Do")) {
             let Some(n) = op.last_name() else { continue };
             if !drawn.insert(n.to_vec()) {
                 continue;
@@ -99,7 +99,7 @@ fn any_draws(drawn: &[(HashSet<Vec<u8>>, bool)], name: &[u8]) -> Option<bool> {
 
 /// Every page-tree node with a /Resources of its own, and the pages that draw through it (the
 /// nearest such node above a page, or the page itself). Cycles are cut as in
-/// `pdfcraft_model::pages`. The flag is false when a node was reached twice (listed under two
+/// `patronuspdf_model::pages`. The flag is false when a node was reached twice (listed under two
 /// parents, or in a cycle) or the walk stopped early: a page may then draw through a holder it
 /// isn't listed under.
 fn resource_holders(doc: &Document) -> (Vec<(ObjRef, Vec<ObjRef>)>, bool) {
@@ -138,7 +138,7 @@ fn resource_holders(doc: &Document) -> (Vec<(ObjRef, Vec<ObjRef>)>, bool) {
 /// entry is replaced by a private copy on its node, as in [`unlink_doomed`]. Returns how many
 /// names went.
 pub(crate) fn unlink_undrawn(doc: &mut Document) -> Result<usize, RedactError> {
-    let index: HashMap<ObjRef, usize> = pdfcraft_model::pages(doc).iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
+    let index: HashMap<ObjRef, usize> = patronuspdf_model::pages(doc).iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
     let (holders, whole) = resource_holders(doc);
     if !whole {
         return Ok(0);
@@ -191,7 +191,7 @@ pub(crate) fn unlink_undrawn(doc: &mut Document) -> Result<usize, RedactError> {
 fn names_drawn(doc: &Document, res: &Dict, pages: &[ObjRef], index: &HashMap<ObjRef, usize>) -> Option<HashSet<Vec<u8>>> {
     let mut drawn = HashSet::new();
     let mut note = |data: &[u8]| {
-        for op in pdfcraft_content::parse(data).ops.iter().filter(|op| op.is("Do")) {
+        for op in patronuspdf_content::parse(data).ops.iter().filter(|op| op.is("Do")) {
             if let Some(name) = op.last_name() {
                 drawn.insert(name.to_vec());
             }
@@ -299,7 +299,7 @@ pub(crate) fn unlink_doomed(doc: &mut Document, doomed: &[ObjRef], retired_prope
     }
     let doomed: HashSet<ObjRef> = doomed.iter().copied().collect();
     let (holders, _) = resource_holders(doc);
-    let index: HashMap<ObjRef, usize> = pdfcraft_model::pages(doc).iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
+    let index: HashMap<ObjRef, usize> = patronuspdf_model::pages(doc).iter().enumerate().map(|(i, p)| (p.obj, i)).collect();
     let holder_nodes: Vec<ObjRef> = holders.iter().map(|(node, _)| *node).collect();
     for (node, users) in holders {
         let Some(mut res) = doc.get(node).as_dict().and_then(|d| d.get(b"Resources")).and_then(|r| doc.resolve(r).as_dict().cloned()) else {
@@ -482,7 +482,7 @@ pub(super) fn clip_out(rects: &[[f64; 4]], ctm: &Matrix, around: [f64; 4]) -> Op
 pub(crate) fn resource_ops(doc: &Document, budget: &mut DecodeBudget, res: &Dict, content: &[Vec<u8>]) -> Result<Vec<Op>, CosError> {
     const MAX_OPS: usize = 2_000_000;
     let joined = Pieces::join(content);
-    let mut read = pdfcraft_content::ops(joined.data());
+    let mut read = patronuspdf_content::ops(joined.data());
     let mut ops: Vec<Op> = read.by_ref().take(MAX_OPS + 1).collect();
     // Under the limit the reader ran to the end, so `skipped` counts all of it.
     if read.skipped() > 0 || ops.len() > MAX_OPS {
@@ -501,7 +501,7 @@ pub(crate) fn resource_ops(doc: &Document, budget: &mut DecodeBudget, res: &Dict
             && s.dict.get(b"Resources").is_none_or(|r| doc.resolve(r).as_dict().is_none())
         {
             let data = budget.decode(&doc.with_direct_parms(s))?;
-            let mut read = pdfcraft_content::ops(&data);
+            let mut read = patronuspdf_content::ops(&data);
             ops.extend(read.by_ref().take((MAX_OPS + 1).saturating_sub(ops.len())));
             // `seen` gains at most one form for each `Do` in `ops`, so this bounds it too.
             if ops.len() > MAX_OPS || read.skipped() > 0 {

@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use pdfcraft_cos::{Dict, Object, SaveOptions, Stream, write_full};
-use pdfcraft_render::{PRINT_TAG, PageRenderer, RenderConfig, RenderRequest, Tile};
+use patronuspdf_cos::{Dict, Object, SaveOptions, Stream, write_full};
+use patronuspdf_render::{PRINT_TAG, PageRenderer, RenderConfig, RenderRequest, Tile};
 
 use crate::guard;
 
@@ -39,7 +39,7 @@ const MAX_FLATTENED_BYTES: usize = 512 << 20;
 ///   job through Windows' XPS-to-GDI conversion: that conversion fails on soft masks (#6155),
 ///   prints halos around them (#5838) or prints transparency as black boxes (#5940). It comes
 ///   after greying, so the picture is of the grey sheet.
-/// - Large images are drawn as tiles ([`pdfcraft_optimize::tile_large_images`], #5131): Windows'
+/// - Large images are drawn as tiles ([`patronuspdf_optimize::tile_large_images`], #5131): Windows'
 ///   PDF renderer prints an image of more than 2²² pixels from a shrunk copy, so a scan comes out
 ///   at the printer's resolution. A flattened sheet's tiles are already under that.
 ///
@@ -77,14 +77,14 @@ pub fn spooler_copy(bytes: Vec<u8>, job: &mut crate::print::spool::Job, flatten_
 /// grey option makes those grey too, and one without prints them as they are.
 pub fn greyed(bytes: Arc<Vec<u8>>) -> Option<Option<Vec<u8>>> {
     guard(|| {
-        let mut doc = pdfcraft_cos::Document::open(bytes).ok()?;
-        let pages: Vec<usize> = (0..pdfcraft_model::pages(&doc).len()).collect();
+        let mut doc = patronuspdf_cos::Document::open(bytes).ok()?;
+        let pages: Vec<usize> = (0..patronuspdf_model::pages(&doc).len()).collect();
         let settings =
-            pdfcraft_edit::ConvertColours { target: pdfcraft_edit::ColourTarget::Gray, preserve_black: true, images: true, annotations: true };
-        let mut recolour = |doc: &pdfcraft_cos::Document, s: &pdfcraft_cos::Stream, _: pdfcraft_edit::ColourTarget| {
-            pdfcraft_optimize::recolour_image(doc, s, pdfcraft_optimize::ImageTarget::Gray)
+            patronuspdf_edit::ConvertColours { target: patronuspdf_edit::ColourTarget::Gray, preserve_black: true, images: true, annotations: true };
+        let mut recolour = |doc: &patronuspdf_cos::Document, s: &patronuspdf_cos::Stream, _: patronuspdf_edit::ColourTarget| {
+            patronuspdf_optimize::recolour_image(doc, s, patronuspdf_optimize::ImageTarget::Gray)
         };
-        let done = pdfcraft_edit::convert_colours(&mut doc, &pages, &settings, &mut recolour).ok()?;
+        let done = patronuspdf_edit::convert_colours(&mut doc, &pages, &settings, &mut recolour).ok()?;
         if done.colours == 0 && done.images == 0 {
             return Some(None);
         }
@@ -98,15 +98,15 @@ pub fn greyed(bytes: Arc<Vec<u8>>) -> Option<Option<Vec<u8>>> {
 /// can't be read or written.
 pub fn tiled(bytes: Arc<Vec<u8>>) -> Option<Vec<u8>> {
     guard(|| {
-        let mut doc = pdfcraft_cos::Document::open(bytes).ok()?;
-        let report = pdfcraft_optimize::tile_large_images(&mut doc);
+        let mut doc = patronuspdf_cos::Document::open(bytes).ok()?;
+        let report = patronuspdf_optimize::tile_large_images(&mut doc);
         (report.tiled > 0).then(|| write_full(&doc, &SaveOptions::default()).ok()).flatten()
     })
     .ok()
     .flatten()
 }
 
-/// `bytes` with each page that uses transparency ([`pdfcraft_preflight::page_uses_transparency`])
+/// `bytes` with each page that uses transparency ([`patronuspdf_preflight::page_uses_transparency`])
 /// replaced by an opaque picture of itself, or `None` when no page needs it, none could be
 /// rendered, or the copy can't be read or written. Pages without transparency stay as they are.
 ///
@@ -116,16 +116,16 @@ pub fn tiled(bytes: Arc<Vec<u8>>) -> Option<Vec<u8>> {
 /// page keeps its boxes, `/Rotate` and `/UserUnit`, so the sheet keeps its size and orientation.
 /// Its transparency group goes, since nothing on it is transparent any more, and so do its
 /// annotations, which the picture already shows. A print-ready PDF has none:
-/// [`pdfcraft_print::impose`] draws them into the sheet.
+/// [`patronuspdf_print::impose`] draws them into the sheet.
 ///
 /// A page whose picture can't be rendered keeps its vectors, as does one whose picture would take
 /// the pictures past 512 MB encoded.
 pub fn flattened(bytes: Arc<Vec<u8>>, dpi: f64) -> Option<Vec<u8>> {
     guard(|| {
-        let mut doc = pdfcraft_cos::Document::open(bytes.clone()).ok()?;
-        let pages = pdfcraft_model::pages(&doc);
+        let mut doc = patronuspdf_cos::Document::open(bytes.clone()).ok()?;
+        let pages = patronuspdf_model::pages(&doc);
         let transparent: Vec<usize> =
-            pages.iter().enumerate().filter(|(_, p)| pdfcraft_preflight::page_uses_transparency(&doc, &p.dict)).map(|(i, _)| i).collect();
+            pages.iter().enumerate().filter(|(_, p)| patronuspdf_preflight::page_uses_transparency(&doc, &p.dict)).map(|(i, _)| i).collect();
         if transparent.is_empty() {
             return None;
         }
@@ -185,9 +185,9 @@ fn flatten_scale(w: f64, h: f64, dpi: f64) -> f64 {
 /// tiles' encoded size would pass what is left of `budget`, which a page that succeeds is
 /// charged.
 fn sheet_picture(
-    doc: &pdfcraft_cos::Document,
+    doc: &patronuspdf_cos::Document,
     renderer: &mut PageRenderer,
-    page: &pdfcraft_model::Page,
+    page: &patronuspdf_model::Page,
     index: usize,
     dpi: f64,
     budget: &mut usize,
@@ -199,7 +199,7 @@ fn sheet_picture(
     if !(scale.is_finite() && scale > 0.0) {
         return None;
     }
-    let (width, height) = (pdfcraft_render::device_pixels(w as f32, scale), pdfcraft_render::device_pixels(h as f32, scale));
+    let (width, height) = (patronuspdf_render::device_pixels(w as f32, scale), patronuspdf_render::device_pixels(h as f32, scale));
     let s = f64::from(scale);
     let mut content = format!("q {} cm\n", matrix(page.view_matrix(doc)));
     let mut tiles = Vec::new();
@@ -249,14 +249,14 @@ fn matrix(m: [f64; 6]) -> String {
         if i > 0 {
             out.push(b' ');
         }
-        pdfcraft_cos::serialize(&Object::Real(v), &mut out);
+        patronuspdf_cos::serialize(&Object::Real(v), &mut out);
     }
     String::from_utf8_lossy(&out).into_owned()
 }
 
 #[cfg(test)]
 mod tests {
-    use pdfcraft_cos::{Dict, Document, Object, Stream};
+    use patronuspdf_cos::{Dict, Document, Object, Stream};
 
     use super::*;
     use crate::print::spool::Job;
@@ -346,7 +346,7 @@ mod tests {
     /// The operators of the first page's content.
     fn first_page_content(bytes: Vec<u8>) -> String {
         let doc = Document::open(Arc::new(bytes)).unwrap();
-        let page = pdfcraft_model::pages(&doc)[0].obj;
+        let page = patronuspdf_model::pages(&doc)[0].obj;
         let contents = doc.get(page).as_dict().and_then(|d| d.reference(b"Contents")).unwrap();
         match &*doc.get(contents) {
             Object::Stream(s) => String::from_utf8_lossy(&s.decoded().unwrap()).into_owned(),
@@ -471,7 +471,7 @@ mod tests {
 
     /// Page `n`'s dictionary, inherited entries filled in, and the operators of its content.
     fn page_of(doc: &Document, n: usize) -> (Dict, String) {
-        let page = pdfcraft_model::pages(doc).swap_remove(n);
+        let page = patronuspdf_model::pages(doc).swap_remove(n);
         let contents = page.dict.reference(b"Contents").unwrap();
         let content = match &*doc.get(contents) {
             Object::Stream(s) => String::from_utf8_lossy(&s.decoded().unwrap()).into_owned(),
@@ -512,7 +512,7 @@ mod tests {
         let (page, content) = page_of(&doc, 0);
         assert_eq!(page.get(b"MediaBox"), Some(&Object::Array([0, 0, 612, 792].map(Object::Int).to_vec())));
         assert_eq!(content.matches(" Do").count(), 4, "{content}");
-        assert!(!pdfcraft_preflight::page_uses_transparency(&doc, &page));
+        assert!(!patronuspdf_preflight::page_uses_transparency(&doc, &page));
         assert_eq!(tiled(Arc::new(flat)), None);
     }
 
@@ -591,7 +591,7 @@ mod tests {
         // Turned a quarter clockwise, the page shows 200 × 250 pt with the red at its top left.
         assert_eq!((before.width, before.height), (200, 250));
         assert_eq!((after.width, after.height), (200, 250));
-        let px = |r: &pdfcraft_render::RenderedPage, x: u32, y: u32| {
+        let px = |r: &patronuspdf_render::RenderedPage, x: u32, y: u32| {
             let i = ((y * r.width + x) * 4) as usize;
             [r.rgba[i], r.rgba[i + 1], r.rgba[i + 2]]
         };

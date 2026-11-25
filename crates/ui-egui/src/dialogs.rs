@@ -3,9 +3,9 @@
 use egui::{Align, Layout};
 
 use crate::theme::{self, Tokens};
-use pdfcraft_engine::Edit;
+use patronuspdf_engine::Edit;
 
-use crate::{CloseRequest, Dialog, PdfCraftApp, PropsTab, panels::human_size, widgets};
+use crate::{CloseRequest, Dialog, PatronusPdfApp, PropsTab, panels::human_size, widgets};
 
 pub(super) mod appearance;
 pub mod bookmark_styles_ui;
@@ -34,7 +34,7 @@ use crate::properties_session::INFO_KEYS;
 
 /// Drop (and zeroize) password drafts as soon as their owning dialog is inactive.
 /// Commands and control requests also call this: close/reopen can happen between frames.
-pub(crate) fn discard_inactive_password_drafts(app: &mut PdfCraftApp) {
+pub(crate) fn discard_inactive_password_drafts(app: &mut PatronusPdfApp) {
     if app.dialog != Some(Dialog::Protect) {
         app.protect_draft = Default::default();
     }
@@ -77,8 +77,8 @@ struct Pending {
     summarize_now: bool,
     optimize_now: bool,
     duplicate_now: Option<Edit>,
-    page_props_now: Option<(pdfcraft_engine::DocId, u64, Edit)>,
-    attachment_description_now: Option<(pdfcraft_engine::DocId, Edit)>,
+    page_props_now: Option<(patronuspdf_engine::DocId, u64, Edit)>,
+    attachment_description_now: Option<(patronuspdf_engine::DocId, Edit)>,
     replace_now: bool,
     open_revision: Option<usize>,
     a11y_now: bool,
@@ -93,7 +93,7 @@ struct Pending {
     next: Option<Dialog>,
 }
 
-pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut PatronusPdfApp, ctx: &egui::Context) {
     // The page sets hover cursors from the raw pointer position (form fields, links, comments)
     // before any dialog is drawn, and nothing under a modal's backdrop takes clicks. Start from
     // the arrow; the modal's own widgets set theirs as they are drawn.
@@ -108,7 +108,7 @@ pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
 }
 
 /// Draw the active modal dialog and apply the action the user chose.
-fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
+fn dialogs(app: &mut PatronusPdfApp, ctx: &egui::Context) {
     password(app, ctx);
     save_prompt(app, ctx);
     link_prompt(app, ctx);
@@ -172,7 +172,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
 }
 
 /// The dialog's content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) -> bool {
+fn dialog_body(ui: &mut egui::Ui, app: &mut PatronusPdfApp, dialog: Dialog, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     match dialog {
         Dialog::WordCount => {
@@ -546,7 +546,7 @@ fn dialog_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &m
 }
 
 /// `Dialog::Properties(tab)` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_properties(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending, tab: PropsTab) -> bool {
+fn dialog_properties(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending, tab: PropsTab) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!("Document Properties")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -629,7 +629,7 @@ fn dialog_properties(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending
                 row(ui, "PDF producer", i.producer.clone().unwrap_or_default());
             }
             PropsTab::InitialView => {
-                use pdfcraft_engine::{InitialLayout as L, Magnification as M, Navigation as N};
+                use patronuspdf_engine::{InitialLayout as L, Magnification as M, Navigation as N};
                 let editable = doc.allows_modification();
                 let pages = i.pages.len();
                 let Some((_, v)) = app.view_draft.as_mut() else { return };
@@ -844,7 +844,7 @@ fn dialog_properties(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending
                 // An entry the list leaves out (not text, only padding, or past its 256) keeps its value.
                 let file_props = doc.custom_info();
                 let unlisted = doc.has_info(&name) && !file_props.iter().any(|(k, _)| *k == name);
-                let refused = pdfcraft_engine::check_custom_key(&name).err().filter(|_| !name.is_empty()).map(|e| e.to_string());
+                let refused = patronuspdf_engine::check_custom_key(&name).err().filter(|_| !name.is_empty()).map(|e| e.to_string());
                 ui.label("");
                 // A file can hold a custom name that `check_custom_key` refuses, such as one
                 // with a space: the tab lists it, and Add, Update and Delete stay off for it.
@@ -978,7 +978,7 @@ fn dialog_properties(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending
 }
 
 /// `Dialog::Split` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_split(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_split(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!("Split document")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -1019,15 +1019,15 @@ fn dialog_split(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> 
         widgets::radio_value(ui, &mut draft.mode, M::Selection, tl!("Before each selected page (select pages in Organize)"))
     });
     let plan = match draft.mode {
-        M::Pages => crate::SplitPlan::By(pdfcraft_engine::SplitBy::PageCount(draft.every)),
-        M::Selection => crate::SplitPlan::By(pdfcraft_engine::SplitBy::Before(selected)),
+        M::Pages => crate::SplitPlan::By(patronuspdf_engine::SplitBy::PageCount(draft.every)),
+        M::Selection => crate::SplitPlan::By(patronuspdf_engine::SplitBy::Before(selected)),
         M::Size => crate::SplitPlan::Size((draft.size_mb * 1_048_576.0) as usize),
         M::Bookmarks => crate::SplitPlan::Bookmarks,
     };
     let files = match &plan {
-        crate::SplitPlan::By(by) => Some(pdfcraft_engine::split_ranges(n, by).len()),
+        crate::SplitPlan::By(by) => Some(patronuspdf_engine::split_ranges(n, by).len()),
         crate::SplitPlan::Bookmarks => {
-            Some(pdfcraft_engine::split_ranges(n, &pdfcraft_engine::SplitBy::Before(marks.iter().map(|m| m.0).collect())).len())
+            Some(patronuspdf_engine::split_ranges(n, &patronuspdf_engine::SplitBy::Before(marks.iter().map(|m| m.0).collect())).len())
         }
         crate::SplitPlan::Size(_) => None,
     };
@@ -1050,7 +1050,7 @@ fn dialog_split(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> 
 }
 
 /// `Dialog::ReplacePages` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_replace_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_replace_pages(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let count = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.info.pages.len()).unwrap_or(1).max(1);
     let Some(d) = app.replace_draft.as_mut() else {
@@ -1105,7 +1105,7 @@ fn dialog_replace_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pend
 }
 
 /// `Dialog::RedactProps` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_redact_props(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_redact_props(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let mut prefs = app.redact_prefs.clone();
     let (ok, cancel) = crate::redact_ui::props_body(ui, &mut prefs, &t);
@@ -1124,7 +1124,7 @@ fn dialog_redact_props(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pendi
 }
 
 /// `Dialog::Extract` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_extract(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_extract(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let (selected, total) = app.active_ids().map_or((Vec::new(), 0), |(i, _)| (app.views[i].target_pages(), app.views[i].page_count()));
     ui.label(egui::RichText::new(tl!("Extract pages")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -1172,8 +1172,8 @@ fn dialog_extract(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -
 }
 
 /// `Dialog::RotatePages` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_rotate_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
-    use pdfcraft_engine::{PageOrientation as O, PageParity as P};
+fn dialog_rotate_pages(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
+    use patronuspdf_engine::{PageOrientation as O, PageParity as P};
     let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
     let d = &mut app.rotate_draft;
     let mut typing_to = false;
@@ -1251,7 +1251,7 @@ fn dialog_rotate_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pendi
 }
 
 /// `Dialog::DuplicateField` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_duplicate_field(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_duplicate_field(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
     let Some(d) = app.duplicate_draft.as_mut() else {
         req.close = true;
@@ -1288,7 +1288,7 @@ fn dialog_duplicate_field(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pe
 }
 
 /// `Dialog::CertificateViewer` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_certificate_viewer(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_certificate_viewer(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.set_width(700.0);
     let trusted = app.session.trusted_certificates().to_vec();
@@ -1309,7 +1309,7 @@ fn dialog_certificate_viewer(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut
 }
 
 /// `Dialog::SummarizeComments` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     ui.label(egui::RichText::new(tl!("Summarize Options")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
     ui.label(tl!("Choose a layout:"));
@@ -1318,7 +1318,7 @@ fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut
     ui.horizontal(|ui| {
         ui.label(tl!("Sort comments by:"));
         craft_ui::ComboBox::from_id_salt("summary-sort").selected_text(tl!(app.summary_sort.name())).show_ui(ui, |ui| {
-            for s in pdfcraft_engine::SummarySort::ALL {
+            for s in patronuspdf_engine::SummarySort::ALL {
                 ui.selectable_value(&mut app.summary_sort, s, tl!(s.name()));
             }
         });
@@ -1338,7 +1338,7 @@ fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut
 
 /// `Dialog::LockSignatures` content (#2149). Returns `false` when it has its own buttons and no
 /// footer is wanted.
-fn dialog_lock_signatures(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_lock_signatures(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     ui.label(egui::RichText::new(tl!("Lock your signature into the page?")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
     ui.label(tl!("A placed signature is a comment until it is locked: anyone with a PDF editor can move or remove it. Locking makes your Fill & Sign text, marks and signatures part of the page."));
@@ -1362,7 +1362,7 @@ fn dialog_lock_signatures(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pe
 }
 
 /// `Dialog::Revert` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_revert(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_revert(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let name = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.name.clone()).unwrap_or_default();
     ui.label(egui::RichText::new(tl!("Revert")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -1384,7 +1384,7 @@ fn dialog_revert(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) ->
 }
 
 /// `Dialog::OverwriteChanged` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_overwrite_changed(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_overwrite_changed(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     #[cfg(not(target_arch = "wasm32"))]
     let name = app.pending_overwrite.as_ref().and_then(|p| app.session.get(p.id)).map(|d| d.name.clone()).unwrap_or_default();
     #[cfg(target_arch = "wasm32")]
@@ -1413,7 +1413,7 @@ fn dialog_overwrite_changed(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut 
 }
 
 /// `Dialog::Print` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_print(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_print(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let Some((i, id)) = app.active_ids() else {
         req.close = true;
@@ -1445,7 +1445,7 @@ fn dialog_print(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> 
 }
 
 /// `Dialog::Signature` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_signature(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_signature(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let (go, cancel, browse) =
         crate::fill_sign::signature_pad(ui, &t, &mut app.signature_draft, &mut app.signature_preview, &mut app.signature_photo);
@@ -1471,7 +1471,7 @@ fn dialog_signature(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending)
 }
 
 /// `Dialog::Preferences` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_preferences(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_preferences(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     ui.set_width(610.0);
     let t = Tokens::get(ui.ctx());
     preferences::preferences_header(ui, &t);
@@ -1508,9 +1508,9 @@ fn preferences_scroll(ui: &mut egui::Ui, max: f32, add_contents: impl FnOnce(&mu
 }
 
 /// `Dialog::NumberPages` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_number_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_number_pages(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
-    use pdfcraft_engine::LabelStyle as L;
+    use patronuspdf_engine::LabelStyle as L;
     ui.label(egui::RichText::new(tl!("Number pages")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
     let Some((_, id)) = app.active_ids() else { return false };
@@ -1569,14 +1569,14 @@ fn dialog_number_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pendi
 }
 
 /// `Dialog::Recovery` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_recovery(ui: &mut egui::Ui, app: &mut PdfCraftApp) -> bool {
+fn dialog_recovery(ui: &mut egui::Ui, app: &mut PatronusPdfApp) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.horizontal(|ui| {
         ui.add(crate::icons::image("clock-3", 22.0, t.accent));
         ui.label(egui::RichText::new(tl!("Recover unsaved documents?")).font(theme::semibold(18.0)));
     });
     ui.add_space(6.0);
-    ui.label(tl!("PdfCraft didn't shut down normally. These documents had changes that were autosaved:"));
+    ui.label(tl!("Patronus PDF didn't shut down normally. These documents had changes that were autosaved:"));
     ui.add_space(8.0);
     let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     egui::Grid::new("recoverable").num_columns(2).spacing([18.0, 6.0]).show(ui, |ui| {
@@ -1606,14 +1606,14 @@ fn dialog_shortcuts(ui: &mut egui::Ui) -> bool {
     };
     // Registered commands first (always in sync with the real bindings), then the
     // keys the document view handles itself.
-    let mut rows: Vec<(String, String)> = pdfcraft_engine::commands::COMMANDS
+    let mut rows: Vec<(String, String)> = patronuspdf_engine::commands::COMMANDS
         .iter()
         .filter_map(|c| {
             c.shortcut_for(crate::commands::mac_shortcuts(ui.ctx()))
                 .map(|k| (crate::commands::shortcut_label(ui.ctx(), k), tl!(c.label).trim_end_matches('…').to_string()))
         })
         .collect();
-    let key = |s: pdfcraft_engine::commands::Shortcut| crate::commands::shortcut_label(ui.ctx(), s);
+    let key = |s: patronuspdf_engine::commands::Shortcut| crate::commands::shortcut_label(ui.ctx(), s);
     let pair = |a, b| format!("{} / {}", key(a), key(b));
     // Key names, translated where a catalog has them (not scanned as UI literals).
     let named = |k: &str| tl!(k).to_string();
@@ -1681,10 +1681,10 @@ fn dialog_about(ui: &mut egui::Ui, req: &mut Pending) -> bool {
         2 => crate::credits::models_ui(ui),
         _ => {
             ui.horizontal(|ui| {
-                widgets::artcraft_mark(ui, 40.0);
+                widgets::patronus_mark(ui, 40.0);
                 ui.vertical(|ui| {
-                    ui.label(egui::RichText::new("PdfCraft").font(theme::semibold(20.0)));
-                    ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", &pdfcraft_engine::build_info::version())]));
+                    ui.label(egui::RichText::new("Patronus PDF").font(theme::semibold(20.0)));
+                    ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", &patronuspdf_engine::build_info::version())]));
                 });
             });
             ui.add_space(6.0);
@@ -1699,7 +1699,7 @@ fn dialog_about(ui: &mut egui::Ui, req: &mut Pending) -> bool {
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.label(egui::RichText::new(tl!("Part of")).color(t.text_muted));
-                widgets::artcraft_logo(ui, 16.0);
+                widgets::patronus_logo(ui, 16.0);
             });
             ui.add_space(6.0);
             if let Some(cmd) = widgets::community_links(ui) {
@@ -1710,7 +1710,7 @@ fn dialog_about(ui: &mut egui::Ui, req: &mut Pending) -> bool {
     true
 }
 
-fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
+fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut PatronusPdfApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(tl!("Pin tools to Home")).font(theme::semibold(18.0)));
@@ -1741,7 +1741,7 @@ fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) 
     let query = app.pin_tool_search.trim().to_lowercase();
     egui::ScrollArea::vertical().max_height(380.0).auto_shrink([false, true]).show(ui, |ui| {
         let mut toggle = None;
-        for g in pdfcraft_engine::catalog::TOOL_GROUPS {
+        for g in patronuspdf_engine::catalog::TOOL_GROUPS {
             let label = tl!(g.label);
             let blurb = g.sections.first().map(|s| s.items.iter().take(4).map(|i| tl!(i.label)).collect::<Vec<_>>().join(" • ")).unwrap_or_default();
             if !query.is_empty()
@@ -1796,7 +1796,7 @@ fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) 
 }
 
 /// Draw the active dialog's footer and record any requested action in `req`.
-fn dialog_footer(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) {
+fn dialog_footer(ui: &mut egui::Ui, app: &mut PatronusPdfApp, dialog: Dialog, req: &mut Pending) {
     ui.add_space(16.0);
     app.stage_properties();
     let changed = app.properties_changed();
@@ -1840,7 +1840,7 @@ fn dialog_footer(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: 
                             doc.info
                                 .attachments
                                 .iter()
-                                .find(|attachment| matches!(&attachment.source, pdfcraft_render::AttachmentSource::Document { key: attachment_key } if attachment_key == key))
+                                .find(|attachment| matches!(&attachment.source, patronuspdf_render::AttachmentSource::Document { key: attachment_key } if attachment_key == key))
                                 .map(|attachment| (attachment.description.as_deref().unwrap_or_default().trim().to_owned(), attachment.has_description))
                         });
                         let normalized = description.trim();
@@ -1873,7 +1873,7 @@ fn dialog_footer(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: 
 }
 
 /// Acts on what the dialog asked for, once the modal is drawn.
-fn finish_dialog(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
+fn finish_dialog(app: &mut PatronusPdfApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
     finish_requests(app, dialog, modal_closed, req);
     finish_actions(app, req);
     finish_redactions_and_fields(app, req);
@@ -1882,7 +1882,7 @@ fn finish_dialog(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req:
 }
 
 /// Runs the one-shot requests the dialog made.
-fn finish_requests(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
+fn finish_requests(app: &mut PatronusPdfApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
     if let Some(yes) = req.recover {
         let keys: Vec<String> = app.recoverable.iter().map(|m| m.key.clone()).collect();
         if yes {
@@ -1939,7 +1939,7 @@ fn finish_requests(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, re
 }
 
 /// Runs the document actions the dialog asked for.
-fn finish_actions(app: &mut PdfCraftApp, req: &mut Pending) {
+fn finish_actions(app: &mut PatronusPdfApp, req: &mut Pending) {
     if let Some((doc, edit)) = req.attachment_description_now.take() {
         app.attachment_description_draft = None;
         if app.active_ids().is_some_and(|(_, active)| active == doc) {
@@ -1983,7 +1983,7 @@ fn finish_actions(app: &mut PdfCraftApp, req: &mut Pending) {
 }
 
 /// Redaction, hidden-data and field-properties requests.
-fn finish_redactions_and_fields(app: &mut PdfCraftApp, req: &mut Pending) {
+fn finish_redactions_and_fields(app: &mut PatronusPdfApp, req: &mut Pending) {
     match req.redact_now.take() {
         Some(Dialog::RedactPages) => app.redact_pages(),
         Some(Dialog::RedactSearch) => {
@@ -1991,7 +1991,7 @@ fn finish_redactions_and_fields(app: &mut PdfCraftApp, req: &mut Pending) {
             app.redact_search.found = Some(n);
         }
         Some(Dialog::RemoveHidden) => {
-            let which: Vec<pdfcraft_engine::Hidden> = app.hidden_draft.found.iter().filter(|f| f.2 && f.1 > 0).map(|f| f.0).collect();
+            let which: Vec<patronuspdf_engine::Hidden> = app.hidden_draft.found.iter().filter(|f| f.2 && f.1 > 0).map(|f| f.0).collect();
             let n: usize = app.hidden_draft.found.iter().filter(|f| f.2).map(|f| f.1).sum();
             if app.apply_edit(Edit::RemoveHidden { which }) {
                 if let Some((_, id)) = app.active_ids() {
@@ -2049,7 +2049,7 @@ fn finish_redactions_and_fields(app: &mut PdfCraftApp, req: &mut Pending) {
         && let Some(d) = app.field_props.take()
         && let Some(props) = d.props()
     {
-        let form = |app: &PdfCraftApp| app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|doc| doc.form.clone());
+        let form = |app: &PatronusPdfApp| app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|doc| doc.form.clone());
         // A rename also renames the field in the formulas that read it.
         let before = props.name.as_ref().and_then(|_| form(app));
         // The widget being edited, by object: a radio button that joins a group by its new name
@@ -2071,7 +2071,7 @@ fn finish_redactions_and_fields(app: &mut PdfCraftApp, req: &mut Pending) {
             let index =
                 widget.and_then(|obj| after.as_ref()?.iter().find(|f| f.name == name)?.widgets.iter().position(|w| w.obj == obj)).unwrap_or(d.widget);
             if let (Some(before), Some(after)) = (before, after) {
-                let n = pdfcraft_engine::form_calculations_changed(&before, &after).iter().filter(|f| **f != name).count();
+                let n = patronuspdf_engine::form_calculations_changed(&before, &after).iter().filter(|f| **f != name).count();
                 if n > 0 {
                     app.notify(crate::i18n::trn(
                         crate::i18n::current(),
@@ -2089,7 +2089,7 @@ fn finish_redactions_and_fields(app: &mut PdfCraftApp, req: &mut Pending) {
 /// The sentence telling the user where the removed text is still held that applying redactions
 /// leaves as it is, or `None` when it is nowhere else. When the text couldn't be searched for,
 /// the places are those holding any text, and the sentence says they may hold it.
-pub(crate) fn still_holding_note(e: &pdfcraft_engine::RedactionElsewhere) -> Option<String> {
+pub(crate) fn still_holding_note(e: &patronuspdf_engine::RedactionElsewhere) -> Option<String> {
     let count = |n: usize, one: &str, many: &str| match n {
         0 => None,
         1 => Some(tl!(one).to_string()),
@@ -2117,8 +2117,8 @@ pub(crate) fn still_holding_note(e: &pdfcraft_engine::RedactionElsewhere) -> Opt
 /// The sentence telling the user what became of the document's PDF/A or PDF/UA identification
 /// when applying redactions removed the XMP packet that held it (and the redacted text), or
 /// `None` when no such packet was removed.
-pub(crate) fn identification_note(id: &pdfcraft_engine::RedactionIdentification) -> Option<String> {
-    use pdfcraft_engine::RedactionClaim as Claim;
+pub(crate) fn identification_note(id: &patronuspdf_engine::RedactionIdentification) -> Option<String> {
+    use patronuspdf_engine::RedactionClaim as Claim;
     let named = |claim: Claim| -> Option<String> {
         match (id.pdfa == claim, id.pdfua == claim) {
             (true, true) => Some(tl!("PDF/A and PDF/UA").to_string()),
@@ -2142,7 +2142,7 @@ pub(crate) fn identification_note(id: &pdfcraft_engine::RedactionIdentification)
 }
 
 /// Edits built from the dialog's drafts.
-fn finish_edits(app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) {
+fn finish_edits(app: &mut PatronusPdfApp, dialog: Dialog, req: &mut Pending) {
     if req.props_now
         && let Some(d) = app.comment_props.take()
     {
@@ -2209,7 +2209,7 @@ fn finish_edits(app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) {
 }
 
 /// Closes (or switches) the dialog, then runs what closing it asked for.
-fn finish_close(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
+fn finish_close(app: &mut PatronusPdfApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
     // Protect / Remove security replace the Properties dialog.
     let replaces = req.link_command.is_some_and(|c| c.starts_with("protect.")) || req.open_revision.is_some();
     if modal_closed || req.close || replaces {
@@ -2279,7 +2279,7 @@ mod password_draft_tests {
     use super::*;
     use egui_kittest::Harness;
 
-    fn seed_password_drafts(app: &mut PdfCraftApp) {
+    fn seed_password_drafts(app: &mut PatronusPdfApp) {
         app.start_signing(0, None, None, None);
         let sign = app.sign_draft.as_mut().unwrap();
         sign.step = crate::sign_ui::SignStep::Choose;
@@ -2293,7 +2293,7 @@ mod password_draft_tests {
         app.protect_draft.protection.permissions_password = Some("owner password".into());
     }
 
-    fn assert_protect_cleared(app: &PdfCraftApp) {
+    fn assert_protect_cleared(app: &PatronusPdfApp) {
         assert_eq!(app.protect_draft, crate::protect::ProtectDraft::default());
     }
 
@@ -2302,7 +2302,7 @@ mod password_draft_tests {
         // None and FieldTable return before the ordinary modal-close path; About replaces it.
         for dialog in [None, Some(Dialog::FieldTable), Some(Dialog::About)] {
             let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| {
-                let mut app = PdfCraftApp::new();
+                let mut app = PatronusPdfApp::new();
                 app.set_option("language", "en").unwrap();
                 seed_password_drafts(&mut app);
                 app.dialog = dialog;
@@ -2318,7 +2318,7 @@ mod password_draft_tests {
     fn rendering_preserves_only_the_active_password_draft() {
         for dialog in [Dialog::Protect, Dialog::Sign] {
             let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| {
-                let mut app = PdfCraftApp::new();
+                let mut app = PatronusPdfApp::new();
                 app.set_option("language", "en").unwrap();
                 seed_password_drafts(&mut app);
                 app.dialog = Some(dialog);
@@ -2342,7 +2342,7 @@ mod password_draft_tests {
 
     #[test]
     fn control_close_and_reopen_clears_passwords_without_a_render_between_requests() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         // The control queue can handle several ui.set requests before the next rendered frame.
         // Repeat both close and replacement flows so stale drafts cannot return on later opens.
         for _ in 0..2 {
@@ -2370,7 +2370,7 @@ mod password_draft_tests {
 
     #[test]
     fn selecting_the_active_protect_dialog_keeps_its_password() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("dialog", "protect").unwrap();
         app.protect_draft.password = "current password".into();
         app.protect_draft.confirm = "current password".into();
@@ -2381,7 +2381,7 @@ mod password_draft_tests {
 
     #[test]
     fn commands_discard_replaced_password_drafts_before_the_next_control_request() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         for _ in 0..2 {
             seed_password_drafts(&mut app);
             app.dialog = Some(Dialog::Protect);

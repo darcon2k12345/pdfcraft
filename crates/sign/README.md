@@ -1,4 +1,4 @@
-# pdfcraft-sign
+# patronuspdf-sign
 
 Layer L4: digital signatures (execution plan M9; ISO 32000-2 §12.8; PAdES, ETSI EN 319 142).
 
@@ -82,7 +82,7 @@ needs a prompt to open is listed and asks at signing (issue #179).
 - **The signer's certificate must allow signing documents** (`Certificate::signing_problem`): a
   key usage needs digitalSignature or nonRepudiation, an extended key usage needs a
   document-signing purpose (any, emailProtection, codeSigning, RFC 9336 documentSigning, Adobe
-  Authentic Documents, Microsoft document signing), and no critical extension may be one PdfCraft
+  Authentic Documents, Microsoft document signing), and no critical extension may be one Patronus PDF
   doesn't process. Otherwise the verdict is unknown, never valid, and the details say why.
 - **BER as well as DER.** The CMS is read with `der::Tlv::parse_ber`, as Windows CryptoAPI, Adobe
   PPKMS, DocuSign, Documenso and `openssl cms -stream` write it: indefinite lengths and an
@@ -109,7 +109,7 @@ needs a prompt to open is listed and asks at signing (issue #179).
   ECDSA is read as DER, non-minimal DER or raw `r ‖ s`. `adbe.x509.rsa_sha1` is validated. What the
   check tolerated is listed in the signature's details: a DigestInfo without its NULL, an RSA value
   that isn't modulus-length, ECDSA that isn't canonical DER, a SignerInfo whose digest algorithm
-  differs from the one the signature algorithm names. What PdfCraft can't check (an unknown
+  differs from the one the signature algorithm names. What Patronus PDF can't check (an unknown
   algorithm or curve) is *unknown*, never *invalid*.
 - **Weak algorithms still validate, and say so.** SHA-1 and RIPEMD-160 signatures are common in
   documents signed years ago, so they validate (new signatures never use SHA-1), but the signature's
@@ -119,7 +119,7 @@ needs a prompt to open is listed and asks at signing (issue #179).
   salt length the signature declares), ECDSA on P-256, P-384, P-521, brainpoolP256r1, P384r1 and
   P512r1 (also BSI "plain" ECDSA), and Ed25519 (RFC 8419, over the signed attributes).
   Signing: RSA, P-256, P-384 with SHA-256/384/512. Verification delegates to the existing pinned `craft-pkcs7` implementation, including
-  RSA padding checks and brainpoolP512r1 arithmetic. PdfCraft keeps its document trust policy,
+  RSA padding checks and brainpoolP512r1 arithmetic. Patronus PDF keeps its document trust policy,
   platform signing and user-facing error/diagnostic vocabulary.
 
 Oracles: poppler's `pdfsig` reports our signatures valid; OpenSSL reads our `.p12` files and

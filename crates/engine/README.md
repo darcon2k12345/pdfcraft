@@ -1,4 +1,4 @@
-# pdfcraft-engine
+# patronuspdf-engine
 
 The façade every frontend talks to. It holds the open documents, their edit history and the tool
 catalogue; frontends never reach past it into the parsing, rendering or editing crates.
@@ -12,8 +12,8 @@ with optional semantic exclusions; see [word-count behavior and limits](../../do
   code keep a last-resort `catch_unwind` guard so an escaped panic becomes an error and the user
   keeps their document.
 
-Two frontends exist on top of it today: `pdfcraft-ui-egui` (desktop and web) and
-`pdfcraft-automation` (headless tools, the CLI and MCP). Anything one can do, the other must be
+Two frontends exist on top of it today: `patronuspdf-ui-egui` (desktop and web) and
+`patronuspdf-automation` (headless tools, the CLI and MCP). Anything one can do, the other must be
 able to do — see app-agents.md rule 14.
 
 When dynamic XFA layout is active, `JsRunner` does not initialize Acrobat JavaScript with
@@ -26,7 +26,7 @@ undoing that conversion switches the context with the document state.
 
 ## The editing model
 
-Each open document holds a `pdfcraft_cos::Document`: the object graph plus a copy-on-write overlay.
+Each open document holds a `patronuspdf_cos::Document`: the object graph plus a copy-on-write overlay.
 
 1. An edit runs **on a clone**. On success the previous state is pushed onto the undo stack. Clones
    share all unchanged data, so a snapshot is cheap — this is what makes 100 levels of undo
@@ -79,7 +79,7 @@ family (`sign`, `sign_with_timestamp`, `timestamp_document`, `embed_ltv`).
 | `actions` | PDF action dispatch (go-to, URI, named, set-layer-state, JavaScript) |
 | `links` | Link creation, properties, and finding URLs in page text |
 | `open_parameters` | A path's PDF open parameters (`manual.pdf#nameddest=Intro`, `#page=12`): the file to open and where to show it. The app and `doc_open` both read them |
-| `js` | The bridge to `pdfcraft-js`. `forms` never depends on `js` directly; the engine injects it, so a build without JavaScript is possible |
+| `js` | The bridge to `patronuspdf-js`. `forms` never depends on `js` directly; the engine injects it, so a build without JavaScript is possible |
 | `xfa`, `ocr`, `compare`, `export` | Façades over the L3/L4 crates of the same names |
 
 AcroForm Keystroke, Validate, Calculate and Format scripts run automatically. Their Print,
@@ -93,7 +93,7 @@ available for the system Minimize action.
 
 ## Not done here
 
-- **Rendering is still borrowed.** `pdfcraft-render` wraps `hayro` and inspects through `lopdf`
+- **Rendering is still borrowed.** `patronuspdf-render` wraps `hayro` and inspects through `lopdf`
   (ADR-0004). The engine only sees `inspect() -> DocInfo`, `RenderPool` and `text::PageText`, and
   that API stays frozen while M2 replaces what is behind it.
 - Performance budgets (`misc.performance-budgets`) are not set or enforced.

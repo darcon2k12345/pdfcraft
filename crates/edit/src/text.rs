@@ -14,10 +14,10 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use pdfcraft_content::{Matrix, Op, Pieces, parse, serialize_ops};
-use pdfcraft_cos::{DecodeBudget, Dict, Document, Object, PdfString, Stream};
-use pdfcraft_fonts::pdf::Metrics;
-use pdfcraft_fonts::{CraftFont, GlyphError, japanese_glyph_from};
+use patronuspdf_content::{Matrix, Op, Pieces, parse, serialize_ops};
+use patronuspdf_cos::{DecodeBudget, Dict, Document, Object, PdfString, Stream};
+use patronuspdf_fonts::pdf::Metrics;
+use patronuspdf_fonts::{CraftFont, GlyphError, japanese_glyph_from};
 
 use crate::EditError;
 

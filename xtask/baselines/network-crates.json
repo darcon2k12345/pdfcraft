@@ -1,74 +1,74 @@
 [
   {
-    "crate": "pdfcraft-cli",
+    "crate": "patronuspdf-cli",
     "name": "hyper",
     "reachable": true,
-    "path": "pdfcraft-cli -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> hyper"
+    "path": "patronuspdf-cli -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> hyper"
   },
   {
-    "crate": "pdfcraft-cli",
+    "crate": "patronuspdf-cli",
     "name": "reqwest",
     "reachable": true,
-    "path": "pdfcraft-cli -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest"
+    "path": "patronuspdf-cli -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest"
   },
   {
-    "crate": "pdfcraft-cli",
+    "crate": "patronuspdf-cli",
     "name": "socket2",
     "reachable": true,
-    "path": "pdfcraft-cli -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> hyper-util -> socket2"
+    "path": "patronuspdf-cli -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> hyper-util -> socket2"
   },
   {
-    "crate": "pdfcraft-cli",
+    "crate": "patronuspdf-cli",
     "name": "tokio",
     "reachable": true,
-    "path": "pdfcraft-cli -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> tokio"
+    "path": "patronuspdf-cli -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> tokio"
   },
   {
-    "crate": "pdfcraft-automation",
+    "crate": "patronuspdf-automation",
     "name": "hyper",
     "reachable": true,
-    "path": "pdfcraft-automation -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> hyper"
+    "path": "patronuspdf-automation -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> hyper"
   },
   {
-    "crate": "pdfcraft-automation",
+    "crate": "patronuspdf-automation",
     "name": "reqwest",
     "reachable": true,
-    "path": "pdfcraft-automation -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest"
+    "path": "patronuspdf-automation -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest"
   },
   {
-    "crate": "pdfcraft-automation",
+    "crate": "patronuspdf-automation",
     "name": "socket2",
     "reachable": true,
-    "path": "pdfcraft-automation -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> hyper-util -> socket2"
+    "path": "patronuspdf-automation -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> hyper-util -> socket2"
   },
   {
-    "crate": "pdfcraft-automation",
+    "crate": "patronuspdf-automation",
     "name": "tokio",
     "reachable": true,
-    "path": "pdfcraft-automation -> pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> tokio"
+    "path": "patronuspdf-automation -> patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> tokio"
   },
   {
-    "crate": "pdfcraft-engine",
+    "crate": "patronuspdf-engine",
     "name": "hyper",
     "reachable": true,
-    "path": "pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> hyper"
+    "path": "patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> hyper"
   },
   {
-    "crate": "pdfcraft-engine",
+    "crate": "patronuspdf-engine",
     "name": "reqwest",
     "reachable": true,
-    "path": "pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest"
+    "path": "patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest"
   },
   {
-    "crate": "pdfcraft-engine",
+    "crate": "patronuspdf-engine",
     "name": "socket2",
     "reachable": true,
-    "path": "pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> hyper-util -> socket2"
+    "path": "patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> hyper-util -> socket2"
   },
   {
-    "crate": "pdfcraft-engine",
+    "crate": "patronuspdf-engine",
     "name": "tokio",
     "reachable": true,
-    "path": "pdfcraft-engine -> pdfcraft-print -> craft-print -> winprint -> reqwest -> tokio"
+    "path": "patronuspdf-engine -> patronuspdf-print -> craft-print -> winprint -> reqwest -> tokio"
   }
 ]

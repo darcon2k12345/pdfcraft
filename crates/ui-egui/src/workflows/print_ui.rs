@@ -6,10 +6,10 @@
 #[cfg(not(target_arch = "wasm32"))]
 use crate::file_filter::AddFilterAnyCase as _;
 use egui::{Color32, Pos2, Rect, Stroke, pos2, vec2};
-use pdfcraft_engine::print::{self, Binding, BookletSubset, Content, Layout, Orientation, PageOrder, SizeMode, Subset, spool};
+use patronuspdf_engine::print::{self, Binding, BookletSubset, Content, Layout, Orientation, PageOrder, SizeMode, Subset, spool};
 
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, widgets};
+use crate::{PatronusPdfApp, widgets};
 
 mod body;
 mod draft;
@@ -34,7 +34,7 @@ pub(crate) const LABEL_CROP_PAGES: usize = 50;
 #[cfg(not(target_arch = "wasm32"))]
 const TWO_SIDED_READS: usize = 4;
 
-/// Lists the printers off the UI thread (the desktop app sets [`PdfCraftApp::printer_source`]):
+/// Lists the printers off the UI thread (the desktop app sets [`PatronusPdfApp::printer_source`]):
 /// CUPS' driverless discovery can wait on the network. Without a source the dialog reads them as
 /// it opens, so tests stay deterministic.
 pub type PrinterSource = std::sync::Arc<dyn Fn() -> Vec<spool::Printer> + Send + Sync>;
@@ -62,7 +62,7 @@ pub fn system_printers() -> PrinterSource {
 }
 
 /// Reads whether one printer's driver takes two-sided settings, off the UI thread, for the
-/// printer picked (the desktop app sets [`PdfCraftApp::two_sided_source`]). The printer list
+/// printer picked (the desktop app sets [`PatronusPdfApp::two_sided_source`]). The printer list
 /// leaves it unknown: reading a driver Windows can't reach takes it about 48 s, so the list
 /// doesn't wait for every printer's (#2192).
 pub type TwoSidedSource = std::sync::Arc<dyn Fn(&str) -> Option<bool> + Send + Sync>;
@@ -164,7 +164,7 @@ fn offered(printer: Option<&str>, printers: &[spool::Printer]) -> bool {
     printer.is_none_or(|name| printers.iter().any(|p| p.name == name))
 }
 
-/// Asks for a frame when a worker thread ends, also when it panics: [`PdfCraftApp::poll_print`]
+/// Asks for a frame when a worker thread ends, also when it panics: [`PatronusPdfApp::poll_print`]
 /// then sees the answer, or the disconnected channel of a worker that died, without waiting
 /// for some other event to draw (#2108 review). Declared before the worker's sender, so the
 /// sender is dropped first and the frame finds the channel closed.
@@ -180,7 +180,7 @@ impl Drop for WakeOnExit {
     }
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Open the Print dialog, preselecting the default printer and reading papers in the background.
     pub fn open_print(&mut self) {
         let Some((i, _)) = self.active_ids() else { return };
@@ -264,7 +264,7 @@ impl PdfCraftApp {
     /// Label printing: find each printed page's printed area (a quick low-resolution render, as
     /// Fit Visible does) and which way its text runs. Only the pages being printed are read, at
     /// most [`LABEL_CROP_PAGES`] of them (the rest print whole); read again when they change.
-    pub(crate) fn read_label_crops(&mut self, id: pdfcraft_engine::DocId) {
+    pub(crate) fn read_label_crops(&mut self, id: patronuspdf_engine::DocId) {
         let Some(doc) = self.session.get(id) else { return };
         let labels: Vec<String> = doc.info.pages.iter().map(|p| p.label.clone()).collect();
         let mut pages = self.print_draft.settings(doc.info.pages.len(), &labels).map(|s| s.pages).unwrap_or_default();
@@ -275,8 +275,8 @@ impl PdfCraftApp {
             return;
         }
         let up = self.session.print_text_up(id, &pages);
-        let config = pdfcraft_render::RenderConfig { password: doc.password.as_deref().map(std::sync::Arc::from), ..Default::default() };
-        let mut r = pdfcraft_render::PageRenderer::new(doc.bytes.clone(), config);
+        let config = patronuspdf_render::RenderConfig { password: doc.password.as_deref().map(std::sync::Arc::from), ..Default::default() };
+        let mut r = patronuspdf_render::PageRenderer::new(doc.bytes.clone(), config);
         self.print_draft.crops = doc
             .info
             .pages
@@ -287,9 +287,9 @@ impl PdfCraftApp {
                 if pages.binary_search(&page).is_err() || w <= 0.0 || h <= 0.0 {
                     return None;
                 }
-                let out = r.render(pdfcraft_render::RenderRequest {
+                let out = r.render(patronuspdf_render::RenderRequest {
                     page,
-                    kind: pdfcraft_render::RequestKind::Pixels,
+                    kind: patronuspdf_render::RequestKind::Pixels,
                     tile: None,
                     scale: (1000.0 / w.max(h) as f32).clamp(0.1, 4.0),
                     tag: 0,
@@ -636,7 +636,7 @@ impl PdfCraftApp {
         // A form's Will Print script runs first: what it changes is printed.
         if self.session.get(id).is_some_and(|d| d.allows_printing()) {
             let before = self.session.get(id).map(|d| d.edit_generation());
-            self.run_document_actions(id, pdfcraft_engine::js::DocumentScriptEvent::WillPrint);
+            self.run_document_actions(id, patronuspdf_engine::js::DocumentScriptEvent::WillPrint);
             // What it showed may lie outside the printed areas Label printing found: find them again.
             if self.session.get(id).map(|d| d.edit_generation()) != before && self.print_draft.handling == Handling::Label {
                 self.print_draft.crop_pages = None;
@@ -712,7 +712,7 @@ impl PdfCraftApp {
             // A GDI (v3) driver gets transparent sheets flattened (#6155, #5838, #5940); XPS (v4)
             // drivers print them as they are.
             let flatten = job.printer.as_deref().is_some_and(spool::gdi_driver);
-            let bytes = pdfcraft_engine::spooler::spooler_copy(bytes, &mut job, flatten);
+            let bytes = patronuspdf_engine::spooler::spooler_copy(bytes, &mut job, flatten);
             // The receiver may be gone (the app quit): nothing to report to then.
             let result = match &spooler {
                 Some(submit) => submit(&bytes, &job),
@@ -740,7 +740,7 @@ impl PdfCraftApp {
     }
 
     /// Print through the browser's print dialog: start drawing `sheets` (the pages of the
-    /// print-ready `bytes`), a sheet a frame in [`PdfCraftApp::poll_print`]. A print still being
+    /// print-ready `bytes`), a sheet a frame in [`PatronusPdfApp::poll_print`]. A print still being
     /// prepared is replaced. The dialog closes at once.
     #[cfg(target_arch = "wasm32")]
     fn print_in_browser(&mut self, name: String, bytes: Vec<u8>, sheets: Vec<(f64, f64)>) -> bool {
@@ -1040,7 +1040,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn the_progress_card_counts_the_sheets_of_a_print_job() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         let (tx, rx) = std::sync::mpsc::channel();
         app.print_tasks.jobs.push(PrintJob { printer: "Office".into(), sheets: None, news: rx });

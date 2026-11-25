@@ -12,13 +12,13 @@ fn with_annotation(rect: Option<Object>, inline: bool) -> Document {
     let mut annotation = Dict::from_iter([
         (b"Type".to_vec(), Object::name("Annot")),
         (b"Subtype".to_vec(), Object::name("Text")),
-        (b"Contents".to_vec(), Object::String(pdfcraft_cos::PdfString::text("PRIVATE-NOTE"))),
+        (b"Contents".to_vec(), Object::String(patronuspdf_cos::PdfString::text("PRIVATE-NOTE"))),
     ]);
     if let Some(rect) = rect {
         annotation.set(b"Rect".to_vec(), rect);
     }
     let annotation = if inline { Object::Dict(annotation) } else { Object::Ref(doc.add(Object::Dict(annotation))) };
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = patronuspdf_model::pages(&doc)[0].obj;
     doc.update_dict(page, |d| d.set(b"Annots".to_vec(), Object::Array(vec![annotation]))).unwrap();
     mark(&mut doc, 0, &[[0.0, 90.0, 100.0, 130.0]], "");
     doc
@@ -41,12 +41,12 @@ fn unreadable_annotation_rectangles_refuse_apply_without_changing_the_document()
         for rect in &bad {
             let mut doc = with_annotation(rect.clone(), inline);
             // Keep non-finite objects in memory for the check: a writer need not preserve them.
-            let before_page = pdfcraft_model::pages(&doc)[0].dict.clone();
+            let before_page = patronuspdf_model::pages(&doc)[0].dict.clone();
             let before_content = content(&doc, 0);
             let before_marks = marks(&doc);
             let result = apply(&mut doc, None);
             assert!(matches!(result, Err(RedactError::UnreadableAnnotation { page: 1, annotation: 1 })), "{rect:?}, inline={inline}: {result:?}");
-            assert_eq!(pdfcraft_model::pages(&doc)[0].dict, before_page);
+            assert_eq!(patronuspdf_model::pages(&doc)[0].dict, before_page);
             assert_eq!(content(&doc, 0), before_content);
             assert_eq!(marks(&doc), before_marks);
         }
@@ -61,7 +61,7 @@ fn readable_annotation_rectangles_keep_their_geometry_and_save_without_the_note(
             if indirect {
                 let coordinates: Vec<Object> = [40, 120, 10, 100].into_iter().map(|n| Object::Ref(doc.add(Object::Int(n)))).collect();
                 let rect = doc.add(Object::Array(coordinates));
-                let page = pdfcraft_model::pages(&doc)[0].clone();
+                let page = patronuspdf_model::pages(&doc)[0].clone();
                 let mut annots = annots_of(&doc, &page.dict);
                 let mut annotation = doc.resolve(&annots[0]).as_dict().unwrap().clone();
                 annotation.set(b"Rect".to_vec(), Object::Ref(rect));
@@ -72,7 +72,7 @@ fn readable_annotation_rectangles_keep_their_geometry_and_save_without_the_note(
             let bytes = write_full(&doc, &SaveOptions { object_streams: false, ..SaveOptions::default() }).unwrap();
             assert!(!bytes.windows(b"PRIVATE-NOTE".len()).any(|w| w == b"PRIVATE-NOTE"));
             let saved = Document::open(Arc::new(bytes)).unwrap();
-            assert!(annots_of(&saved, &pdfcraft_model::pages(&saved)[0].dict).is_empty());
+            assert!(annots_of(&saved, &patronuspdf_model::pages(&saved)[0].dict).is_empty());
         }
     }
 }
@@ -87,9 +87,9 @@ fn malformed_annotations_on_unselected_pages_do_not_block_apply() {
         stream("", b"BT ET"),
     ]);
     mark(&mut doc, 0, &[[0.0, 0.0, 100.0, 100.0]], "");
-    let before = pdfcraft_model::pages(&doc)[1].dict.clone();
+    let before = patronuspdf_model::pages(&doc)[1].dict.clone();
     apply(&mut doc, Some(&[0])).unwrap();
-    assert_eq!(pdfcraft_model::pages(&doc)[1].dict, before);
+    assert_eq!(patronuspdf_model::pages(&doc)[1].dict, before);
 }
 
 /// A page whose `/Annots` is `annots`, with a mark over the lower left of the page.
@@ -111,7 +111,7 @@ fn dictionaries_of_another_type_in_annots_do_not_block_apply() {
     let others = "<< /Type /ExtGState /CA 1 >> << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
     let mut doc = page_with_annots(&format!("{others} << /Type /Annot /Subtype /Text /Rect [10 100 40 120] /Contents (PRIVATE-NOTE) >>"));
     assert_eq!(apply(&mut doc, None).unwrap().annotations, 1);
-    let left = annots_of(&doc, &pdfcraft_model::pages(&doc)[0].dict);
+    let left = annots_of(&doc, &patronuspdf_model::pages(&doc)[0].dict);
     let type_of = |a: &Object| doc.resolve(a).as_dict().and_then(|d| d.get(b"Type")?.as_name().map(<[u8]>::to_vec));
     assert_eq!(left.iter().filter_map(type_of).collect::<Vec<_>>(), [b"ExtGState".to_vec(), b"Font".to_vec()]);
 }

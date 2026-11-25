@@ -96,7 +96,7 @@ pub fn run_shared_calculations(
         let failed =
             |why: String| Outcome { rc: true, value: event.value.clone(), change: event.change.clone(), error: Some(why), ..Default::default() };
         std::thread::scope(|scope| {
-            let spawned = std::thread::Builder::new().name("pdfcraft-js".into()).stack_size(SCRIPT_STACK).spawn_scoped(scope, || {
+            let spawned = std::thread::Builder::new().name("patronuspdf-js".into()).stack_size(SCRIPT_STACK).spawn_scoped(scope, || {
                 crate::format::with_english_printd(english, || run_shared_here(script, event, doc, fields, doc_scripts, calculations, limits))
             });
             match spawned {

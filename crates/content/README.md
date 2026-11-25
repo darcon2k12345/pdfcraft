@@ -1,7 +1,7 @@
-# pdfcraft-content
+# patronuspdf-content
 
 Layer L2: content streams (ISO 32000-2 §7.8.2, §8, §9). The code lives in craft-libs as
-`craft_pdf::cos::content` (feature `content`); this crate re-exports it, as `pdfcraft-cos` does for
+`craft_pdf::cos::content` (feature `content`); this crate re-exports it, as `patronuspdf-cos` does for
 the object layer.
 
 ```rust

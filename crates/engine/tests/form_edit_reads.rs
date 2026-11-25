@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use pdfcraft_engine::{DocId, Edit, FieldValue, Session};
-use pdfcraft_forms::form_reads_on_this_thread as form_reads;
+use patronuspdf_engine::{DocId, Edit, FieldValue, Session};
+use patronuspdf_forms::form_reads_on_this_thread as form_reads;
 
 /// An AcroForm of `n` text fields `f0`…, fifty to a page.
 fn acroform(n: usize) -> Vec<u8> {
@@ -92,8 +92,8 @@ fn an_xfa_form_edit_reads_the_fields_a_fixed_number_of_times() {
     let mut counts = Vec::new();
     for rows in [2, 60] {
         let mut s = Session::new();
-        let xdp = pdfcraft_xfa::fixtures::template(rows);
-        let id = s.open("form.pdf", None, Arc::new(pdfcraft_xfa::fixtures::shell(&xdp)), None).unwrap();
+        let xdp = patronuspdf_xfa::fixtures::template(rows);
+        let id = s.open("form.pdf", None, Arc::new(patronuspdf_xfa::fixtures::shell(&xdp)), None).unwrap();
         let name = s.get(id).unwrap().form.iter().find(|f| f.name.contains("familyName")).unwrap().name.clone();
         let fields = s.get(id).unwrap().form.len();
         let reads: Vec<usize> = (0..3).map(|k| fill(&mut s, id, &name, &format!("Name {k}"))).collect();

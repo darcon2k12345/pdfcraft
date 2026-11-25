@@ -1,5 +1,5 @@
 //! PDF-tab actions. Closed history contains paths only, never bytes or passwords.
-use pdfcraft_engine::DocId;
+use patronuspdf_engine::DocId;
 
 pub(crate) enum Action {
     /// Close a tab, by its view key (`DocView::view_key`: split view can show one document in two
@@ -15,11 +15,11 @@ pub(crate) enum Action {
     },
 }
 
-impl crate::PdfCraftApp {
+impl crate::PatronusPdfApp {
     /// Reveal a local file without opening it or changing document/Recent state. The existence
     /// check and the file manager call can block (a disconnected network mount, a slow `dbus-send`
     /// or `explorer.exe`), so they run on a worker; a failure is shown by
-    /// [`Self::show_reveal_errors`]. Tests run it inline ([`PdfCraftApp::run_inline`]).
+    /// [`Self::show_reveal_errors`]. Tests run it inline ([`PatronusPdfApp::run_inline`]).
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn reveal_path(&mut self, path: &std::path::Path) {
         let path = path.to_path_buf();
@@ -35,7 +35,7 @@ impl crate::PdfCraftApp {
         };
         if self.run_inline {
             work();
-        } else if let Err(e) = std::thread::Builder::new().name("pdfcraft-reveal".into()).spawn(work) {
+        } else if let Err(e) = std::thread::Builder::new().name("patronuspdf-reveal".into()).spawn(work) {
             self.notify_error(e);
         }
     }
@@ -93,7 +93,7 @@ impl crate::PdfCraftApp {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-/// Blocking: call it from a worker thread ([`crate::PdfCraftApp::reveal_path`]).
+/// Blocking: call it from a worker thread ([`crate::PatronusPdfApp::reveal_path`]).
 fn reveal(path: &std::path::Path) -> Result<(), String> {
     // Absolute paths also prevent a filename starting with '-' becoming an option.
     let path = std::path::absolute(path).map_err(|e| e.to_string())?;
@@ -196,11 +196,11 @@ mod tests {
 
     #[test]
     fn confirmed_close_uses_id_and_cancel_keeps_history_empty() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.open_bytes("first.pdf", Some("/tmp/first.pdf".into()), PDF.to_vec()).unwrap();
         let (first, first_tab) = (app.views[0].id, app.views[0].view_key());
         app.open_bytes("second.pdf", None, PDF.to_vec()).unwrap();
-        app.session.apply(first, pdfcraft_engine::Edit::InsertBlankPage { at: 0, width: 300.0, height: 400.0 }).unwrap();
+        app.session.apply(first, patronuspdf_engine::Edit::InsertBlankPage { at: 0, width: 300.0, height: 400.0 }).unwrap();
         app.tab_action(Action::Close(first_tab));
         assert_eq!(app.views.len(), 2);
         assert!(app.closed_tabs.is_empty());
@@ -219,11 +219,11 @@ mod tests {
     fn reopen_reads_saved_file_and_history_is_bounded() {
         use std::io::Write as _;
         let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let path = std::env::temp_dir().join(format!("pdfcraft-tab-{}-{nonce}-年度 report.pdf", std::process::id()));
+        let path = std::env::temp_dir().join(format!("patronuspdf-tab-{}-{nonce}-年度 report.pdf", std::process::id()));
         let mut file = std::fs::OpenOptions::new().write(true).create_new(true).open(&path).unwrap();
         file.write_all(PDF).unwrap();
         drop(file);
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         let path_text = path.to_str().unwrap();
         for _ in 0..12 {
             app.open_path(path_text);
@@ -243,12 +243,12 @@ mod tests {
     fn failed_reopen_keeps_history_and_retry_does_not_duplicate_tabs() {
         use std::io::Write as _;
         let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let path = std::env::temp_dir().join(format!("pdfcraft-retry-{}-{nonce}.pdf", std::process::id()));
+        let path = std::env::temp_dir().join(format!("patronuspdf-retry-{}-{nonce}.pdf", std::process::id()));
         let text = path.to_str().unwrap();
         let mut file = std::fs::OpenOptions::new().create_new(true).write(true).open(&path).unwrap();
         file.write_all(PDF).unwrap();
         drop(file);
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.open_path(text);
         app.close_tab(0);
         std::fs::remove_file(&path).unwrap();
@@ -268,9 +268,9 @@ mod tests {
 
     #[test]
     fn a_failed_reveal_is_reported_back_to_the_ui_thread() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.run_inline = true;
-        app.reveal_path(std::path::Path::new("/pdfcraft-no-such-dir/missing.pdf"));
+        app.reveal_path(std::path::Path::new("/patronuspdf-no-such-dir/missing.pdf"));
         assert!(app.toast.is_none(), "nothing is shown until the UI thread takes the report");
         app.show_reveal_errors();
         assert_eq!(app.toast.as_ref().map(|t| t.0.as_str()), Some("The file no longer exists"));
@@ -331,7 +331,7 @@ mod tests {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod ui_tests {
-    use crate::PdfCraftApp;
+    use crate::PatronusPdfApp;
     use egui_kittest::{
         Harness,
         kittest::{NodeT, Queryable},
@@ -340,7 +340,7 @@ mod ui_tests {
     #[test]
     fn inactive_tab_menu_closes_target_and_disables_unavailable_actions() {
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.set_option("language", "en").unwrap();
             for name in ["first.pdf", "second.pdf"] {
                 app.open_bytes(name, None, include_bytes!("../../tests/data/form.pdf").to_vec()).unwrap();

@@ -1,9 +1,9 @@
 //! Document Properties keeps its widget buffers local and commits one revision-bound draft.
 
 use edit_session::EditSession;
-use pdfcraft_engine::{DocId, Document, Edit, InitialView};
+use patronuspdf_engine::{DocId, Document, Edit, InitialView};
 
-use crate::{CustomDraft, PdfCraftApp};
+use crate::{CustomDraft, PatronusPdfApp};
 
 pub(crate) const INFO_KEYS: [&str; 4] = ["Title", "Author", "Subject", "Keywords"];
 
@@ -71,7 +71,7 @@ impl Context {
 
 pub(crate) type Draft = EditSession<Values, Context>;
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Discard local form buffers and their session, without issuing an engine command.
     pub(crate) fn discard_properties(&mut self) {
         self.props_session = None;
@@ -186,8 +186,8 @@ mod tests {
     use super::*;
 
     /// Create a one-page document with a pending title edit for direct commit-path regressions.
-    fn app() -> PdfCraftApp {
-        let mut app = PdfCraftApp::new();
+    fn app() -> PatronusPdfApp {
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(200.0, 300.0, 1).unwrap();
         app.open_bytes("properties.pdf", None, bytes.as_ref().clone()).unwrap();
         app.dialog = Some(crate::Dialog::Properties(crate::PropsTab::Description));

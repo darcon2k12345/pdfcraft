@@ -1,4 +1,4 @@
-//! pdfcraft-render — page rasterization and document inspection.
+//! patronuspdf-render — page rasterization and document inspection.
 //!
 //! **Bootstrap status (see ADR-0004):** rasterization uses the shared `craft-pdf` facade over `hayro`
 //! (hayro-interpret + vello_cpu). Inspection uses the lazy `cos` reader with a read-only lopdf

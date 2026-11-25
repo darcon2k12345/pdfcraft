@@ -395,7 +395,7 @@ fn calculate_now(_: &JsValue, _: &[JsValue], ctx: &mut Context) -> JsResult<JsVa
 
 /// Acrobat's built-in calculation helper, used by the scripts written by its Calculate tab.
 /// `AFSimple_Calculate(op, names)`, with the semantics of the native Simple calculation
-/// (`pdfcraft_forms::af::calculate`), so a total read right after `calculateNow()` is the one the
+/// (`patronuspdf_forms::af::calculate`), so a total read right after `calculateNow()` is the one the
 /// commit path writes: a name also stands for every field under it (`b` sums `b.c` and `b.d`),
 /// each field counts its first value, and values are read as `AFMakeNumber` reads typed text
 /// (currency, `%`, group separators, a comma decimal separator), anything else counting as 0.
@@ -437,7 +437,7 @@ fn af_simple_calculate(_: &JsValue, args: &[JsValue], ctx: &mut Context) -> JsRe
     Ok(s(&if result.is_finite() { js_number(result) } else { "0".into() }))
 }
 
-/// `AFMakeNumber`'s reading of typed text, as `pdfcraft_forms::af::make_number` has it: currency
+/// `AFMakeNumber`'s reading of typed text, as `patronuspdf_forms::af::make_number` has it: currency
 /// symbols, spaces, `'` and `%` ignored, `(7)` negative, and a comma the decimal separator when
 /// it comes last (`1.234,56`) or is not followed by exactly three digits.
 fn make_number(s: &str) -> Option<f64> {

@@ -1,6 +1,6 @@
 //! Script prompts suspend the document worker, never the egui event loop.
-use crate::PdfCraftApp;
-use pdfcraft_engine::{
+use crate::PatronusPdfApp;
+use patronuspdf_engine::{
     DocId,
     js::{InteractiveEvent, JsOutput, MenuItem, PendingScript, Prompt},
 };
@@ -49,8 +49,8 @@ fn reply_to_prompt(ctx: &egui::Context, pending: &mut Pending, answer: Option<St
             match prompt {
                 Prompt::Alert(m) => Some(
                     match m.buttons {
-                        pdfcraft_engine::js::MessageButtons::Ok => "1",
-                        pdfcraft_engine::js::MessageButtons::YesNo => "3",
+                        patronuspdf_engine::js::MessageButtons::Ok => "1",
+                        patronuspdf_engine::js::MessageButtons::YesNo => "3",
                         _ => "2",
                     }
                     .into(),
@@ -66,7 +66,7 @@ fn reply_to_prompt(ctx: &egui::Context, pending: &mut Pending, answer: Option<St
     ctx.request_repaint();
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Start one explicit button interaction with captured document/view state and leave egui responsive.
     pub(crate) fn start_ui_script(&mut self, id: DocId, script: &str, field: Option<&str>, identity: Option<u64>) {
         self.start_script_with(id, |s| s.start_javascript_target(id, script, field, identity));
@@ -79,7 +79,7 @@ impl PdfCraftApp {
     fn start_script_with(
         &mut self,
         id: DocId,
-        start: impl FnOnce(&mut pdfcraft_engine::Session) -> Result<PendingScript, pdfcraft_engine::EditError>,
+        start: impl FnOnce(&mut patronuspdf_engine::Session) -> Result<PendingScript, patronuspdf_engine::EditError>,
     ) {
         if self.script_pending.is_some() {
             self.notify("Another form script is active; this click was not run");
@@ -214,7 +214,7 @@ impl PdfCraftApp {
                 }
                 Prompt::Text { title, question, password, label, .. } => {
                     if *password {
-                        ui.label(tl!("This request comes from the document, not PdfCraft. Only enter a password if you trust this document."));
+                        ui.label(tl!("This request comes from the document, not Patronus PDF. Only enter a password if you trust this document."));
                     }
                     if !title.is_empty() {
                         ui.label(title);
@@ -237,7 +237,7 @@ impl PdfCraftApp {
                         ui.label(title);
                     }
                     ui.label(&message.text);
-                    use pdfcraft_engine::js::MessageButtons as B;
+                    use patronuspdf_engine::js::MessageButtons as B;
                     ui.horizontal(|ui| match message.buttons {
                         B::Ok | B::OkCancel => {
                             if ui.button(tl!("OK")).clicked() {
@@ -272,7 +272,7 @@ mod review_tests {
     /// The central shortcut/page-input gate must see a real pending script prompt.
     #[test]
     fn a_script_prompt_blocks_document_input_until_answered() {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(200.0, 300.0, 1).unwrap();
         app.open_bytes("synthetic.pdf", None, bytes.to_vec()).unwrap();
         let id = app.active_ids().unwrap().1;
@@ -305,8 +305,8 @@ mod review_tests {
 mod review13_ui_tests {
     use super::*;
     /// Create a native app with a visible synthetic blank document and no renderer.
-    fn app() -> (PdfCraftApp, DocId) {
-        let mut app = PdfCraftApp::new();
+    fn app() -> (PatronusPdfApp, DocId) {
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         let bytes = app.session.create_blank(200.0, 300.0, 2).unwrap();
         app.open_bytes("synthetic.pdf", None, bytes.to_vec()).unwrap();
@@ -360,7 +360,7 @@ mod review13_ui_tests {
             app.run_compare();
             assert!(app.compare.as_ref().unwrap().side_by_side);
             let dir = std::env::temp_dir().join(format!(
-                "pdfcraft-comparison-request-{}-{}",
+                "patronuspdf-comparison-request-{}-{}",
                 std::process::id(),
                 std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
             ));
@@ -382,7 +382,7 @@ mod review13_ui_tests {
             if request.contains("SaveAs") {
                 assert_eq!(app.active_ids().unwrap().1, new, "Save As need not change the comparison tab");
                 assert_eq!(app.session.get(old).unwrap().path.as_deref(), saved.to_str());
-                let mut reopened = pdfcraft_engine::Session::new();
+                let mut reopened = patronuspdf_engine::Session::new();
                 let id = reopened.open("saved.pdf", None, std::sync::Arc::new(std::fs::read(&saved).unwrap()), None).unwrap();
                 assert_eq!(reopened.get(id).unwrap().info.pages.len(), 2, "the saved file is the two-page source, not the one-page active file");
             } else if request == "print();" {
@@ -408,15 +408,15 @@ mod review13_ui_tests {
         app.session
             .apply(
                 id,
-                pdfcraft_engine::Edit::AddField {
+                patronuspdf_engine::Edit::AddField {
                     page: 1,
                     rect: [20.0, 20.0, 120.0, 40.0],
-                    kind: pdfcraft_engine::NewField::Text { multiline: false },
+                    kind: patronuspdf_engine::NewField::Text { multiline: false },
                     name: Some("later".into()),
                 },
             )
             .unwrap();
-        app.handle_js(id, JsOutput { requests: vec![pdfcraft_engine::js::Request::Focus("later".into())], ..Default::default() });
+        app.handle_js(id, JsOutput { requests: vec![patronuspdf_engine::js::Request::Focus("later".into())], ..Default::default() });
         let view = app.views.iter().find(|v| v.id == id).unwrap();
         assert_eq!(view.current, 1);
         assert_eq!(view.forms.focus.as_ref().unwrap().name, "later");
@@ -460,7 +460,7 @@ mod link_script_tests {
         // `/C/…` form, which reads as `C:/…`.
         let path = if cfg!(windows) { "/C/abs/other.pdf" } else { "/abs/other.pdf" };
         let script = format!("getField\\('log'\\).value = app.popUpMenuEx\\({{cName:'A', cReturn:'a'}}\\) + event.type; app.openDoc\\('{path}'\\);");
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.open_bytes("link.pdf", None, linked(&script)).unwrap();
         let id = app.active_ids().unwrap().1;
         app.run_link_script(id, 0, 0);

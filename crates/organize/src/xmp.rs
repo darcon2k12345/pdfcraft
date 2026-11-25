@@ -4,7 +4,7 @@
 //! Files that carry XMP state the title and author twice, and viewers that read XMP first show
 //! the packet's value, so changing only `/Info` leaves the file disagreeing with itself. Each
 //! information key maps to the XMP property PDF/A pairs it with (ISO 19005-1 §6.7.3, the same
-//! mapping `pdfcraft-preflight` writes): Title → `dc:title`, Author → `dc:creator`, Subject →
+//! mapping `patronuspdf-preflight` writes): Title → `dc:title`, Author → `dc:creator`, Subject →
 //! `dc:description`, Keywords → `pdf:Keywords`, Creator → `xmp:CreatorTool`, Producer →
 //! `pdf:Producer`. A custom property (Document Properties ▸ Custom) is kept as `pdfx:<name>`, plain
 //! text in the `http://ns.adobe.com/pdfx/1.3/` schema where Acrobat keeps them, so tools that read
@@ -19,7 +19,7 @@
 use std::cell::RefCell;
 use std::sync::{Arc, Weak};
 
-use pdfcraft_cos::{Document, Object, Stream};
+use patronuspdf_cos::{Document, Object, Stream};
 
 use crate::OrganizeError;
 use crate::pdfx::esc;

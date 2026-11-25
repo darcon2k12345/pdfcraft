@@ -4,10 +4,10 @@
 //! millimetres or centimetres, and the pages. A preview shows the current page's media box and the new box.
 
 use egui::{Align, Color32, CornerRadius, Layout, Rect, Stroke, pos2, vec2};
-use pdfcraft_engine::{BoxSpec, Edit, PageBox};
+use patronuspdf_engine::{BoxSpec, Edit, PageBox};
 
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, widgets};
+use crate::{PatronusPdfApp, widgets};
 
 pub use crate::units::Unit;
 
@@ -98,7 +98,7 @@ fn box_index(b: PageBox) -> usize {
 }
 
 /// Draw the dialog body; returns (apply, cancel).
-pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (bool, bool) {
+pub(crate) fn body(ui: &mut egui::Ui, app: &mut PatronusPdfApp, t: &Tokens) -> (bool, bool) {
     let Some((i, id)) = app.active_ids() else { return (false, true) };
     let current = app.views[i].current;
     let Some(doc) = app.session.get(id) else { return (false, true) };
@@ -247,12 +247,12 @@ mod tests {
     }
 
     /// Two pages of 432 x 360 points, the first with `/UserUnit` 1 and the second with 2, opened in a session.
-    fn session_with_user_units() -> (pdfcraft_engine::Session, pdfcraft_engine::DocId) {
-        use pdfcraft_cos::{Document as Cos, Object, SaveOptions, write_full};
-        let mut session = pdfcraft_engine::Session::new();
+    fn session_with_user_units() -> (patronuspdf_engine::Session, patronuspdf_engine::DocId) {
+        use patronuspdf_cos::{Document as Cos, Object, SaveOptions, write_full};
+        let mut session = patronuspdf_engine::Session::new();
         let blank = session.create_blank(432.0, 360.0, 2).unwrap();
         let mut cos = Cos::open(blank).unwrap();
-        let second = pdfcraft_model::pages(&cos)[1].obj;
+        let second = patronuspdf_model::pages(&cos)[1].obj;
         cos.update_dict(second, |d| d.set(b"UserUnit".to_vec(), Object::Int(2))).unwrap();
         let bytes = write_full(&cos, &SaveOptions::default()).unwrap();
         let id = session.open_new("units.pdf", std::sync::Arc::new(bytes)).unwrap();

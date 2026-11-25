@@ -57,8 +57,8 @@ fn grid_pages_are_centred_and_as_large_as_the_cell_allows() {
     }
 }
 
-fn signature(signed: bool, visible: bool, page: Option<usize>, rect: Option<[f64; 4]>) -> pdfcraft_engine::SignatureInfo {
-    pdfcraft_engine::SignatureInfo {
+fn signature(signed: bool, visible: bool, page: Option<usize>, rect: Option<[f64; 4]>) -> patronuspdf_engine::SignatureInfo {
+    patronuspdf_engine::SignatureInfo {
         field: "Signature1".into(),
         signed,
         page,
@@ -81,8 +81,8 @@ fn signature(signed: bool, visible: bool, page: Option<usize>, rect: Option<[f64
         algorithm: None,
         timestamp: false,
         timestamp_time: None,
-        status: pdfcraft_engine::SignatureStatus::Valid,
-        modification: pdfcraft_engine::sign::Modification::None,
+        status: patronuspdf_engine::SignatureStatus::Valid,
+        modification: patronuspdf_engine::sign::Modification::None,
         verdict_shown: false,
         details: Vec::new(),
     }
@@ -94,7 +94,7 @@ fn signature_states_change_with_a_verdict_or_what_draws_it() {
     let before = vec![shown.clone()];
     assert!(!signature_states_changed(&before, &before), "identical lists report no change");
     let mut invalid = shown.clone();
-    invalid.status = pdfcraft_engine::SignatureStatus::Invalid;
+    invalid.status = patronuspdf_engine::SignatureStatus::Invalid;
     let mut drawn = shown.clone();
     drawn.verdict_shown = true;
     let mut other = shown.clone();
@@ -146,7 +146,7 @@ fn signature_badges_skip_rectangles_that_cannot_reach_the_screen() {
 fn signature_badges_keep_every_verdict_the_appearance_shows() {
     // Whether the redrawn layers are visible (not clipped or painted over) is not known, so a
     // valid verdict keeps its badge as well.
-    use pdfcraft_engine::SignatureStatus::{Invalid, Unknown, Valid};
+    use patronuspdf_engine::SignatureStatus::{Invalid, Unknown, Valid};
     for status in [Valid, Unknown, Invalid] {
         let mut shown = signature(true, true, Some(0), Some([10.0, 10.0, 100.0, 50.0]));
         (shown.verdict_shown, shown.status) = (true, status);
@@ -180,7 +180,7 @@ fn the_verdict_mark_turns_with_the_page_and_the_view() {
     for page_turn in [0_u16, 90, 180, 270] {
         for view_turn in [0_u16, 90, 180, 270] {
             let page =
-                pdfcraft_render::PageInfo { width: 612.0, height: 792.0, label: "1".into(), crop: [0.0, 0.0, 612.0, 792.0], rotation: page_turn };
+                patronuspdf_render::PageInfo { width: 612.0, height: 792.0, label: "1".into(), crop: [0.0, 0.0, 612.0, 792.0], rotation: page_turn };
             let info = DocInfo { pages: vec![page], ..Default::default() };
             let xf = PageXform { rect: Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 800.0)), rot: view_turn, pw: 612.0, ph: 792.0 };
             let widget = xf.user_rect(&info, 0, rect.map(|v: f64| v as f32));
@@ -321,7 +321,7 @@ fn rendered_rasters_become_texture_images_without_a_copy() {
 endstream endobj
 trailer << /Root 1 0 R >>
 %%EOF";
-    let mut r = pdfcraft_render::PageRenderer::new(Arc::new(pdf.to_vec()), Default::default());
+    let mut r = patronuspdf_render::PageRenderer::new(Arc::new(pdf.to_vec()), Default::default());
     let out = r.render(RenderRequest { page: 0, kind: RequestKind::Pixels, tile: None, scale: 1.5, tag: 0, preview: false });
     assert!(out.error.is_none(), "{:?}", out.error);
     let size = [out.width as usize, out.height as usize];
@@ -368,9 +368,9 @@ fn grid_zoom_is_clamped_and_sharp_renders_tolerate_a_pinch() {
 }
 
 fn view(pages: usize, layout: PageLayout, continuous: bool) -> DocView {
-    let info = pdfcraft_render::DocInfo {
+    let info = patronuspdf_render::DocInfo {
         pages: (0..pages)
-            .map(|_| pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
+            .map(|_| patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
             .collect(),
         ..Default::default()
     };
@@ -475,8 +475,8 @@ fn history_search_view() -> DocView {
     let mut v = view(5, PageLayout::Single, true);
     v.texts.insert(
         3,
-        pdfcraft_render::PageText {
-            glyphs: vec![pdfcraft_render::TextGlyph {
+        patronuspdf_render::PageText {
+            glyphs: vec![patronuspdf_render::TextGlyph {
                 text: "match".into(),
                 rect: [20.0, 260.0, 60.0, 280.0],
                 quad: [[20.0, 260.0], [60.0, 260.0], [60.0, 280.0], [20.0, 280.0]],
@@ -610,7 +610,7 @@ fn find_test_text(s: &str) -> PageText {
     PageText {
         glyphs: s
             .chars()
-            .map(|c| pdfcraft_render::TextGlyph { text: c.into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] })
+            .map(|c| patronuspdf_render::TextGlyph { text: c.into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] })
             .collect(),
         line_of: s.chars().map(|_| 0).collect(),
         space_before: s.chars().map(|_| false).collect(),
@@ -619,8 +619,8 @@ fn find_test_text(s: &str) -> PageText {
 }
 
 /// A text-layer result for `page`, for the search tests below.
-fn find_text_result(page: usize, text: &str) -> pdfcraft_render::RenderedPage {
-    pdfcraft_render::RenderedPage {
+fn find_text_result(page: usize, text: &str) -> patronuspdf_render::RenderedPage {
+    patronuspdf_render::RenderedPage {
         request: RenderRequest { page, kind: RequestKind::Text, tag: TEXT_TAG, ..Default::default() },
         width: 0,
         height: 0,
@@ -645,7 +645,7 @@ fn automatic_search_match_follows_the_viewed_page_when_text_arrives_out_of_order
 
     let ctx = egui::Context::default();
     let request = |page| RenderRequest { page, kind: RequestKind::Text, tag: TEXT_TAG, ..Default::default() };
-    let result = |page, text: &str| pdfcraft_render::RenderedPage {
+    let result = |page, text: &str| patronuspdf_render::RenderedPage {
         request: request(page),
         width: 0,
         height: 0,
@@ -794,7 +794,7 @@ fn a_failed_text_layer_keeps_the_automatic_anchor_without_jitter() {
     v.last_queue = vec![request];
     v.receive_result(
         &ctx,
-        pdfcraft_render::RenderedPage {
+        patronuspdf_render::RenderedPage {
             request,
             width: 0,
             height: 0,
@@ -838,7 +838,7 @@ fn a_failed_text_layer_after_navigation_does_not_reveal_a_late_match() {
     v.last_queue = vec![failed];
     v.receive_result(
         &ctx,
-        pdfcraft_render::RenderedPage {
+        patronuspdf_render::RenderedPage {
             request: failed,
             width: 0,
             height: 0,
@@ -979,9 +979,9 @@ fn a_page_count_shrink_ends_following_before_a_late_reveal() {
     v.rerun_find();
     assert_eq!((v.current, v.find.as_ref().unwrap().auto_page), (4, Some(4)), "the automatic choice is on the last page");
 
-    let info = pdfcraft_render::DocInfo {
+    let info = patronuspdf_render::DocInfo {
         pages: (0..2)
-            .map(|_| pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
+            .map(|_| patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
             .collect(),
         ..Default::default()
     };
@@ -1088,7 +1088,7 @@ fn text_pages_pdf(lines: &[&str]) -> Vec<u8> {
 /// in page order, reading the pages whose text wasn't read for display.
 #[test]
 fn select_all_copies_the_whole_document_while_scrolling_continuously() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let v = &mut app.views[0];
     assert!(v.continuous, "continuous scrolling is the default");
@@ -1137,7 +1137,7 @@ fn select_all_copies_the_whole_document_while_scrolling_continuously() {
 /// those that failed before.
 #[test]
 fn a_document_copy_reads_only_the_pages_it_needs() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     app.views[0].text_failed.insert(2);
     let job = crate::DocumentCopyJob::of(&app.views[0], app.session.get(app.views[0].id).unwrap());
@@ -1150,7 +1150,7 @@ fn a_document_copy_reads_only_the_pages_it_needs() {
 /// copied after it started, from the page or anywhere else (a text field, a comment).
 #[test]
 fn a_later_copy_cancels_a_document_copy_still_reading() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let ctx = egui::Context::default();
     // Another copy in the same frame (here a text field's) drops it.
@@ -1184,7 +1184,7 @@ fn a_later_copy_cancels_a_document_copy_still_reading() {
 #[test]
 fn a_press_on_a_page_ends_select_all_of_the_document() {
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
         app
     });
@@ -1225,11 +1225,11 @@ fn a_press_on_a_page_ends_select_all_of_the_document() {
 /// cancelled copy gives nothing (a new copy or a closed document cancels the old one).
 #[test]
 fn a_document_copy_reads_in_page_order_and_stops_when_cancelled() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     // The middle page's text read for display already; the others read by the copy.
     let doc = app.session.get(app.views[0].id).unwrap();
-    let mut r = pdfcraft_render::PageRenderer::new(doc.bytes.clone(), Default::default());
+    let mut r = patronuspdf_render::PageRenderer::new(doc.bytes.clone(), Default::default());
     let middle = r.render(RenderRequest { page: 1, kind: RequestKind::Text, ..Default::default() }).text.unwrap();
     app.views[0].texts.insert(1, middle);
     let job = || crate::DocumentCopyJob::of(&app.views[0], app.session.get(app.views[0].id).unwrap());
@@ -1246,7 +1246,7 @@ fn select_all_of_the_document_only_while_scrolling_through_several_pages() {
     let one_line = |s: &str| PageText {
         glyphs: s
             .chars()
-            .map(|c| pdfcraft_render::TextGlyph { text: c.into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] })
+            .map(|c| patronuspdf_render::TextGlyph { text: c.into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] })
             .collect(),
         line_of: s.chars().map(|_| 0).collect(),
         space_before: s.chars().map(|_| false).collect(),
@@ -1278,7 +1278,7 @@ fn text_layers_keep_the_selection_page() {
     let info = thumbnail_info(100);
     let mut v = DocView::new(DocId(1), &info, ViewDefaults::default());
     let text = PageText {
-        glyphs: vec![pdfcraft_render::TextGlyph { text: "x".into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] }],
+        glyphs: vec![patronuspdf_render::TextGlyph { text: "x".into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] }],
         line_of: vec![0],
         space_before: vec![false],
         truncated: false,
@@ -1306,7 +1306,7 @@ fn line_text(s: &str) -> PageText {
     PageText {
         glyphs: s
             .chars()
-            .map(|c| pdfcraft_render::TextGlyph { text: c.into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] })
+            .map(|c| patronuspdf_render::TextGlyph { text: c.into(), rect: [0.0, 0.0, 10.0, 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] })
             .collect(),
         line_of: s.chars().map(|_| 0).collect(),
         space_before: s.chars().map(|_| false).collect(),
@@ -1316,8 +1316,12 @@ fn line_text(s: &str) -> PageText {
 
 /// Two lines of two glyphs: "ab" at the top, "cd" below it.
 fn two_line_text() -> PageText {
-    let glyph =
-        |c: char, y: f32| pdfcraft_render::TextGlyph { text: c.into(), rect: [0.0, y, 10.0, y + 10.0], quad: [[0.0, 0.0]; 4], direction: [1.0, 0.0] };
+    let glyph = |c: char, y: f32| patronuspdf_render::TextGlyph {
+        text: c.into(),
+        rect: [0.0, y, 10.0, y + 10.0],
+        quad: [[0.0, 0.0]; 4],
+        direction: [1.0, 0.0],
+    };
     PageText {
         glyphs: vec![glyph('a', 0.0), glyph('b', 0.0), glyph('c', 20.0), glyph('d', 20.0)],
         line_of: vec![0, 0, 1, 1],
@@ -1429,9 +1433,9 @@ fn copy_with_formatting_takes_a_selection_on_one_page_only() {
 #[test]
 fn markup_on_several_pages_is_one_undo_step_named_like_one() {
     let mark = |page| {
-        Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
+        Edit::AddAnnotation(patronuspdf_engine::NewAnnotation {
             page,
-            shape: pdfcraft_engine::Shape::TextMarkup { kind: pdfcraft_engine::Markup::Highlight, quads: vec![[0.0; 8]] },
+            shape: patronuspdf_engine::Shape::TextMarkup { kind: patronuspdf_engine::Markup::Highlight, quads: vec![[0.0; 8]] },
             style: Default::default(),
             contents: String::new(),
             author: String::new(),
@@ -1441,7 +1445,7 @@ fn markup_on_several_pages_is_one_undo_step_named_like_one() {
     assert!(matches!(selection::one_undo_step(vec![mark(0)]), Some(Edit::AddAnnotation(_))));
     let Some(Edit::Batch { label, edits }) = selection::one_undo_step(vec![mark(0), mark(1)]) else { panic!("a batch") };
     assert_eq!((label.as_str(), edits.len()), (mark(0).label().wording, 2));
-    assert!(pdfcraft_engine::EDIT_LABELS.contains(&label.as_str()), "a wording the catalogues translate");
+    assert!(patronuspdf_engine::EDIT_LABELS.contains(&label.as_str()), "a wording the catalogues translate");
 }
 
 #[test]
@@ -1467,7 +1471,7 @@ fn thumbnail_info(count: usize) -> DocInfo {
                     1 => (200.0, 4000.0),
                     _ => (4000.0, 200.0),
                 };
-                pdfcraft_render::PageInfo { width, height, label: (i + 1).to_string(), crop: [0.0, 0.0, width, height], rotation: 0 }
+                patronuspdf_render::PageInfo { width, height, label: (i + 1).to_string(), crop: [0.0, 0.0, width, height], rotation: 0 }
             })
             .collect(),
         ..Default::default()
@@ -1525,12 +1529,12 @@ fn oversized_thumbnail_viewport_scales_all_admitted_cells_to_one_budget() {
     assert!(bytes <= THUMB_BYTES);
 }
 
-fn solid_result(request: RenderRequest, w: u32, h: u32) -> pdfcraft_render::RenderedPage {
-    pdfcraft_render::RenderedPage {
+fn solid_result(request: RenderRequest, w: u32, h: u32) -> patronuspdf_render::RenderedPage {
+    patronuspdf_render::RenderedPage {
         request,
         width: w,
         height: h,
-        rgba: pdfcraft_render::Pixels::from(vec![u32::MAX; rgba_bytes(w as usize, h as usize) / 4]),
+        rgba: patronuspdf_render::Pixels::from(vec![u32::MAX; rgba_bytes(w as usize, h as usize) / 4]),
         text: None,
         error: None,
         warnings: Vec::new(),
@@ -1543,7 +1547,7 @@ fn solid_result(request: RenderRequest, w: u32, h: u32) -> pdfcraft_render::Rend
 fn replacing_a_page_after_layout_never_uploads_an_oversized_texture() {
     let ctx = egui::Context::default();
     ctx.input_mut(|i| i.max_texture_side = 2048);
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     let original = app.session.create_blank(200.0, 300.0, 1).unwrap();
     let replacement = app.session.create_blank(400.0, 500.0, 1).unwrap();
     app.open_bytes("original.pdf", None, original.as_ref().clone()).unwrap();
@@ -1838,7 +1842,7 @@ fn continuous_two_page_prefetch_counts_rows_from_the_end_of_the_row_shown() {
 fn scrolling_the_other_way_drops_the_prefetch_from_the_queue() {
     let info = DocInfo {
         pages: (0..20)
-            .map(|_| pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
+            .map(|_| patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
             .collect(),
         ..Default::default()
     };
@@ -1919,7 +1923,7 @@ fn an_arriving_raster_evicts_pages_nobody_asks_for_and_then_pages_behind_the_scr
 fn a_tiled_page_ahead_keeps_its_sharper_raster() {
     let ctx = egui::Context::default();
     let mut v = view(20, PageLayout::Single, true);
-    let p = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    let p = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let (scale, max_side) = (12.0, 16384.0);
     let backdrop = BASE_SIDE / 400.0;
     // At 12× the page is 4800 pixels tall: tiled, with a 2048-pixel backdrop.
@@ -2149,7 +2153,7 @@ fn thumbnail_tags_do_not_change_as_a_row_scrolls_in_or_out() {
 #[test]
 fn many_open_documents_share_one_raster_allowance_and_close_releases_handles() {
     let ctx = egui::Context::default();
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     let bytes = app.session.create_blank(612.0, 792.0, 1).unwrap();
     let mut expected = Vec::new();
     for index in 0..6 {
@@ -2209,8 +2213,8 @@ fn suspended_signature_preview_releases_layers_and_rebuilds_without_editing() {
     let ctx = egui::Context::default();
     let img = craft_image_codecs::Image::from_u8(12, 4, craft_image_codecs::ChannelLayout::Rgba, [20, 30, 40, 255].repeat(48)).unwrap();
     let png = craft_image_codecs::encode(&img, craft_image_codecs::Format::Png, &craft_image_codecs::EncodeOptions::default()).unwrap();
-    let image = pdfcraft_engine::SignatureImage::from_bytes(&png).unwrap();
-    let mut session = pdfcraft_engine::Session::new();
+    let image = patronuspdf_engine::SignatureImage::from_bytes(&png).unwrap();
+    let mut session = patronuspdf_engine::Session::new();
     let blank = session.create_blank(300.0, 400.0, 1).unwrap();
     let id = session.open_new("signature-preview.pdf", blank).unwrap();
     let info = session.get(id).unwrap().info.pages[0].clone();
@@ -2272,7 +2276,7 @@ fn suspending_a_view_releases_owned_raster_textures_and_queue_state() {
 #[test]
 fn edit_text_boxes_stay_drawn_while_page_input_is_blocked() {
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(300.0, 400.0, 1).unwrap();
         app.open_bytes("blank.pdf", None, bytes.as_ref().clone()).unwrap();
         app.quick_tool = QuickTool::EditText;
@@ -2296,9 +2300,9 @@ fn a_cut_page_is_named_beside_an_xfa_form_notice() {
     use egui_kittest::kittest::Queryable;
 
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
-        let bytes = pdfcraft_xfa::fixtures::static_shell("<form1><page1><name>Ada</name></page1></form1>");
+        let bytes = patronuspdf_xfa::fixtures::static_shell("<form1><page1><name>Ada</name></page1></form1>");
         app.open_bytes("form.pdf", None, bytes).unwrap();
         app
     });
@@ -2306,7 +2310,7 @@ fn a_cut_page_is_named_beside_an_xfa_form_notice() {
     h.get_by_label_contains("XFA data are kept in step");
     h.state_mut().views[0].cut_pages.insert(0);
     h.run_steps(2);
-    h.get_by_label_contains("Page 1 holds more content than PdfCraft can read");
+    h.get_by_label_contains("Page 1 holds more content than Patronus PDF can read");
     h.get_by_label_contains("XFA data are kept in step");
 }
 
@@ -2317,7 +2321,7 @@ fn a_page_found_cut_after_a_dismissal_is_still_named() {
     use egui_kittest::kittest::Queryable;
 
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         let bytes = app.session.create_blank(300.0, 400.0, 2).unwrap();
         app.open_bytes("blank.pdf", None, bytes.as_ref().clone()).unwrap();
@@ -2328,7 +2332,7 @@ fn a_page_found_cut_after_a_dismissal_is_still_named() {
     h.state_mut().views[0].notice_dismissed = true;
     h.state_mut().views[0].cut_pages.insert(0);
     h.run_steps(2);
-    h.get_by_label_contains("Page 1 holds more content than PdfCraft can read");
+    h.get_by_label_contains("Page 1 holds more content than Patronus PDF can read");
     h.get_by_label("Dismiss").click();
     h.run_steps(2);
     assert!(h.query_by_label_contains("holds more content").is_none(), "the cut-page notice can be dismissed");
@@ -2339,7 +2343,7 @@ fn a_page_found_cut_after_a_dismissal_is_still_named() {
     assert!(h.query_by_label_contains("holds more content").is_none(), "the dismissed page stays dismissed");
     h.state_mut().views[0].cut_pages.insert(1);
     h.run_steps(2);
-    h.get_by_label_contains("2 pages hold more content than PdfCraft can read, page 1 first");
+    h.get_by_label_contains("2 pages hold more content than Patronus PDF can read, page 1 first");
 }
 
 /// Ctrl+wheel zooms a visible window that another application has focus over, as plain
@@ -2347,7 +2351,7 @@ fn a_page_found_cut_after_a_dismissal_is_still_named() {
 #[test]
 fn ctrl_wheel_zooms_an_unfocused_window() {
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(300.0, 400.0, 1).unwrap();
         app.open_bytes("blank.pdf", None, bytes.as_ref().clone()).unwrap();
         app
@@ -2381,7 +2385,7 @@ fn virtualized_organizer_keeps_insert_gaps_at_document_positions() {
     use egui_kittest::kittest::Queryable;
 
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(300.0, 400.0, 100).unwrap();
         app.open_bytes("organize-gaps.pdf", None, bytes.as_ref().clone()).unwrap();
         app.views[0].organize = true;
@@ -2412,7 +2416,7 @@ fn virtualized_organizer_keeps_insert_gaps_at_document_positions() {
 #[test]
 fn real_shell_pages_organizer_and_print_only_collect_current_thumbnail_consumers() {
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(612.0, 792.0, 10_000).unwrap();
         app.open_bytes("synthetic-ten-thousand.pdf", None, bytes.as_ref().clone()).unwrap();
         app.right = Some(RightPanel::Pages);
@@ -2518,7 +2522,7 @@ fn reselecting_the_layout_does_not_scroll_to_top() {
 #[test]
 fn fit_page_and_height_hold_still_while_mixed_page_sizes_scroll_past() {
     let page =
-        |width: f32, height: f32| pdfcraft_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
+        |width: f32, height: f32| patronuspdf_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
     let info = DocInfo { pages: vec![page(300.0, 400.0), page(600.0, 800.0)], ..Default::default() };
     for fit in [Fit::Page, Fit::Height] {
         let mut v = DocView::new(DocId(1), &info, ViewDefaults::default());
@@ -2543,7 +2547,7 @@ fn fit_page_and_height_hold_still_while_mixed_page_sizes_scroll_past() {
 #[test]
 fn full_screen_two_page_view_fits_the_spread_it_shows() {
     let page =
-        |width: f32, height: f32| pdfcraft_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
+        |width: f32, height: f32| patronuspdf_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
     // Spreads [0, 1] small, [2, 3] large; with a cover page [0], [1, 2] mixed, [3].
     let info = DocInfo { pages: vec![page(300.0, 400.0), page(300.0, 400.0), page(600.0, 800.0), page(600.0, 800.0)], ..Default::default() };
     let mut v = DocView::new(DocId(1), &info, ViewDefaults::default());
@@ -2620,7 +2624,7 @@ fn full_screen_two_page_view_fits_the_spread_it_shows() {
 #[test]
 fn fit_width_fits_the_shown_page_in_single_page_view_only() {
     let page =
-        |width: f32, height: f32| pdfcraft_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
+        |width: f32, height: f32| patronuspdf_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
     let info = DocInfo { pages: vec![page(300.0, 400.0), page(600.0, 400.0)], ..Default::default() };
     let mut v = DocView::new(DocId(1), &info, ViewDefaults::default());
     (v.fit, v.viewport_w, v.viewport_h) = (Fit::Width, 1000.0, 800.0);
@@ -2646,7 +2650,7 @@ fn fit_width_fits_the_shown_page_in_single_page_view_only() {
 #[test]
 fn layouts_match_their_commands_and_names() {
     for l in PageLayout::ORDER {
-        let spec = pdfcraft_engine::commands::command(l.command()).expect("registered");
+        let spec = patronuspdf_engine::commands::command(l.command()).expect("registered");
         assert_eq!((l.label(), l.icon()), (spec.label, spec.icon), "{l:?}");
         assert_eq!(PageLayout::from_command(l.command()), Some(l));
         assert_eq!(PageLayout::try_parse(l.as_str()), Some(l));
@@ -2659,9 +2663,9 @@ fn layouts_match_their_commands_and_names() {
 fn a_null_xyz_coordinate_keeps_the_readers_place_on_the_new_page() {
     // CAD exports link each cross-reference as `/XYZ null null 0`. Acrobat keeps the
     // point at the window's top-left (and the zoom) when following one to another sheet.
-    let info = pdfcraft_render::DocInfo {
+    let info = patronuspdf_render::DocInfo {
         pages: (0..3)
-            .map(|_| pdfcraft_render::PageInfo { width: 842.0, height: 595.0, label: String::new(), crop: [0.0, 0.0, 842.0, 595.0], rotation: 0 })
+            .map(|_| patronuspdf_render::PageInfo { width: 842.0, height: 595.0, label: String::new(), crop: [0.0, 0.0, 842.0, 595.0], rotation: 0 })
             .collect(),
         ..Default::default()
     };
@@ -2698,9 +2702,9 @@ fn a_null_xyz_coordinate_keeps_the_readers_place_on_the_new_page() {
 
 #[test]
 fn destinations_set_the_zoom_mode_and_the_point_to_show() {
-    let info = pdfcraft_render::DocInfo {
+    let info = patronuspdf_render::DocInfo {
         pages: (0..3)
-            .map(|_| pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
+            .map(|_| patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 })
             .collect(),
         ..Default::default()
     };
@@ -2734,7 +2738,7 @@ fn destinations_set_the_zoom_mode_and_the_point_to_show() {
     // A page past the end goes to the last page; a page the document info lacks, to its top.
     v.go_to_dest(usize::MAX, DestView::FitH { top: Some(100.0) }, &info);
     assert_eq!((v.current, v.goto_point.map(|g| g.0)), (2, Some(2)));
-    let empty = pdfcraft_render::DocInfo::default();
+    let empty = patronuspdf_render::DocInfo::default();
     v.go_to_dest(1, DestView::FitH { top: Some(100.0) }, &empty);
     assert_eq!((v.current, v.goto_point), (1, None));
 }
@@ -2750,7 +2754,7 @@ fn page_text_failure_preserves_valid_search_match_without_jitter() {
     let ctx = egui::Context::default();
     v.receive_result(
         &ctx,
-        pdfcraft_render::RenderedPage {
+        patronuspdf_render::RenderedPage {
             request: req,
             width: 0,
             height: 0,
@@ -2800,14 +2804,14 @@ fn a_moved_picture_is_drawn_from_the_fresh_raster_while_a_tile_is_still_stale() 
     }
     bytes.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 1100.0)).build_eframe(move |_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("picture.pdf", None, bytes.clone()).unwrap();
         app.set_option("zoom", "100").unwrap();
         app.quick_tool = QuickTool::EditText;
         app
     });
-    let settle = |h: &mut egui_kittest::Harness<'static, PdfCraftApp>| {
+    let settle = |h: &mut egui_kittest::Harness<'static, PatronusPdfApp>| {
         for _ in 0..400 {
             h.step();
             if !h.state().render_pending() {
@@ -2829,7 +2833,7 @@ fn a_moved_picture_is_drawn_from_the_fresh_raster_while_a_tile_is_still_stale() 
     };
     let (old, new) = (Rect::from_two_pos(at(42.0, 262.0), at(98.0, 318.0)), Rect::from_two_pos(at(182.0, 82.0), at(238.0, 138.0)));
     // Select the picture and drag it, without overlap, from (40, 260) to (180, 80).
-    let drag = |h: &mut egui_kittest::Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2, release: bool| {
+    let drag = |h: &mut egui_kittest::Harness<'static, PatronusPdfApp>, from: Pos2, to: Pos2, release: bool| {
         h.hover_at(from);
         h.run_steps(1);
         h.drag_at(from);
@@ -2927,7 +2931,7 @@ fn esc_with_a_field_being_filled_leaves_the_selection() {
 #[test]
 fn first_page_now_measures_the_pages_in_the_spread() {
     let page =
-        |width: f32, height: f32| pdfcraft_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
+        |width: f32, height: f32| patronuspdf_render::PageInfo { width, height, label: String::new(), crop: [0.0, 0.0, width, height], rotation: 0 };
     let info = DocInfo { pages: vec![page(300.0, 400.0), page(600.0, 800.0), page(200.0, 500.0)], ..Default::default() };
     let mut v = DocView::new(DocId(1), &info, ViewDefaults::default());
     let one = v.first_page_now(&info).expect("a page");
@@ -2973,8 +2977,8 @@ fn presenter_frame_animating(ctx: &egui::Context, v: &mut DocView, info: &DocInf
 /// on screen waiting for it, and the page's own time can start.
 #[test]
 fn a_transition_into_a_page_that_failed_to_render_ends_at_once() {
-    use pdfcraft_render::{PageTransition, TransitionStyle};
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    use patronuspdf_render::{PageTransition, TransitionStyle};
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let wipe = PageTransition {
         page: 1,
         style: Some(TransitionStyle::Wipe),
@@ -3004,8 +3008,8 @@ fn a_transition_into_a_page_that_failed_to_render_ends_at_once() {
 /// for a frame after frame: the render cache wakes the window while pages are queued.
 #[test]
 fn a_transition_waiting_for_its_page_does_not_redraw_every_frame() {
-    use pdfcraft_render::{PageTransition, TransitionStyle};
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    use patronuspdf_render::{PageTransition, TransitionStyle};
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let wipe = PageTransition {
         page: 1,
         style: Some(TransitionStyle::Wipe),
@@ -3039,8 +3043,8 @@ fn a_transition_waiting_for_its_page_does_not_redraw_every_frame() {
 /// after it): the presenter then stays on it without asking for a frame after frame.
 #[test]
 fn a_display_time_on_the_last_spread_does_not_redraw_every_frame() {
-    use pdfcraft_render::PageTransition;
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    use patronuspdf_render::PageTransition;
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let timed = PageTransition {
         page: 2,
         style: None,
@@ -3072,8 +3076,8 @@ fn a_display_time_on_the_last_spread_does_not_redraw_every_frame() {
 /// a slow render that still shows Rendering… does not use it up.
 #[test]
 fn a_display_time_starts_once_the_page_has_rendered() {
-    use pdfcraft_render::PageTransition;
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    use patronuspdf_render::PageTransition;
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let timed = PageTransition {
         page: 0,
         style: None,
@@ -3106,8 +3110,8 @@ fn a_display_time_starts_once_the_page_has_rendered() {
 /// it still showing Rendering… holds the spread (#5316 review).
 #[test]
 fn a_display_time_in_two_page_view_waits_for_the_whole_spread() {
-    use pdfcraft_render::PageTransition;
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    use patronuspdf_render::PageTransition;
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let timed = PageTransition {
         page: 0,
         style: None,
@@ -3141,8 +3145,8 @@ fn a_display_time_in_two_page_view_waits_for_the_whole_spread() {
 
 /// Page 1 of `pages` 300×400 pt pages, with `transitions`, in full screen (single page), its
 /// raster in. The other pages get theirs with [`give_raster`].
-fn presenting_view(pages: usize, transitions: Vec<pdfcraft_render::PageTransition>, ctx: &egui::Context) -> (DocView, DocInfo) {
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+fn presenting_view(pages: usize, transitions: Vec<patronuspdf_render::PageTransition>, ctx: &egui::Context) -> (DocView, DocInfo) {
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let info = DocInfo { pages: vec![page; pages], transitions, ..Default::default() };
     let mut v = DocView::new(DocId(1), &info, ViewDefaults { layout: PageLayout::Single, continuous: false, ..Default::default() });
     v.enter_presentation();
@@ -3164,15 +3168,25 @@ fn turn_to(ctx: &egui::Context, v: &mut DocView, page: usize) {
 }
 
 /// A page's `/Trans` (style and `/D`) and `/Dur`, the rest as the spec's defaults.
-fn trans(page: usize, style: Option<pdfcraft_render::TransitionStyle>, duration: f32, display: Option<f32>) -> pdfcraft_render::PageTransition {
-    pdfcraft_render::PageTransition { page, style, duration, horizontal: true, inward: true, direction: Some(0), scale: 1.0, opaque: false, display }
+fn trans(page: usize, style: Option<patronuspdf_render::TransitionStyle>, duration: f32, display: Option<f32>) -> patronuspdf_render::PageTransition {
+    patronuspdf_render::PageTransition {
+        page,
+        style,
+        duration,
+        horizontal: true,
+        inward: true,
+        direction: Some(0),
+        scale: 1.0,
+        opaque: false,
+        display,
+    }
 }
 
 /// A page with a transition but no display time (ISO 32000-2 Table 31, `Dur`: "By default, the
 /// viewer shall not advance automatically") stays until the user turns it, however long it shows.
 #[test]
 fn a_page_without_a_display_time_never_advances_by_itself() {
-    use pdfcraft_render::TransitionStyle;
+    use patronuspdf_render::TransitionStyle;
     let ctx = egui::Context::default();
     let (mut v, info) = presenting_view(3, vec![trans(0, Some(TransitionStyle::Wipe), 1.0, None)], &ctx);
     for now in [0.0, 1.0, 60.0, 86_400.0, 1.0e7] {
@@ -3226,7 +3240,7 @@ fn a_display_time_longer_than_a_day_is_cut_to_a_day() {
 /// screen.
 #[test]
 fn a_transition_of_a_day_ends_within_ten_seconds() {
-    use pdfcraft_render::TransitionStyle;
+    use patronuspdf_render::TransitionStyle;
     for duration in [86_400.0, f32::MAX] {
         let ctx = egui::Context::default();
         let (mut v, info) = presenting_view(3, vec![trans(1, Some(TransitionStyle::Wipe), duration, None)], &ctx);
@@ -3244,7 +3258,7 @@ fn a_transition_of_a_day_ends_within_ten_seconds() {
 /// (a negative one would otherwise never end).
 #[test]
 fn a_transition_of_zero_or_negative_length_cuts() {
-    use pdfcraft_render::TransitionStyle;
+    use patronuspdf_render::TransitionStyle;
     for duration in [0.0, -1.0, f32::NAN, f32::NEG_INFINITY] {
         let ctx = egui::Context::default();
         let (mut v, info) = presenting_view(3, vec![trans(1, Some(TransitionStyle::Wipe), duration, None)], &ctx);
@@ -3260,9 +3274,9 @@ fn a_transition_of_zero_or_negative_length_cuts() {
 /// a page's transition doesn't play over the scrolling pages.
 #[test]
 fn full_screen_that_keeps_scrolling_plays_no_transition() {
-    use pdfcraft_render::TransitionStyle;
+    use patronuspdf_render::TransitionStyle;
     let ctx = egui::Context::default();
-    let page = pdfcraft_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
+    let page = patronuspdf_render::PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 };
     let info = DocInfo { pages: vec![page; 3], transitions: vec![trans(1, Some(TransitionStyle::Wipe), 1.0, None)], ..Default::default() };
     let mut v = DocView::new(DocId(1), &info, ViewDefaults { layout: PageLayout::Single, continuous: true, ..Default::default() });
     v.full_screen_fill = false;
@@ -3280,7 +3294,7 @@ fn full_screen_that_keeps_scrolling_plays_no_transition() {
 /// once, and its display time still counts.
 #[test]
 fn an_unknown_transition_style_cuts_and_keeps_the_display_time() {
-    use pdfcraft_render::TransitionStyle;
+    use patronuspdf_render::TransitionStyle;
     let ctx = egui::Context::default();
     let unknown = TransitionStyle::from_name("Spiral");
     let (mut v, info) = presenting_view(3, vec![trans(1, Some(unknown), 5.0, Some(1.0))], &ctx);
@@ -3298,7 +3312,7 @@ fn an_unknown_transition_style_cuts_and_keeps_the_display_time() {
 /// the page's display time still counts from when it is on screen.
 #[test]
 fn without_animations_a_transition_cuts_and_the_display_time_counts() {
-    use pdfcraft_render::TransitionStyle;
+    use patronuspdf_render::TransitionStyle;
     let ctx = egui::Context::default();
     let (mut v, info) = presenting_view(3, vec![trans(1, Some(TransitionStyle::Wipe), 5.0, Some(1.0))], &ctx);
     presenter_frame_animating(&ctx, &mut v, &info, 0.0, false);
@@ -3333,7 +3347,7 @@ fn image_handles_account_for_document_and_view_rotation() {
         for view_rotation in [0, 90, 180, 270] {
             let (width, height) = if page_rotation % 180 == 0 { (300.0, 400.0) } else { (400.0, 300.0) };
             let info = DocInfo {
-                pages: vec![pdfcraft_render::PageInfo {
+                pages: vec![patronuspdf_render::PageInfo {
                     width,
                     height,
                     label: String::new(),
@@ -3403,13 +3417,13 @@ fn enhancing_a_scan_re_renders_the_page_shown() {
         )
         .as_bytes(),
     );
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("scan.pdf", None, pdf).unwrap();
     let (i, doc) = app.active_ids().unwrap();
     let ctx = egui::Context::default();
     let tex = ctx.load_texture("before", egui::ColorImage::filled([1, 1], Color32::WHITE), TextureOptions::LINEAR);
     app.views[i].pages.insert(0, PageTex { tag: 1000, tex });
-    let job = app.session.scan_clean_job(doc, &[], pdfcraft_engine::scan_clean::ScanCleanSettings::default()).unwrap();
+    let job = app.session.scan_clean_job(doc, &[], patronuspdf_engine::scan_clean::ScanCleanSettings::default()).unwrap();
     let cleaned = job.run(|_, _| true).unwrap();
     assert_eq!(cleaned.report.pages, vec![0], "the page is a scan and gets cleaned");
     let progress =
@@ -3445,14 +3459,14 @@ fn only_pixel_snapping_passes_for_fitting_the_view() {
 /// page has selected.
 #[test]
 fn a_selection_across_pages_still_to_be_read_is_copied_once_read() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     // From the second glyph of page 1 to the first of page 3, no page read yet.
     app.views[0].selection = Some(Selection { page: 0, span: Span::Run { anchor: 1, head: 0, head_page: 2, head_x: None } });
     let span = app.views[0].selection_waits_for_text().expect("waits for its pages");
     assert_eq!(span, TextSpan { start: (0, 1), end: (2, 0) });
     assert!(app.views[0].selected_text().is_none(), "nothing to copy on this thread yet");
-    assert!(pdfcraft_engine::commands::command("edit.copy").is_some_and(|c| app.command_enabled(c)), "Copy stays on");
+    assert!(patronuspdf_engine::commands::command("edit.copy").is_some_and(|c| app.command_enabled(c)), "Copy stays on");
     // The job reads only the selection's part of each page, and no page outside it.
     let doc = app.session.get(app.views[0].id).unwrap();
     let text = crate::DocumentCopyJob::of_selection(&app.views[0], doc, span).text(&std::sync::atomic::AtomicBool::new(false));
@@ -3483,7 +3497,7 @@ fn a_selection_across_pages_still_to_be_read_is_copied_once_read() {
 /// rather than leave that page unmarked, and says why; markup tools mark the readable pages.
 #[test]
 fn redaction_refuses_a_selection_over_an_unreadable_page() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let info = app.session.get(app.views[0].id).unwrap().info.clone();
     let v = &mut app.views[0];
@@ -3574,12 +3588,12 @@ fn a_wait_ends_when_the_selection_changes() {
 /// change to a page the selection covers, ends the selection, and the wait goes with it.
 #[test]
 fn waiting_marks_are_dropped_when_their_pages_change() {
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let id = app.views[0].id;
-    let info = |app: &PdfCraftApp| app.session.get(id).unwrap().info.clone();
+    let info = |app: &PatronusPdfApp| app.session.get(id).unwrap().info.clone();
     let sel = Selection { page: 0, span: Span::Run { anchor: 1, head: 1, head_page: 2, head_x: None } };
-    let wait = |app: &mut PdfCraftApp| {
+    let wait = |app: &mut PatronusPdfApp| {
         let info = info(app);
         let v = &mut app.views[0];
         v.texts.clear();
@@ -3605,13 +3619,13 @@ fn waiting_marks_are_dropped_when_their_pages_change() {
     let redactions = app.session.get(id).unwrap().redaction_marks();
     assert_eq!(redactions, 0);
     // A change to one page the selection covers (a comment added on it) ends it too.
-    let mut app = PdfCraftApp::new();
+    let mut app = PatronusPdfApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let id = app.views[0].id;
     wait(&mut app);
-    let note = Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
+    let note = Edit::AddAnnotation(patronuspdf_engine::NewAnnotation {
         page: 2,
-        shape: pdfcraft_engine::Shape::Note { at: [10.0, 10.0], icon: pdfcraft_engine::NoteIcon::Comment },
+        shape: patronuspdf_engine::Shape::Note { at: [10.0, 10.0], icon: patronuspdf_engine::NoteIcon::Comment },
         style: Default::default(),
         contents: "x".into(),
         author: String::new(),

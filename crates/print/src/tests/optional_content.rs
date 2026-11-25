@@ -1,5 +1,5 @@
 use super::*;
-use pdfcraft_render::{PageRenderer, RenderConfig, RenderRequest, RenderedPage, RequestKind};
+use patronuspdf_render::{PageRenderer, RenderConfig, RenderRequest, RenderedPage, RequestKind};
 
 fn numbers(values: &[f64]) -> Object {
     Object::Array(values.iter().copied().map(Object::Real).collect())
@@ -7,10 +7,10 @@ fn numbers(values: &[f64]) -> Object {
 
 fn layer_fixture(off: bool) -> (Document, ObjRef, ObjRef, ObjRef) {
     let mut doc = fixture(1);
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = patronuspdf_model::pages(&doc)[0].obj;
     let group = doc.add(Object::Dict(Dict::from_iter([
         (b"Type".to_vec(), Object::name("OCG")),
-        (b"Name".to_vec(), Object::String(pdfcraft_cos::PdfString::text("Annotation Layer"))),
+        (b"Name".to_vec(), Object::String(patronuspdf_cos::PdfString::text("Annotation Layer"))),
     ])));
     let properties = Dict::from_iter([
         (b"OCGs".to_vec(), Object::Array(vec![Object::Ref(group)])),
@@ -73,7 +73,7 @@ fn vector_print_preserves_annotation_layer_membership() {
         let before = write_full(&doc, &SaveOptions::default()).unwrap();
         let printed = print(&doc).unwrap();
         let reopened = Document::open(Arc::new(printed.clone())).unwrap();
-        assert_eq!(pdfcraft_model::pages(&reopened).len(), 1);
+        assert_eq!(patronuspdf_model::pages(&reopened).len(), 1);
         let page = render(printed);
         let pixel = |x: usize, y: usize| &page.rgba[(y * 100 + x) * 4..(y * 100 + x + 1) * 4];
         assert_eq!(pixel(30, 70), if off { [255, 255, 255, 255] } else { [0, 255, 0, 255] }, "layer off={off}");
@@ -99,7 +99,7 @@ fn assert_appearance(page: &RenderedPage, visible: bool) {
 fn add_group(doc: &mut Document, name: &str, off: bool) -> ObjRef {
     let group = doc.add(Object::Dict(Dict::from_iter([
         (b"Type".to_vec(), Object::name("OCG")),
-        (b"Name".to_vec(), Object::String(pdfcraft_cos::PdfString::text(name))),
+        (b"Name".to_vec(), Object::String(patronuspdf_cos::PdfString::text(name))),
     ])));
     let root = doc.root().unwrap();
     let mut properties = doc.resolve(doc.get(root).as_dict().unwrap().get(b"OCProperties").unwrap()).as_dict().unwrap().clone();
@@ -133,7 +133,7 @@ fn membership(groups: Vec<Object>, policy: Option<&str>, expression: Option<Vec<
 }
 
 fn printed_form(doc: &Document) -> Dict {
-    let page = pdfcraft_model::pages(doc)[0].dict.clone();
+    let page = patronuspdf_model::pages(doc)[0].dict.clone();
     let resources = doc.resolve(page.get(b"Resources").unwrap());
     let xobjects = doc.resolve(resources.as_dict().unwrap().get(b"XObject").unwrap());
     doc.resolve(xobjects.as_dict().unwrap().get(b"P0").unwrap()).as_dict().unwrap().clone()
@@ -236,7 +236,7 @@ fn annotation_and_appearance_layers_are_independent_and_shared_appearances_stay_
     other.set(b"OC".to_vec(), Object::Ref(visible));
     other.set(b"Rect".to_vec(), numbers(&[10.0, 50.0, 50.0, 70.0]));
     let other = doc.add(Object::Dict(other));
-    let page = pdfcraft_model::pages(&doc)[0].obj;
+    let page = patronuspdf_model::pages(&doc)[0].obj;
     doc.update_dict(page, |d| d.set(b"Annots".to_vec(), Object::Array(vec![Object::Ref(annotation), Object::Ref(other)]))).unwrap();
     let before = saved(&doc);
     let original = doc.get(appearance);
@@ -283,7 +283,7 @@ fn annotation_layers_keep_colliding_inherited_and_shared_page_properties() {
                     Dict::new(),
                     b"0 0 1 rg 0 0 8 8 re f\n/OC /PCPrOC0 BDC 1 0 0 rg 60 60 10 10 re f EMC\n/OC /PCPrOC1 BDC 0 0 1 rg 70 60 10 10 re f EMC\n/Span /Unrelated BDC 1 0 1 rg 80 60 10 10 re f EMC",
                 )));
-                let page = pdfcraft_model::pages(&doc)[0].obj;
+                let page = patronuspdf_model::pages(&doc)[0].obj;
                 doc.update_dict(page, |d| {
                     d.set(b"Contents".to_vec(), Object::Ref(contents));
                     d.set(b"Annots".to_vec(), Object::Array(vec![Object::Ref(annotation), Object::Ref(other)]));
@@ -351,7 +351,7 @@ fn absent_annotation_membership_and_null_resource_maps_remain_valid() {
             1 => doc.update_dict(annotation, |d| d.set(b"OC".to_vec(), Object::Null)).unwrap(),
             2 => doc.update_dict(annotation, |d| d.set(b"OC".to_vec(), Object::Ref(ObjRef::new(900_000, 0)))).unwrap(),
             _ => {
-                let page = pdfcraft_model::pages(&doc)[0].obj;
+                let page = patronuspdf_model::pages(&doc)[0].obj;
                 let resources = match case {
                     3 => Object::Null,
                     4 => Object::Dict(Dict::from_iter([(b"Properties".to_vec(), Object::Null)])),
@@ -406,7 +406,7 @@ fn optional_content_reference_resolution_is_bounded_and_keeps_terminal_group_ide
                 _ => {
                     let value = reference_chain(&mut doc, Object::Dict(Dict::new()), references);
                     let resources = if target == "properties" { Object::Dict(Dict::from_iter([(b"Properties".to_vec(), value)])) } else { value };
-                    let page = pdfcraft_model::pages(&doc)[0].obj;
+                    let page = patronuspdf_model::pages(&doc)[0].obj;
                     doc.update_dict(page, |d| d.set(b"Resources".to_vec(), resources)).unwrap();
                 }
             }
@@ -445,7 +445,7 @@ fn malformed_page_resource_maps_cannot_remove_optional_content_guards() {
                 _ => cycle(&mut doc, true),
             };
             let resources = if target == "Properties" { Object::Dict(Dict::from_iter([(b"Properties".to_vec(), value)])) } else { value };
-            let page = pdfcraft_model::pages(&doc)[0].obj;
+            let page = patronuspdf_model::pages(&doc)[0].obj;
             doc.update_dict(page, |d| d.set(b"Resources".to_vec(), resources)).unwrap();
             let before = saved(&doc);
             assert!(matches!(print(&doc), Err(PrintError::Invalid(_))), "target={target}, case={case}");
@@ -476,7 +476,7 @@ fn malformed_membership_on_annotations_that_do_not_draw_does_not_block_printing(
         .unwrap();
         // Resource validation is also lazy: these maps are irrelevant when no guarded
         // annotation invocation will be appended.
-        let page = pdfcraft_model::pages(&doc)[0].obj;
+        let page = patronuspdf_model::pages(&doc)[0].obj;
         let resources =
             if case % 2 == 0 { Object::Dict(Dict::from_iter([(b"Properties".to_vec(), Object::Int(7))])) } else { cycle(&mut doc, false) };
         doc.update_dict(page, |d| d.set(b"Resources".to_vec(), resources)).unwrap();

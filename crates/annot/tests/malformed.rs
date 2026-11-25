@@ -2,7 +2,7 @@
 //!
 //! **These are never-crash tests.** They assert that a stranger's broken annotation data produces an
 //! error or a defined degradation instead of a panic. Where the current behaviour is questionable,
-//! that is said out loud and pinned as it is: an expected value below is *what PdfCraft does today*,
+//! that is said out loud and pinned as it is: an expected value below is *what Patronus PDF does today*,
 //! not a claim that it is right. Each such place carries a `NOTE` comment naming the alternative a
 //! reader could reasonably choose, so a later fix shows up as a changed expectation here rather than a
 //! silent edit. (app-agents.md rule 13 and `CLAUDE.md` Fidelity: no crash, and never repair silently.)
@@ -16,11 +16,11 @@ mod support {
     pub mod fixture;
 }
 
-use pdfcraft_annot::{
+use patronuspdf_annot::{
     AnnotError, AttachIcon, Meta, NewAnnotation, NoteIcon, Shape, Style, add_annotation, delete_annotation, has_visible_fill_sign, links, page_refs,
     picture_rotation, props, set_annots, signature_image, summaries,
 };
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object};
 use proptest::prelude::*;
 use std::sync::Arc;
 
@@ -145,7 +145,7 @@ fn a_quad_list_that_is_not_a_multiple_of_eight_keeps_whole_quads_only() {
 /// on that page disappears — with an empty repair log. Precision matters here: `/Pages` still
 /// shows `Count 1, Kids [3 0 R]`, so it is not that the annotation list alone became
 /// unreachable; the page object itself fails to parse, and nothing downstream sees it.
-/// NOTE: this is `pdfcraft-cos` parser behaviour, reached through the annotation readers. The
+/// NOTE: this is `patronuspdf-cos` parser behaviour, reached through the annotation readers. The
 /// bytes below are HAND-BUILT by this test's `open` helper — no writer path emits a bare
 /// keyword there; they model damage an outside editor or a truncated edit leaves behind.
 ///
@@ -286,7 +286,7 @@ fn reference_loops_terminate_and_a_delete_takes_the_cycle_with_it() {
     assert_eq!(summaries(&dangling_popup).len(), 1);
     let mut reply = dangling_popup.clone();
     assert!(
-        pdfcraft_annot::add_reply(&mut reply, 0, 0, "to you", "Ben", &Meta { date: None, id: "r".into() }).is_ok(),
+        patronuspdf_annot::add_reply(&mut reply, 0, 0, "to you", "Ben", &Meta { date: None, id: "r".into() }).is_ok(),
         "a missing pop-up does not block replying"
     );
 }
@@ -337,7 +337,7 @@ fn wrong_typed_flag_opacity_and_colour_entries_fall_back_without_panicking() {
 
 /// `move_annotation` shifts the numbers of every geometry key, but only the first four of an array
 /// it treats as a rectangle (`every || i < 4`, `crates/annot/src/modify.rs:302`). A `/Rect` with
-/// more than four numbers is not something PdfCraft writes, so the guard only shows up on damaged
+/// more than four numbers is not something Patronus PDF writes, so the guard only shows up on damaged
 /// data — which is precisely why it is pinned here: without this test the rule can be deleted
 /// silently. What must hold is that the four rectangle numbers move together and whatever strays
 /// the file carries are left exactly as they were, rather than being dragged along by half a point.
@@ -360,7 +360,7 @@ fn moving_a_damaged_rectangle_shifts_its_four_numbers_and_leaves_the_strays_alon
     })
     .expect("the entry is a dictionary");
 
-    pdfcraft_annot::move_annotation(&mut doc, 0, 0, 5.0, 7.0, &Meta { date: None, id: "m".into() }).expect("the comment is not locked");
+    patronuspdf_annot::move_annotation(&mut doc, 0, 0, 5.0, 7.0, &Meta { date: None, id: "m".into() }).expect("the comment is not locked");
     let d = dict_of(&doc, &annot_entries(&doc, 0)[0]).expect("a dictionary");
     let stored = nums(&doc, &d, b"Rect").expect("six numbers");
     assert_eq!(stored, vec![15.0, 27.0, 65.0, 37.0, 9.0, -9.5], "four shift, two strays do not");
@@ -408,13 +408,21 @@ fn non_finite_builder_input_is_refused_and_leaves_the_document_untouched() {
     let shapes = [
         ("nan rect", Shape::Rectangle { rect: [f64::NAN, 10.0, 40.0, 30.0] }),
         ("infinite rect", Shape::Rectangle { rect: [f64::NEG_INFINITY, 10.0, 40.0, 30.0] }),
-        ("nan quad", Shape::TextMarkup { kind: pdfcraft_annot::Markup::Highlight, quads: vec![[10.0, 10.0, f64::NAN, 20.0, 10.0, 5.0, 30.0, 5.0]] }),
+        (
+            "nan quad",
+            Shape::TextMarkup { kind: patronuspdf_annot::Markup::Highlight, quads: vec![[10.0, 10.0, f64::NAN, 20.0, 10.0, 5.0, 30.0, 5.0]] },
+        ),
         ("far away note", Shape::Note { at: [1e308, 2.0], icon: NoteIcon::Note }),
         ("nan ink", Shape::Ink { strokes: vec![vec![[f64::NAN, 1.0], [2.0, 3.0]]] }),
         ("empty ink", Shape::Ink { strokes: vec![vec![]] }),
         (
             "degenerate line",
-            Shape::Line { from: [10.0, 10.0], to: [10.0, 10.5], start: pdfcraft_annot::LineEnding::None, end: pdfcraft_annot::LineEnding::None },
+            Shape::Line {
+                from: [10.0, 10.0],
+                to: [10.0, 10.5],
+                start: patronuspdf_annot::LineEnding::None,
+                end: patronuspdf_annot::LineEnding::None,
+            },
         ),
         ("nan polygon", Shape::Polygon { vertices: vec![[0.0, 0.0], [f64::INFINITY, 10.0], [5.0, 5.0]], cloud: false }),
         ("two point polygon", Shape::Polygon { vertices: vec![[0.0, 0.0], [10.0, 10.0]], cloud: false }),
@@ -425,10 +433,10 @@ fn non_finite_builder_input_is_refused_and_leaves_the_document_untouched() {
                 knee: [f64::NAN, 0.0],
                 point: [0.0, 0.0],
                 font_size: 12.0,
-                ending: pdfcraft_annot::LineEnding::None,
+                ending: patronuspdf_annot::LineEnding::None,
             },
         ),
-        ("no quads", Shape::TextMarkup { kind: pdfcraft_annot::Markup::StrikeOut, quads: vec![] }),
+        ("no quads", Shape::TextMarkup { kind: patronuspdf_annot::Markup::StrikeOut, quads: vec![] }),
     ];
     for (label, shape) in shapes {
         let mut doc = blank(1);
@@ -478,12 +486,12 @@ fn non_finite_builder_input_is_refused_and_leaves_the_document_untouched() {
     .expect("adds");
     let before = summaries(&doc)[0].rect;
     assert_eq!(
-        pdfcraft_annot::move_annotation(&mut doc, 0, 0, f64::NAN, 1.0, &Meta { date: None, id: "m".into() }).err(),
+        patronuspdf_annot::move_annotation(&mut doc, 0, 0, f64::NAN, 1.0, &Meta { date: None, id: "m".into() }).err(),
         Some(AnnotError::Invalid("invalid offset".into()))
     );
     assert_eq!(summaries(&doc)[0].rect, before, "a refused move does not shift the comment");
     assert_eq!(
-        pdfcraft_annot::set_rect(&mut doc, 0, 0, [f64::NAN, 0.0, 1e308, 1e308], &Meta { date: None, id: "m".into() }).err().as_ref(),
+        patronuspdf_annot::set_rect(&mut doc, 0, 0, [f64::NAN, 0.0, 1e308, 1e308], &Meta { date: None, id: "m".into() }).err().as_ref(),
         Some(&AnnotError::Invalid("invalid rectangle (too small)".into()))
     );
     assert_eq!(summaries(&doc)[0].rect, before, "a refused resize does not shift the comment");
@@ -681,7 +689,7 @@ fn a_nan_fill_is_accepted_on_create_and_refused_on_edit() {
     assert_eq!(ic.first(), Some(&vec![0.0, 0.0, 0.0]), "the NaN components were written as zeros");
     assert_eq!(props(&reopened, 0, 0).and_then(|p| p.fill), Some([0.0, 0.0, 0.0]));
 
-    let e = pdfcraft_annot::set_fill(&mut reopened.clone(), 0, 0, Some(nan), &Meta { date: None, id: "nf2".into() }).err();
+    let e = patronuspdf_annot::set_fill(&mut reopened.clone(), 0, 0, Some(nan), &Meta { date: None, id: "nf2".into() }).err();
     assert_eq!(e.as_ref(), Some(&AnnotError::Invalid("invalid fill colour".into())), "the same value is refused two lines later in the same crate");
 }
 
@@ -694,7 +702,7 @@ fn tag(path: Save) -> String {
 }
 
 /// The kinds of damage a stranger's annotation data can carry. Twelve wreck the dictionary of a
-/// comment PdfCraft wrote, so the file stays structurally valid around one wrong entry; the
+/// comment Patronus PDF wrote, so the file stays structurally valid around one wrong entry; the
 /// duplicate-entry kind instead repeats that comment's entry in the page's `/Annots`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum Damage {
@@ -782,7 +790,7 @@ proptest! {
         // Build a page holding one comment that will be damaged plus `extra_annot` clean ones.
         let mut doc = blank(1);
         for i in 0..=extra_annot {
-            add_annotation(&mut doc, &NewAnnotation { page: 0, shape: Shape::TextMarkup { kind: pdfcraft_annot::Markup::Highlight, quads: vec![[20.0 + 10.0 * i as f64, 500.0, 80.0 + 10.0 * i as f64, 500.0, 20.0 + 10.0 * i as f64, 486.0, 80.0 + 10.0 * i as f64, 486.0]] }, style: Style::default(), contents: format!("ok{i}"), author: "Ada".into() }, &Meta { date: None, id: format!("ok{i}") }).expect("adds");
+            add_annotation(&mut doc, &NewAnnotation { page: 0, shape: Shape::TextMarkup { kind: patronuspdf_annot::Markup::Highlight, quads: vec![[20.0 + 10.0 * i as f64, 500.0, 80.0 + 10.0 * i as f64, 500.0, 20.0 + 10.0 * i as f64, 486.0, 80.0 + 10.0 * i as f64, 486.0]] }, style: Style::default(), contents: format!("ok{i}"), author: "Ada".into() }, &Meta { date: None, id: format!("ok{i}") }).expect("adds");
         }
         let clean_rect = summaries(&doc).iter().map(|s| s.rect).collect::<Vec<_>>();
         damage(&mut doc, 0, kind);
@@ -866,7 +874,7 @@ fn the_same_huge_fill_is_accepted_on_create_and_refused_on_edit() {
         let ic = bytes::numbers_of(&file, "IC");
         assert_eq!(ic.first().map(Vec::as_slice), Some(want.as_slice()), "{probe:?}: create stores the clamped colour");
         assert_eq!(props(&reopened, 0, 0).and_then(|p| p.fill), Some([want[0], want[1], want[2]]), "{probe:?}: read-back matches what was written",);
-        let e = pdfcraft_annot::set_fill(&mut reopened.clone(), 0, 0, Some(probe), &Meta { date: None, id: "huge-fill-2".into() }).err();
+        let e = patronuspdf_annot::set_fill(&mut reopened.clone(), 0, 0, Some(probe), &Meta { date: None, id: "huge-fill-2".into() }).err();
         assert_eq!(e.as_ref(), Some(&AnnotError::Invalid("invalid fill colour".into())), "{probe:?}: the same value is refused on the edit path",);
     }
 }

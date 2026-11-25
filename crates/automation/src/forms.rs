@@ -1,8 +1,8 @@
 //! Form tools: list fields, fill them (several at once, one undo step), clear the form, and
 //! prepare a form (add fields one at a time or as a table, change and delete them).
 
-use pdfcraft_engine::form_scripts::{CalcOp, Calculate, Format, NOTATION_NOT_STORABLE, Validate, notation_storable};
-use pdfcraft_engine::{CalculationIssue, Edit, FieldProps, FieldValue, FormField, FormFieldKind, NewField, field_flags};
+use patronuspdf_engine::form_scripts::{CalcOp, Calculate, Format, NOTATION_NOT_STORABLE, Validate, notation_storable};
+use patronuspdf_engine::{CalculationIssue, Edit, FieldProps, FieldValue, FormField, FormFieldKind, NewField, field_flags};
 use serde_json::{Value, json};
 
 use crate::{Args, Automation, Result, ToolError, failed};
@@ -43,8 +43,8 @@ fn format_arg(v: &Value) -> Result<Format> {
 
 /// `{"border": "#FF0000" | "none", "fill": …, "width": 1-3, "style": "solid"|…, "text_color": …,
 /// "font": "helvetica"|"times"|"courier"}`, changing only what is given.
-fn look_arg(v: &Value) -> Result<pdfcraft_engine::FieldLookPatch> {
-    use pdfcraft_engine::{BorderStyle, FieldFont, FieldLookPatch};
+fn look_arg(v: &Value) -> Result<patronuspdf_engine::FieldLookPatch> {
+    use patronuspdf_engine::{BorderStyle, FieldFont, FieldLookPatch};
     let o = v.as_object().ok_or_else(|| bad("appearance must be an object"))?;
     for key in o.keys() {
         if !["border", "fill", "text_color", "width", "style", "font"].contains(&key.as_str()) {
@@ -278,10 +278,10 @@ impl Automation {
         let object = a
             .0
             .get("field_id")
-            .map(|value| -> Result<pdfcraft_cos::ObjRef> {
+            .map(|value| -> Result<patronuspdf_cos::ObjRef> {
                 let key =
                     value.as_u64().filter(|key| *key < 1u64 << 48).ok_or_else(|| bad("field_id must be an integer between 0 and 281474976710655"))?;
-                Ok(pdfcraft_cos::ObjRef::new((key >> 16) as u32, key as u16))
+                Ok(patronuspdf_cos::ObjRef::new((key >> 16) as u32, key as u16))
             })
             .transpose()?;
         let path = self.resolve(a.str("path")?, false)?;
@@ -307,7 +307,7 @@ impl Automation {
                 });
                 let mut v = json!({
                     "name": f.name,
-                    "field_id": pdfcraft_engine::js::field_object_id(f.obj),
+                    "field_id": patronuspdf_engine::js::field_object_id(f.obj),
                     "type": kind_name(f.kind),
                     "value": match f.kind {
                         FormFieldKind::CheckBox => json!(!f.value.is_empty()),
@@ -331,7 +331,7 @@ impl Automation {
                 }
                 if f.actions.format != Format::None {
                     o.insert("format".into(), format_json(&f.actions.format));
-                    o.insert("display".into(), json!(f.value.first().map(|v| pdfcraft_engine::form_scripts::format_value(&f.actions.format, v))));
+                    o.insert("display".into(), json!(f.value.first().map(|v| patronuspdf_engine::form_scripts::format_value(&f.actions.format, v))));
                 }
                 if let Validate::Range { min, max } = &f.actions.validate {
                     o.insert("validate".into(), json!({ "min": min, "max": max }));
@@ -504,7 +504,7 @@ impl Automation {
     /// A table of text fields: `rect` (points from the top-left of the displayed page) divided
     /// into rows and columns, one field per cell, as one undo step.
     pub(crate) fn form_add_field_table(&mut self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::field_table::{self, FieldTable, MAX_COLUMNS, TableColumn, TableError};
+        use patronuspdf_engine::field_table::{self, FieldTable, MAX_COLUMNS, TableColumn, TableError};
         let page = self.page(a)?;
         let rect = a
             .get("rect")
@@ -623,7 +623,7 @@ impl Automation {
             // argument (trimmed, kept under its parent's prefix).
             let own =
                 names.first().and_then(|n| before.iter().find(|f| &f.name == n)).and_then(|f| after.iter().find(|g| g.obj == f.obj)).map(|g| &g.name);
-            let mut updated = pdfcraft_engine::form_calculations_changed(&before, after);
+            let mut updated = patronuspdf_engine::form_calculations_changed(&before, after);
             updated.retain(|f| Some(f) != own);
             out["formulas_updated"] = json!(updated);
         }
@@ -680,7 +680,7 @@ impl Automation {
             options: a.get("options").map(|_| a.strs("options")).transpose()?.map(|v| v.into_iter().map(str::to_owned).collect()),
             font_size: a.opt_num("font_size")?,
             look: None,
-            appearance: a.get("appearance").map(look_arg).transpose()?.filter(|p| *p != pdfcraft_engine::FieldLookPatch::default()),
+            appearance: a.get("appearance").map(look_arg).transpose()?.filter(|p| *p != patronuspdf_engine::FieldLookPatch::default()),
             format: a.get("format").map(format_arg).transpose()?,
             validate: a.get("validate").map(validate_arg).transpose()?,
             calculate: a.get("calculate").map(calculate_arg).transpose()?,
@@ -696,7 +696,7 @@ impl Automation {
             flags: match a.get("flags") {
                 None => Vec::new(),
                 Some(v) => {
-                    use pdfcraft_engine::field_flags as ff;
+                    use patronuspdf_engine::field_flags as ff;
                     let obj = v.as_object().ok_or_else(|| bad("flags must be an object of booleans"))?;
                     let mut out = Vec::new();
                     for (k, on) in obj {
@@ -731,7 +731,7 @@ impl Automation {
             check_style: match a.opt_str("check_style")? {
                 None => None,
                 Some(s) => Some(
-                    pdfcraft_engine::CheckStyle::ALL
+                    patronuspdf_engine::CheckStyle::ALL
                         .into_iter()
                         .find(|c| c.label().eq_ignore_ascii_case(s))
                         .ok_or_else(|| bad(format!("unknown check style {s:?} (check, circle, cross, diamond, square, star)")))?,
@@ -760,10 +760,10 @@ impl Automation {
         }
         let order = match a.opt_str("order")? {
             None => None,
-            Some("row" | "rows") => Some(pdfcraft_engine::TabOrder::Row),
-            Some("column" | "columns") => Some(pdfcraft_engine::TabOrder::Column),
-            Some("structure") => Some(pdfcraft_engine::TabOrder::Structure),
-            Some("annotations" | "unspecified") => Some(pdfcraft_engine::TabOrder::Annotations),
+            Some("row" | "rows") => Some(patronuspdf_engine::TabOrder::Row),
+            Some("column" | "columns") => Some(patronuspdf_engine::TabOrder::Column),
+            Some("structure") => Some(patronuspdf_engine::TabOrder::Structure),
+            Some("annotations" | "unspecified") => Some(patronuspdf_engine::TabOrder::Annotations),
             Some(o) => return Err(bad(format!("unknown order {o:?} (row, column, structure, annotations)"))),
         };
         let mut out = match order {
@@ -852,10 +852,10 @@ impl Automation {
             .tab_orders()
             .into_iter()
             .map(|o| match o {
-                pdfcraft_engine::TabOrder::Row => "row",
-                pdfcraft_engine::TabOrder::Column => "column",
-                pdfcraft_engine::TabOrder::Structure => "structure",
-                pdfcraft_engine::TabOrder::Annotations => "annotations",
+                patronuspdf_engine::TabOrder::Row => "row",
+                patronuspdf_engine::TabOrder::Column => "column",
+                patronuspdf_engine::TabOrder::Structure => "structure",
+                patronuspdf_engine::TabOrder::Annotations => "annotations",
             })
             .collect();
         Ok(json!(names))
@@ -881,14 +881,14 @@ impl Automation {
         let path = self.resolve(a.str("path")?, true)?;
         let ext = path.extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default();
         let format =
-            pdfcraft_engine::DataFormat::from_extension(&ext).ok_or_else(|| bad("the path must end in .xfdf, .fdf, .xml, .xdp, .csv or .txt"))?;
+            patronuspdf_engine::DataFormat::from_extension(&ext).ok_or_else(|| bad("the path must end in .xfdf, .fdf, .xml, .xdp, .csv or .txt"))?;
         let (comments, fields) = match a.opt_str("what")?.unwrap_or("all") {
             "all" => (true, true),
             "comments" => (true, false),
             "fields" => (false, true),
             w => return Err(bad(format!("unknown what {w:?} (all, comments, fields)"))),
         };
-        if comments && !matches!(format, pdfcraft_engine::DataFormat::Xfdf | pdfcraft_engine::DataFormat::Fdf) {
+        if comments && !matches!(format, patronuspdf_engine::DataFormat::Xfdf | patronuspdf_engine::DataFormat::Fdf) {
             return Err(bad("comments travel as .xfdf or .fdf; .xml, .csv and .txt hold form data (use what: fields)"));
         }
         let bytes = self.session.export_data(id, format, comments, fields).map_err(failed)?;

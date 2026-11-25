@@ -3,12 +3,12 @@
 
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use pdfcraft_cos::{Document, Object};
-use pdfcraft_engine::dates::use_form_date_language;
-use pdfcraft_engine::js::JsRunner;
-use pdfcraft_forms::FieldValue;
-use pdfcraft_forms::af::{DateTime, Format, format_date, format_value, keystroke, parse_date};
-use pdfcraft_js::{DocInfo, Event, Limits, run};
+use patronuspdf_cos::{Document, Object};
+use patronuspdf_engine::dates::use_form_date_language;
+use patronuspdf_engine::js::JsRunner;
+use patronuspdf_forms::FieldValue;
+use patronuspdf_forms::af::{DateTime, Format, format_date, format_value, keystroke, parse_date};
+use patronuspdf_js::{DocInfo, Event, Limits, run};
 
 /// Held by each test while it changes the process-wide date names, which start as English (a
 /// failed test may have left others).
@@ -113,7 +113,7 @@ fn an_english_weekday_before_a_shared_month_name_reads_as_english() {
 fn every_date_language_reads_back_what_it_writes() {
     let doc = DocInfo { file_name: "form.pdf".into(), num_pages: 1, page: 0, ..Default::default() };
     let mut bad = Vec::new();
-    for l in pdfcraft_engine::dates::DATE_LANGUAGES.iter() {
+    for l in patronuspdf_engine::dates::DATE_LANGUAGES.iter() {
         use_form_date_language(l.code);
         for m in 1..=12u32 {
             let dt = DateTime { y: 2026, m, d: 18, hh: 0, mm: 0, ss: 0 };
@@ -215,7 +215,7 @@ startxref
 
 /// The content of field `name`'s normal appearance.
 fn appearance(doc: &Document, name: &str) -> Vec<u8> {
-    let all = pdfcraft_forms::fields(doc);
+    let all = patronuspdf_forms::fields(doc);
     let f = all.iter().find(|f| f.name == name).expect("field");
     let widget = doc.get(f.widgets[0].obj);
     let normal = widget.as_dict().and_then(|d| d.get(b"AP")).and_then(|a| doc.resolve(a).as_dict().and_then(|a| a.reference(b"N"))).expect("/AP /N");
@@ -242,7 +242,7 @@ fn fill(doc: &mut Document, name: &str) {
 /// Fills `form`'s field `name` with `value` through the JavaScript runner.
 fn fill_with(doc: &mut Document, name: &str, value: &str) {
     let mut js = JsRunner::new(doc, "form.pdf", false);
-    pdfcraft_forms::set_value_with(doc, name, &FieldValue::Text(value.into()), &mut js).expect("fills");
+    patronuspdf_forms::set_value_with(doc, name, &FieldValue::Text(value.into()), &mut js).expect("fills");
 }
 
 /// Month names in the date language that no font of the field can draw are drawn in English,
@@ -267,7 +267,7 @@ fn date_names_no_field_font_can_draw_are_drawn_in_english() {
             assert!(!contains(&helv, b"Oct"), "{language} keeps its name: {}", String::from_utf8_lossy(&helv));
         }
         assert!(!helv.contains(&b'?'), "{language}: {}", String::from_utf8_lossy(&helv));
-        assert!(pdfcraft_forms::undrawn_fields(&doc).is_empty(), "{language}");
+        assert!(patronuspdf_forms::undrawn_fields(&doc).is_empty(), "{language}");
         let song = appearance(&doc, "song");
         assert!(contains(&song, &ucs2(&format!("18-{local}-26"))), "{language} keeps its name: {song:?}");
     }
@@ -294,13 +294,13 @@ fn format_scripts_print_dates_in_english_where_the_field_cannot_draw_them() {
     let helv = appearance(&doc, "helv");
     assert!(contains(&helv, b"(18-Oct-26 !) Tj"), "{}", String::from_utf8_lossy(&helv));
     assert!(!helv.contains(&b'?'), "{}", String::from_utf8_lossy(&helv));
-    assert!(pdfcraft_forms::undrawn_fields(&doc).is_empty());
+    assert!(patronuspdf_forms::undrawn_fields(&doc).is_empty());
     assert!(contains(&appearance(&doc, "song"), &ucs2("18-10月-26 !")));
     // A script whose text has no English either keeps it, reported as undrawn.
     let greeting = [("hi", "Helv", "event.value = \"你好 \" + util.printd(\"mmm\", new Date(2026, 9, 18));")];
     let mut doc = form(&greeting);
     fill(&mut doc, "hi");
-    assert_eq!(pdfcraft_forms::undrawn_fields(&doc), [("hi".to_string(), '你')]);
+    assert_eq!(patronuspdf_forms::undrawn_fields(&doc), [("hi".to_string(), '你')]);
     // The English run is the appearance's alone: scripts go on printing the date language.
     assert_eq!(printd("dd-mmm-yy", "18-10月-26"), "18-10月-26|18-10月-26");
     // Russian names a Helvetica field draws from the bundled face need no English run (#6822).
@@ -309,7 +309,7 @@ fn format_scripts_print_dates_in_english_where_the_field_cannot_draw_them() {
     fill(&mut doc, "helv");
     let helv = appearance(&doc, "helv");
     assert!(contains(&helv, b"(18-) Tj") && contains(&helv, b"/PCLa") && !contains(&helv, b"Oct"), "{}", String::from_utf8_lossy(&helv));
-    assert!(pdfcraft_forms::undrawn_fields(&doc).is_empty());
+    assert!(patronuspdf_forms::undrawn_fields(&doc).is_empty());
     use_form_date_language("en");
 }
 
@@ -327,9 +327,9 @@ fn an_english_run_that_prints_the_stored_value_is_drawn() {
     let helv = appearance(&doc, "helv");
     assert!(contains(&helv, b"(18-Oct-26) Tj"), "{}", String::from_utf8_lossy(&helv));
     assert!(!helv.contains(&b'?'), "{}", String::from_utf8_lossy(&helv));
-    assert!(pdfcraft_forms::undrawn_fields(&doc).is_empty());
+    assert!(patronuspdf_forms::undrawn_fields(&doc).is_empty());
     fill_with(&mut doc, "fails", "18-10月-26");
-    assert_eq!(pdfcraft_forms::undrawn_fields(&doc), [("fails".to_string(), '月')]);
+    assert_eq!(patronuspdf_forms::undrawn_fields(&doc), [("fails".to_string(), '月')]);
     use_form_date_language("en");
 }
 

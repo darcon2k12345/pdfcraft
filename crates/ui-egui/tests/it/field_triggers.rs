@@ -4,7 +4,7 @@
 //! button with only a mouse-down action runs it when pressed (#4751).
 
 use egui_kittest::Harness;
-use pdfcraft_ui_egui::PdfCraftApp;
+use patronuspdf_ui_egui::PatronusPdfApp;
 
 /// `log` records what ran; `hot` (a text field) logs the pointer entering and leaving it;
 /// `strike` (a check box) shows or hides `note` from its Mouse Up script by its own new value.
@@ -36,9 +36,9 @@ fn form() -> Vec<u8> {
     out
 }
 
-fn harness() -> Harness<'static, PdfCraftApp> {
+fn harness() -> Harness<'static, PatronusPdfApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en").unwrap();
         app.set_option("left", "closed").unwrap();
         app.open_bytes("triggers.pdf", None, form()).unwrap();
@@ -48,19 +48,19 @@ fn harness() -> Harness<'static, PdfCraftApp> {
     h
 }
 
-fn field<'a>(app: &'a PdfCraftApp, name: &str) -> &'a pdfcraft_engine::FormField {
+fn field<'a>(app: &'a PatronusPdfApp, name: &str) -> &'a patronuspdf_engine::FormField {
     let id = app.active_ids().unwrap().1;
     app.session.get(id).unwrap().form.iter().find(|f| f.name == name).unwrap()
 }
 
-fn centre(h: &Harness<'static, PdfCraftApp>, name: &str) -> egui::Pos2 {
+fn centre(h: &Harness<'static, PatronusPdfApp>, name: &str) -> egui::Pos2 {
     let app = h.state();
     let (index, id) = app.active_ids().unwrap();
     let doc = app.session.get(id).unwrap();
-    pdfcraft_ui_egui::forms_ui::field_screen_rect(&app.views[index], &doc.info, field(app, name), 0).unwrap().center()
+    patronuspdf_ui_egui::forms_ui::field_screen_rect(&app.views[index], &doc.info, field(app, name), 0).unwrap().center()
 }
 
-fn log(h: &Harness<'static, PdfCraftApp>) -> String {
+fn log(h: &Harness<'static, PatronusPdfApp>) -> String {
     field(h.state(), "log").value.join(",")
 }
 
@@ -87,7 +87,7 @@ fn the_pointer_entering_and_leaving_a_widget_runs_its_scripts() {
 fn a_check_box_mouse_up_script_sees_the_value_its_click_stored() {
     let mut h = harness();
     let strike = centre(&h, "strike");
-    let click = |h: &mut Harness<'static, PdfCraftApp>| {
+    let click = |h: &mut Harness<'static, PatronusPdfApp>| {
         h.hover_at(strike);
         h.run_steps(1);
         h.drag_at(strike);

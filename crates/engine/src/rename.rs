@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn renaming_moves_the_file_and_refuses_what_it_must() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-rename-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-rename-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let file = dir.join("first.pdf");
@@ -432,7 +432,7 @@ mod tests {
 
     #[test]
     fn a_file_that_appears_under_the_new_name_is_never_replaced() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-rename-race-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-rename-race-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let (old, new) = (dir.join("old.pdf"), dir.join("new.pdf"));
@@ -477,7 +477,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn a_folder_swapped_for_a_link_out_of_the_root_is_refused_on_linux() {
-        let base = std::env::temp_dir().join(format!("pdfcraft-rename-root-{}", std::process::id()));
+        let base = std::env::temp_dir().join(format!("patronuspdf-rename-root-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
         let (root, outside) = (base.join("root"), base.join("outside"));
         std::fs::create_dir_all(root.join("sub")).unwrap();

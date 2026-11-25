@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build PdfCraft as an OCI container layout and push it to GitHub Container Registry (GHCR)
+# Build Patronus PDF as an OCI container layout and push it to GitHub Container Registry (GHCR)
 # for consumption by Flatpak OCI clients (flatpak-oci-specs).
 #
 # Usage:
@@ -32,7 +32,7 @@ case "$ARCH" in
   *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
 esac
 
-BASENAME="pdfcraft-$VERSION-linux-$ARCH"
+BASENAME="patronuspdf-$VERSION-linux-$ARCH"
 OUT_OCI="$DIST/$BASENAME-oci"
 
 echo "==> Building Flatpak OCI layout for $BASENAME"

@@ -4,7 +4,7 @@
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object, PdfString};
 
 /// Named destinations whose target page exists: the `/Names /Dests` tree and the old `/Dests`
 /// dictionary.
@@ -106,7 +106,7 @@ fn valid(doc: &Document, o: &Object, pages: &HashSet<ObjRef>, count: usize, name
 
 /// Remove links whose destination is missing, and clear the destination of such bookmarks
 /// (they stay, so their children do too). Returns (links, bookmarks).
-pub(crate) fn remove_invalid(doc: &mut Document, pages: &[ObjRef]) -> Result<(usize, usize), pdfcraft_cos::CosError> {
+pub(crate) fn remove_invalid(doc: &mut Document, pages: &[ObjRef]) -> Result<(usize, usize), patronuspdf_cos::CosError> {
     let set: HashSet<ObjRef> = pages.iter().copied().collect();
     let names = named_dests(doc, &set, pages.len());
     let mut links = 0;
@@ -217,7 +217,7 @@ fn referenced_names(doc: &Document) -> HashSet<Vec<u8>> {
 }
 
 /// Remove named destinations nothing refers to. Returns how many went.
-pub(crate) fn remove_unreferenced_dests(doc: &mut Document) -> Result<usize, pdfcraft_cos::CosError> {
+pub(crate) fn remove_unreferenced_dests(doc: &mut Document) -> Result<usize, patronuspdf_cos::CosError> {
     let Some(root) = doc.root() else { return Ok(0) };
     let cat = doc.get(root).as_dict().cloned().unwrap_or_default();
     let used = referenced_names(doc);

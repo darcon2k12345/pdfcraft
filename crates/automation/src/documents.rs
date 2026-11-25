@@ -107,7 +107,7 @@ impl Automation {
         let requested = a.str("path")?;
         // `manual.pdf#nameddest=Intro`, as a help system starts a PDF reader (#3425): the file under
         // --root, and where it opens. A path that names a file is never split.
-        let parameters = pdfcraft_engine::open_parameters::split(requested, |p| self.resolve(p, false).is_ok_and(|p| p.is_file()));
+        let parameters = patronuspdf_engine::open_parameters::split(requested, |p| self.resolve(p, false).is_ok_and(|p| p.is_file()));
         let (requested, destination) = match &parameters {
             Some((file, destination)) => (file.as_str(), Some(destination.clone())),
             None => (requested, None),
@@ -169,7 +169,7 @@ impl Automation {
             self.apply(a, Edit::FlattenFillSign)?;
         }
         // The document's Will Save actions run first: what they change is saved (#269).
-        let scripts = self.session.run_document_actions(id, pdfcraft_engine::js::DocumentScriptEvent::WillSave);
+        let scripts = self.session.run_document_actions(id, patronuspdf_engine::js::DocumentScriptEvent::WillSave);
         let bytes = if full { self.session.save_full_bytes(id) } else { self.session.save_bytes(id) }.map_err(failed)?;
         // A save that adds or removes encryption, or must not keep the old revision (Sanitize,
         // redaction), is rewritten in full even when an incremental save was asked for.
@@ -193,7 +193,7 @@ impl Automation {
         let name = a.str("name")?;
         let own_path = PathBuf::from(&own);
         self.resolve_for(&own, file_access::Access::Write, true)?;
-        if let Some(target) = pdfcraft_engine::rename_target(&own_path, name).map_err(failed)? {
+        if let Some(target) = patronuspdf_engine::rename_target(&own_path, name).map_err(failed)? {
             let shown = target.to_string_lossy().into_owned();
             self.resolve_for(&shown, file_access::Access::Write, true)?;
         }
@@ -246,7 +246,7 @@ impl Automation {
     }
 
     pub(crate) fn doc_initial_view(&mut self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::{InitialLayout as L, Magnification as M, Navigation as N};
+        use patronuspdf_engine::{InitialLayout as L, Magnification as M, Navigation as N};
         let bad = |m: String| ToolError::InvalidArgs(m);
         let mut v = self.doc(a)?.initial_view();
         let before = v.clone();
@@ -334,7 +334,7 @@ impl Automation {
     }
 
     pub(crate) fn doc_optimize(&mut self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::optimize::{Compatibility, Compression, ImageSettings, MonoCompression, Preset};
+        use patronuspdf_engine::optimize::{Compatibility, Compression, ImageSettings, MonoCompression, Preset};
         const MONO_KEYS: [&str; 4] = ["downsample", "ppi", "above_ppi", "compression"];
         let id = self.doc(a)?.id;
         let before = self.doc(a)?.bytes.len();
@@ -424,7 +424,7 @@ impl Automation {
                 *flag = b;
             }
         }
-        let discard: Vec<pdfcraft_engine::Hidden> = match a.get("discard") {
+        let discard: Vec<patronuspdf_engine::Hidden> = match a.get("discard") {
             None => Vec::new(),
             Some(v) => v
                 .as_array()
@@ -432,7 +432,7 @@ impl Automation {
                 .iter()
                 .map(|x| {
                     x.as_str()
-                        .and_then(pdfcraft_engine::Hidden::from_id)
+                        .and_then(patronuspdf_engine::Hidden::from_id)
                         .ok_or_else(|| ToolError::InvalidArgs(format!("unknown discard category {x}")))
                 })
                 .collect::<Result<_>>()?,
@@ -483,7 +483,7 @@ impl Automation {
         let catalog_version = (settings.compatibility == Compatibility::Retain)
             .then(|| {
                 let pw = self.doc(a).ok().and_then(|d| d.password.as_deref());
-                let doc = pdfcraft_cos::Document::open_with_password(bytes.clone(), pw).ok()?;
+                let doc = patronuspdf_cos::Document::open_with_password(bytes.clone(), pw).ok()?;
                 let root = doc.root()?;
                 // Through a reference too, as the optimizer reads it.
                 let version = doc.get(root).as_dict()?.get(b"Version")?.clone();
@@ -545,12 +545,12 @@ impl Automation {
     }
 
     /// A watermark or background picture: `file` (an image or a PDF) and `file_page` (1-based).
-    fn mark_file(&self, a: &Args) -> Result<Option<pdfcraft_engine::MarkFile>> {
+    fn mark_file(&self, a: &Args) -> Result<Option<patronuspdf_engine::MarkFile>> {
         let Some(p) = a.opt_str("file")? else { return Ok(None) };
         let path = self.resolve(p, false)?;
         let bytes = read_input(&path)?;
         let page = a.opt_int("file_page")?.unwrap_or(1).max(1) as usize - 1;
-        Ok(Some(pdfcraft_engine::MarkFile {
+        Ok(Some(patronuspdf_engine::MarkFile {
             name: path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
             bytes: Arc::new(bytes),
             page,
@@ -586,7 +586,7 @@ impl Automation {
         Ok(out)
     }
 
-    /// Pages whose own backdrop hides a background (see `pdfcraft_edit::backdrop`).
+    /// Pages whose own backdrop hides a background (see `patronuspdf_edit::backdrop`).
     pub(crate) fn backdrops(&mut self, a: &Args) -> Result<Value> {
         let n = self.doc(a)?.info.pages.len();
         let pages = match a.opt_ints("pages")? {
@@ -599,8 +599,8 @@ impl Automation {
             .zip(doc.page_backdrops(&pages))
             .filter_map(|(p, found)| {
                 let kind = match found? {
-                    pdfcraft_engine::Backdrop::Fill => "fill",
-                    pdfcraft_engine::Backdrop::Image => "image",
+                    patronuspdf_engine::Backdrop::Fill => "fill",
+                    patronuspdf_engine::Backdrop::Image => "image",
                 };
                 Some(json!({ "page": p + 1, "backdrop": kind }))
             })
@@ -609,7 +609,7 @@ impl Automation {
     }
 
     pub(crate) fn marks(&mut self, tool: &str, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::{Background, HeaderFooter, MarkKind, Watermark};
+        use patronuspdf_engine::{Background, HeaderFooter, MarkKind, Watermark};
         let n = self.doc(a)?.info.pages.len();
         let pages = match a.opt_ints("pages")? {
             Some(_) => self.pages(a, "pages")?,
@@ -628,9 +628,9 @@ impl Automation {
                     hf.font_size = s;
                 }
                 hf.font = match a.opt_str("font")? {
-                    None | Some("Helvetica") => pdfcraft_engine::FontFamily::Helvetica,
-                    Some("Times") => pdfcraft_engine::FontFamily::Times,
-                    Some("Courier") => pdfcraft_engine::FontFamily::Courier,
+                    None | Some("Helvetica") => patronuspdf_engine::FontFamily::Helvetica,
+                    Some("Times") => patronuspdf_engine::FontFamily::Times,
+                    Some("Courier") => patronuspdf_engine::FontFamily::Courier,
                     Some(other) => {
                         return Err(ToolError::InvalidArgs(format!("font must be \"Helvetica\", \"Times\" or \"Courier\", not {other:?}")));
                     }
@@ -682,7 +682,7 @@ impl Automation {
                 file: self.mark_file(a)?,
             },
             "doc_printer_marks" => {
-                use pdfcraft_engine::PrinterMarks;
+                use patronuspdf_engine::PrinterMarks;
                 let flag = |k: &str, default: bool| -> Result<bool> { Ok(a.opt_bool(k)?.unwrap_or(default)) };
                 let (y, m, d) = self.session.today();
                 let settings = PrinterMarks {
@@ -723,7 +723,7 @@ impl Automation {
             None => (0..doc.info.pages.len()).collect(),
         };
         let stem = doc.name.trim_end_matches(".pdf").trim_end_matches(".PDF").to_string();
-        let mut ex = pdfcraft_engine::export::Exporter::new(doc);
+        let mut ex = patronuspdf_engine::export::Exporter::new(doc);
         if tool == "doc_export_text" {
             let path = self.resolve(a.str("path")?, true)?;
             let text = ex.text_of(&pages).map_err(failed)?;
@@ -734,10 +734,10 @@ impl Automation {
         std::fs::create_dir_all(&folder).map_err(|e| failed(format!("{}: {e}", folder.display())))?;
         if tool == "doc_export_all_images" {
             let min = u32::try_from(a.opt_int("min_size")?.unwrap_or(0).max(0)).unwrap_or(u32::MAX);
-            let out = pdfcraft_engine::export::extract_images(&doc.export_source(), &pages, min).map_err(failed)?;
+            let out = patronuspdf_engine::export::extract_images(&doc.export_source(), &pages, min).map_err(failed)?;
             let mut files = Vec::new();
             for (k, img) in out.images.iter().enumerate() {
-                let path = child(&folder, &pdfcraft_engine::export::image_file_name(&stem, img, k + 1, doc.info.pages.len()));
+                let path = child(&folder, &patronuspdf_engine::export::image_file_name(&stem, img, k + 1, doc.info.pages.len()));
                 write_atomic(&path, &img.data)?;
                 files.push(json!({ "path": path.to_string_lossy(), "page": img.page + 1, "width": img.width, "height": img.height }));
             }
@@ -747,9 +747,9 @@ impl Automation {
         let dpi = a.opt_num("dpi")?.unwrap_or(150.0);
         let quality = a.opt_int("quality")?.unwrap_or(85).clamp(1, 100) as u8;
         let format = match a.opt_str("format")?.unwrap_or("png") {
-            "png" => pdfcraft_engine::export::ImageFormat::Png,
-            "jpeg" | "jpg" => pdfcraft_engine::export::ImageFormat::Jpeg { quality },
-            "tiff" | "tif" => pdfcraft_engine::export::ImageFormat::Tiff,
+            "png" => patronuspdf_engine::export::ImageFormat::Png,
+            "jpeg" | "jpg" => patronuspdf_engine::export::ImageFormat::Jpeg { quality },
+            "tiff" | "tif" => patronuspdf_engine::export::ImageFormat::Tiff,
             f => return Err(ToolError::InvalidArgs(format!("unknown format {f:?} (png, jpeg, tiff)"))),
         };
         let mut files = Vec::new();
@@ -785,7 +785,7 @@ impl Automation {
     }
 
     pub(crate) fn doc_protect(&mut self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::{Algorithm, Changes, Printing, Protection};
+        use patronuspdf_engine::{Algorithm, Changes, Printing, Protection};
         let d = Protection::default();
         // Restrictions only exist behind a permissions password (ISO 32000-2 §7.6.4.4: /P is
         // enforced against the owner password; without one everything stays allowed). Refuse a

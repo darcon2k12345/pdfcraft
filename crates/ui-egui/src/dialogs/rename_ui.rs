@@ -2,12 +2,12 @@
 //! closing it. The tab, the undo history and the view stay as they are; Recent files, Reopen Closed
 //! Tab and the file watcher follow the new name. A document with unsaved changes is saved first
 //! ("Save and Rename"), so the renamed file is always the version on screen (Acrobat on macOS asks
-//! the same). The name's rules are the engine's ([`pdfcraft_engine::new_file_name`]).
+//! the same). The name's rules are the engine's ([`patronuspdf_engine::new_file_name`]).
 
 use egui::{Align, Layout};
-use pdfcraft_engine::DocId;
+use patronuspdf_engine::DocId;
 
-use crate::{Dialog, PdfCraftApp, theme, widgets};
+use crate::{Dialog, PatronusPdfApp, theme, widgets};
 
 /// The Rename dialog's state: the document and the name being typed.
 pub(crate) struct RenameDraft {
@@ -44,7 +44,7 @@ impl Drop for Pending {
     }
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Opens Rename again with the name that was typed, once a save that was to precede the
     /// rename has come to nothing. Called every frame.
     pub(crate) fn reopen_returned_rename(&mut self) {
@@ -111,7 +111,7 @@ impl PdfCraftApp {
 }
 
 /// The Rename dialog. Returns `(close, rename)`.
-pub(crate) fn body(app: &mut PdfCraftApp, ui: &mut egui::Ui) -> (bool, bool) {
+pub(crate) fn body(app: &mut PatronusPdfApp, ui: &mut egui::Ui) -> (bool, bool) {
     let (mut close, mut go) = (false, false);
     let Some(doc_id) = app.rename_draft.as_ref().map(|d| d.id) else { return (true, false) };
     let Some((path, current)) = app.session.get(doc_id).and_then(|d| d.path.clone().map(|p| (p, d.name.clone()))) else { return (true, false) };
@@ -132,7 +132,7 @@ pub(crate) fn body(app: &mut PdfCraftApp, ui: &mut egui::Ui) -> (bool, bool) {
         field.request_focus();
     }
     // Checked as it is typed: the reason shows under the field and Rename waits for a usable name.
-    let check = pdfcraft_engine::rename_target(std::path::Path::new(&path), &draft.name);
+    let check = patronuspdf_engine::rename_target(std::path::Path::new(&path), &draft.name);
     let t = theme::Tokens::get(ui.ctx());
     match &check {
         Err(e) => {
@@ -172,18 +172,18 @@ pub(crate) fn body(app: &mut PdfCraftApp, ui: &mut egui::Ui) -> (bool, bool) {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use crate::PdfCraftApp;
+    use crate::PatronusPdfApp;
     use egui_kittest::{
         Harness,
         kittest::{NodeT, Queryable},
     };
 
-    fn harness(dir: &std::path::Path) -> Harness<'static, PdfCraftApp> {
+    fn harness(dir: &std::path::Path) -> Harness<'static, PatronusPdfApp> {
         let file = dir.join("first.pdf");
         std::fs::write(&file, include_bytes!("../../tests/data/form.pdf")).unwrap();
         let path = file.to_string_lossy().into_owned();
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_| {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("first.pdf", Some(path), include_bytes!("../../tests/data/form.pdf").to_vec()).unwrap();
             app
@@ -192,21 +192,21 @@ mod tests {
         h
     }
 
-    fn open_rename(h: &mut Harness<'static, PdfCraftApp>, tab: &str) {
+    fn open_rename(h: &mut Harness<'static, PatronusPdfApp>, tab: &str) {
         h.get_by_role_and_label(egui::accesskit::Role::Tab, tab).click_secondary();
         h.run_steps(2);
         h.get_by_label("Rename…").click();
         h.run_steps(6);
     }
 
-    fn type_name(h: &mut Harness<'static, PdfCraftApp>, name: &str) {
+    fn type_name(h: &mut Harness<'static, PatronusPdfApp>, name: &str) {
         h.state_mut().rename_draft.as_mut().unwrap().name = name.to_string();
         h.run_steps(3);
     }
 
     #[test]
     fn rename_from_the_tab_menu_moves_the_file_and_keeps_the_tab() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-rename-ui-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-rename-ui-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("taken.pdf"), b"other").unwrap();
@@ -237,12 +237,12 @@ mod tests {
 
     #[test]
     fn unsaved_changes_are_saved_before_the_rename() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-rename-ui-save-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-rename-ui-save-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let mut h = harness(&dir);
         let id = h.state().views[0].id;
-        h.state_mut().apply_edit(pdfcraft_engine::Edit::SetInfo { key: "Title".into(), value: "Saved first".into() });
+        h.state_mut().apply_edit(patronuspdf_engine::Edit::SetInfo { key: "Title".into(), value: "Saved first".into() });
         h.run_steps(3);
         assert!(h.state().session.get(id).unwrap().dirty);
         open_rename(&mut h, "first.pdf (edited)"); // an edited tab says so to assistive technology
@@ -261,12 +261,12 @@ mod tests {
 
     #[test]
     fn a_save_that_fails_keeps_the_typed_name() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-rename-ui-fail-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-rename-ui-fail-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let mut h = harness(&dir);
         let id = h.state().views[0].id;
-        h.state_mut().apply_edit(pdfcraft_engine::Edit::SetInfo { key: "Title".into(), value: "Unsaved".into() });
+        h.state_mut().apply_edit(patronuspdf_engine::Edit::SetInfo { key: "Title".into(), value: "Unsaved".into() });
         h.run_steps(3);
         open_rename(&mut h, "first.pdf (edited)");
         type_name(&mut h, "second");
@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn a_document_without_a_file_offers_no_rename() {
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("unsaved.pdf", None, include_bytes!("../../tests/data/form.pdf").to_vec()).unwrap();
             app

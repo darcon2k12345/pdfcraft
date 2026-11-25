@@ -1,7 +1,7 @@
 //! Original synthetic workflow: no private timesheet, employee, PIN or signature assets.
-use pdfcraft_automation::{Automation, Content};
-use pdfcraft_cos::{Dict, Document, Object, SaveOptions, Stream, write_full};
-use pdfcraft_engine::{Edit, NewField, Session};
+use patronuspdf_automation::{Automation, Content};
+use patronuspdf_cos::{Dict, Document, Object, SaveOptions, Stream, write_full};
+use patronuspdf_engine::{Edit, NewField, Session};
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -60,7 +60,7 @@ function selectTime(){var v=app.popUpMenuEx({cName:'Unavailable',cReturn:'bad',b
 #[test]
 /// Exercise retained keypad state, geometry, synchronous calculation and transparent icons through save/reopen and Undo/Redo.
 fn timesheet_keypad_geometry_icons_calculation_and_persistence() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-timesheet-compat-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-timesheet-compat-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("synthetic.pdf"), fixture()).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();
@@ -80,7 +80,7 @@ fn timesheet_keypad_geometry_icons_calculation_and_persistence() {
     let fields = call(&mut a, "form_fields", json!({"doc":id}));
     let go = fields["fields"].as_array().unwrap().iter().find(|f| f["name"] == "go").unwrap();
     assert_eq!(go["tooltip"], "Synthetic keypad");
-    let model = a.session().get(pdfcraft_engine::DocId(id)).unwrap().form.iter().find(|f| f.name == "go").unwrap();
+    let model = a.session().get(patronuspdf_engine::DocId(id)).unwrap().form.iter().find(|f| f.name == "go").unwrap();
     assert_eq!(model.widgets[0].rect, [40.0, 350.0, 200.0, 400.0]);
     assert!(model.da.contains("16 Tf"), "{}", model.da);
     for (key, expected) in [("1", "1"), ("2", "12"), ("3", "123")] {
@@ -133,7 +133,7 @@ fn timesheet_keypad_geometry_icons_calculation_and_persistence() {
 #[test]
 /// Resume one invocation across popup/text prompts and reject disabled or invented choices.
 fn popup_and_manual_response_resume_the_same_script_and_validate_choices() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-timesheet-menu-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-timesheet-menu-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("synthetic.pdf"), fixture()).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();
@@ -154,13 +154,13 @@ fn popup_and_manual_response_resume_the_same_script_and_validate_choices() {
 /// The advertised schema must bound prompt strings before clients dispatch them.
 #[test]
 fn prompt_answer_schema_advertises_the_length_budget() {
-    let tool = pdfcraft_automation::tools().into_iter().find(|t| t.name == "js_run").unwrap();
+    let tool = patronuspdf_automation::tools().into_iter().find(|t| t.name == "js_run").unwrap();
     assert_eq!(tool.input_schema["properties"]["answers"]["items"]["maxLength"], 4096);
 }
 
 #[test]
 fn js_run_exact_field_ids_are_discoverable_and_strictly_validated() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-field-identity-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-field-identity-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("synthetic.pdf"), fixture()).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();
@@ -180,7 +180,7 @@ fn js_run_exact_field_ids_are_discoverable_and_strictly_validated() {
         assert!(a.call("js_run", &json!({"doc":id,"field":"go","field_id":invalid,"script":"getField('input').value='bad';"})).is_err());
     }
     assert!(a.call("js_run", &json!({"doc":id,"field_id":go,"script":"true;"})).is_err());
-    let schema = pdfcraft_automation::tools().into_iter().find(|t| t.name == "js_run").unwrap();
+    let schema = patronuspdf_automation::tools().into_iter().find(|t| t.name == "js_run").unwrap();
     assert_eq!(schema.input_schema["properties"]["field_id"]["maximum"], 281474976710655u64);
     std::fs::remove_dir_all(dir).unwrap();
 }
@@ -188,7 +188,7 @@ fn js_run_exact_field_ids_are_discoverable_and_strictly_validated() {
 /// The headless image picker counterpart accepts exact duplicate identities and keeps legacy lookup.
 #[test]
 fn exact_image_field_tool_targets_duplicates_and_rejects_invalid_ids() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-exact-image-tool-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-exact-image-tool-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let mut session = Session::new();
     let bytes = session.create_blank(300.0, 300.0, 1).unwrap();
@@ -198,10 +198,10 @@ fn exact_image_field_tool_targets_duplicates_and_rejects_invalid_ids() {
     }
     let mut cos = Document::open(session.save_bytes(id).unwrap()).unwrap();
     for field in session.get(id).unwrap().form.iter() {
-        cos.update_dict(field.obj, |d| d.set(b"T".to_vec(), pdfcraft_cos::PdfString::text("same"))).unwrap();
+        cos.update_dict(field.obj, |d| d.set(b"T".to_vec(), patronuspdf_cos::PdfString::text("same"))).unwrap();
     }
     std::fs::write(dir.join("synthetic.pdf"), write_full(&cos, &Default::default()).unwrap()).unwrap();
-    std::fs::write(dir.join("picture.gif"), pdfcraft_xfa::fixtures::TINY_GIF).unwrap();
+    std::fs::write(dir.join("picture.gif"), patronuspdf_xfa::fixtures::TINY_GIF).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();
     let id = call(&mut a, "doc_open", json!({"path":"synthetic.pdf"}))["doc"].as_u64().unwrap();
     let fields = call(&mut a, "form_fields", json!({"doc":id}));
@@ -237,7 +237,7 @@ fn exact_image_field_tool_targets_duplicates_and_rejects_invalid_ids() {
     assert_eq!(icons(&mut a), [false, false]);
     call(&mut a, "form_set_image", json!({"doc":id,"field":"same","path":"picture.gif"}));
     assert_eq!(icons(&mut a), [true, false]);
-    let tool = pdfcraft_automation::tools().into_iter().find(|t| t.name == "form_set_image").unwrap();
+    let tool = patronuspdf_automation::tools().into_iter().find(|t| t.name == "form_set_image").unwrap();
     assert_eq!(tool.input_schema["properties"]["field_id"]["maximum"], 281474976710655u64);
     std::fs::remove_dir_all(dir).unwrap();
 }

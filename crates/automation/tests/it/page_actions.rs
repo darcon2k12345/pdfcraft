@@ -1,7 +1,7 @@
 //! Page actions and timers through the tool table (#169): `js_page` reads a page as the viewer
 //! does, `js_advance` moves the script clock on, and `page_render` draws what they show.
 
-use pdfcraft_automation::{Automation, Content};
+use patronuspdf_automation::{Automation, Content};
 use serde_json::{Value, json};
 
 fn tool(a: &mut Automation, name: &str, args: Value) -> Value {
@@ -49,7 +49,7 @@ fn animation_pdf() -> Vec<u8> {
 
 #[test]
 fn js_page_and_js_advance_run_an_animation_that_page_render_draws() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-page-actions-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-page-actions-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("anim.pdf"), animation_pdf()).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();
@@ -72,7 +72,7 @@ fn js_page_and_js_advance_run_an_animation_that_page_render_draws() {
     assert!(a.call("js_advance", &json!({ "doc": id, "ms": 3_600_001 })).is_err());
     let out = tool(&mut a, "js_page", json!({ "doc": id, "page": 2 }));
     assert_eq!(out["next_timer_in_ms"], Value::Null, "the page's close action cleared the interval: {out}");
-    let doc = a.session().get(pdfcraft_engine::DocId(id)).unwrap();
+    let doc = a.session().get(patronuspdf_engine::DocId(id)).unwrap();
     assert!(!doc.dirty && doc.undo_depth() == 0, "the frames turned in the view only");
 }
 
@@ -88,7 +88,7 @@ trailer << /Root 1 0 R >>
 /// one runs at the next call.
 #[test]
 fn js_advance_runs_no_more_timers_than_its_cap() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-js-advance-cap-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-js-advance-cap-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("interval.pdf"), INTERVAL).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();

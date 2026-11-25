@@ -2,8 +2,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_content::Pieces;
-use pdfcraft_cos::{CosError, DecodeBudget, Dict, Document, ObjRef, Object};
+use patronuspdf_content::Pieces;
+use patronuspdf_cos::{CosError, DecodeBudget, Dict, Document, ObjRef, Object};
 
 use crate::{RedactError, page_streams};
 
@@ -152,7 +152,7 @@ struct GlyphReads {
 fn collect_used_resources_in_stream(data: &[u8], used: &mut UsedInGlyphs) -> Result<(), CosError> {
     // One operator at a time, so a glyph program of millions of them is never held whole. A byte
     // that can't be read anywhere in it still refuses, once the loop has read it all.
-    let mut read = pdfcraft_content::ops(data);
+    let mut read = patronuspdf_content::ops(data);
     read.by_ref().for_each(|op| record_used(&op, used));
     if read.skipped() > 0 {
         return Err(CosError::Syntax { offset: 0, detail: "redaction could not fully inspect glyph stream syntax".into() });
@@ -161,7 +161,7 @@ fn collect_used_resources_in_stream(data: &[u8], used: &mut UsedInGlyphs) -> Res
 }
 
 /// Record the resource name `op` uses, if any.
-fn record_used(op: &pdfcraft_content::Op, used: &mut UsedInGlyphs) {
+fn record_used(op: &patronuspdf_content::Op, used: &mut UsedInGlyphs) {
     {
         match op.op.as_slice() {
             b"Do" => {
@@ -243,7 +243,7 @@ fn prune_font_forms(doc: &mut Document, font_res: &Dict) -> Result<(), CosError>
         let mut used = UsedInGlyphs::default();
         // Each Form's walk has the allowance of a page, as `prune_retired_properties` gives each
         // content it reads.
-        crate::interp::resource_ops(doc, &mut pdfcraft_cos::DecodeBudget::page(), &res, std::slice::from_ref(&data))?
+        crate::interp::resource_ops(doc, &mut patronuspdf_cos::DecodeBudget::page(), &res, std::slice::from_ref(&data))?
             .iter()
             .for_each(|op| record_used(op, &mut used));
         // `rg`, `g` and `k` draw through these entries when the Form keeps them as its defaults,
@@ -314,7 +314,7 @@ fn scan_content_stream(
     let joined = Pieces::join(content);
     // One operator at a time, so content of millions of them is never held whole. The scan only
     // reads, and a byte that can't be read anywhere still refuses, once the loop has read it all.
-    let mut read = pdfcraft_content::ops(joined.data());
+    let mut read = patronuspdf_content::ops(joined.data());
 
     let mut stack: Vec<Option<FontKey>> = Vec::new();
     let mut current_font = initial_font;
@@ -354,7 +354,7 @@ fn scan_content_stream(
 
 /// Apply an operator that changes or uses the current font: `Tf`, `gs`, and the text-showing
 /// operators, which record the glyphs they draw.
-fn apply_text_op(ctx: &mut ScanContext<'_>, res: &Dict, op: &pdfcraft_content::Op, current_font: &mut Option<FontKey>) {
+fn apply_text_op(ctx: &mut ScanContext<'_>, res: &Dict, op: &patronuspdf_content::Op, current_font: &mut Option<FontKey>) {
     match op.op.as_slice() {
         b"Tf" => {
             if let Some(name) = op.name_back(1) {
@@ -488,7 +488,7 @@ fn resourceless_appearances(doc: &Document, page: &Dict) -> Vec<ObjRef> {
 /// already. Tiling patterns are not read here: a tiling pattern must have resources of its own,
 /// so its cell draws through them, and Apply Redactions refuses one without them
 /// (`pattern_guard`).
-fn add_soft_mask_ops(doc: &Document, res: &Dict, ops: &mut Vec<pdfcraft_content::Op>, known: usize) -> Result<(), CosError> {
+fn add_soft_mask_ops(doc: &Document, res: &Dict, ops: &mut Vec<patronuspdf_content::Op>, known: usize) -> Result<(), CosError> {
     let xobjects = res_dict(doc, res, b"XObject");
     let states = res_dict(doc, res, b"ExtGState");
     let mut seen = HashSet::new();
@@ -517,7 +517,7 @@ fn add_soft_mask_ops(doc: &Document, res: &Dict, ops: &mut Vec<pdfcraft_content:
         if s.dict.get(b"Resources").is_some_and(|ro| doc.resolve(ro).as_dict().is_some()) {
             continue;
         }
-        let parsed = pdfcraft_content::parse(&doc.with_direct_parms(s).decoded()?);
+        let parsed = patronuspdf_content::parse(&doc.with_direct_parms(s).decoded()?);
         if parsed.skipped > 0 || ops.len().saturating_add(parsed.ops.len()) > 2_000_000 {
             return Err(CosError::Syntax { offset: 0, detail: "redaction could not fully inspect soft mask content".into() });
         }
@@ -573,7 +573,7 @@ fn is_type3(doc: &Document, f: &Object) -> bool {
 /// own (below).
 pub(crate) fn prune_type3_from_resources(
     doc: &Document,
-    budget: &mut pdfcraft_cos::DecodeBudget,
+    budget: &mut patronuspdf_cos::DecodeBudget,
     res: &mut Dict,
     content: &[Vec<u8>],
     page: Option<&Dict>,
@@ -592,7 +592,7 @@ pub(crate) fn prune_type3_from_resources(
     // allowance of a page of its own, not to what the walk left of the page's, since it decides
     // nothing about the fonts.
     let type3 = fonts.iter().any(|(_, f)| is_type3(doc, f));
-    let mut own = pdfcraft_cos::DecodeBudget::page();
+    let mut own = patronuspdf_cos::DecodeBudget::page();
     let mut ops = crate::interp::resource_ops(doc, if type3 { &mut *budget } else { &mut own }, res, content)?;
     // So do those of a page's annotation appearances, and of soft mask groups, without resources of
     // their own. They are read only when there is a Type 3 font to keep, so other files are not
@@ -717,7 +717,7 @@ pub(crate) fn unlink_type3(doc: &mut Document) -> Result<(), RedactError> {
     }
 
     // Scan all page contents and reachable forms to discover surviving glyph usage.
-    let page_list = pdfcraft_model::pages(doc);
+    let page_list = patronuspdf_model::pages(doc);
     let mut used_glyphs: HashMap<FontKey, HashSet<Vec<u8>>> = HashMap::new();
     let mut seen_drawn_forms = HashSet::new();
 

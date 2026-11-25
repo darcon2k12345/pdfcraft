@@ -527,9 +527,9 @@ pub(super) fn selection_actions(
             let Some(kind) = tool.markup() else { return false };
             view.clear_selection();
             let edits = marks.into_iter().map(|(page, quads)| {
-                Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
+                Edit::AddAnnotation(patronuspdf_engine::NewAnnotation {
                     page,
-                    shape: pdfcraft_engine::Shape::TextMarkup { kind, quads },
+                    shape: patronuspdf_engine::Shape::TextMarkup { kind, quads },
                     style: prefs.style(tool),
                     contents: String::new(),
                     author: prefs.author.clone(),

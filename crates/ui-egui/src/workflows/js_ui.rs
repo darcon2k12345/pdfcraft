@@ -2,11 +2,11 @@
 //! the JavaScript console (⌘J), Document JavaScripts, and Preferences ▸ JavaScript.
 
 use egui::{Align, Layout};
-use pdfcraft_engine::js::{JsOutput, Message, MessageIcon, Panel, Request};
-use pdfcraft_engine::{DocId, Edit};
+use patronuspdf_engine::js::{JsOutput, Message, MessageIcon, Panel, Request};
+use patronuspdf_engine::{DocId, Edit};
 
 use crate::theme::{self, Tokens};
-use crate::{PdfCraftApp, widgets};
+use crate::{PatronusPdfApp, widgets};
 
 /// The JavaScript console: the input and the output so far.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -43,7 +43,7 @@ pub(crate) fn scripts_off_notice() -> String {
     tl!("This form's scripts are turned off because one ran too long. Reopen the document to run them again.").to_string()
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Act on what scripts produced in document `id`: alerts are shown, console output goes to
     /// the console, print and page requests are carried out, links wait for the user's permission
     /// (form submissions are reported, never sent).
@@ -86,7 +86,7 @@ impl PdfCraftApp {
                 Request::OpenDoc(path) => self.request_script_document(id, &path),
                 Request::LaunchUrl(u) => self.request_document_url(&u, crate::LinkOrigin::Script),
                 Request::Submit(u) => self.notify_fmt(
-                    "The form asks to be submitted to {u}; PdfCraft doesn't send form data. Save the document to keep your entries.",
+                    "The form asks to be submitted to {u}; Patronus PDF doesn't send form data. Save the document to keep your entries.",
                     &[("u", &u)],
                 ),
                 Request::SaveAs => {
@@ -125,7 +125,7 @@ impl PdfCraftApp {
     fn focus_script_field(&mut self, id: DocId, view: Option<usize>, name: &str, object_id: Option<u64>) {
         if let Some(i) = view
             && let Some(f) = self.session.get(id).and_then(|d| {
-                d.form.iter().find(|f| object_id.map_or_else(|| f.name == name, |key| pdfcraft_engine::js::field_object_id(f.obj) == key))
+                d.form.iter().find(|f| object_id.map_or_else(|| f.name == name, |key| patronuspdf_engine::js::field_object_id(f.obj) == key))
             })
             && let Some((wi, widget)) = f.widgets.iter().enumerate().find(|(_, w)| !w.hidden && w.page.is_some())
         {
@@ -156,7 +156,7 @@ impl PdfCraftApp {
     /// PDF, and otherwise offered to save. Other files aren't launched in other programs.
     fn open_script_attachment(&mut self, id: DocId, name: &str, open: bool) {
         let Some(doc) = self.session.get(id) else { return };
-        let keyed = |a: &pdfcraft_render::Attachment| matches!(&a.source, pdfcraft_render::AttachmentSource::Document { key } if key == name);
+        let keyed = |a: &patronuspdf_render::Attachment| matches!(&a.source, patronuspdf_render::AttachmentSource::Document { key } if key == name);
         let index = doc.info.attachments.iter().position(keyed).or_else(|| doc.info.attachments.iter().position(|a| a.name == name));
         let Some(i) = index else {
             // The name is the form's own text: shortened, as file names are elsewhere.
@@ -261,7 +261,7 @@ impl PdfCraftApp {
     /// Run document `id`'s catalog JavaScript for `event` (Will Save before a save, Will Print
     /// before printing) and show what it said. What it changed is part of what is saved or
     /// printed. A failing script is reported and the save or print still goes ahead.
-    pub(crate) fn run_document_actions(&mut self, id: DocId, event: pdfcraft_engine::js::DocumentScriptEvent) {
+    pub(crate) fn run_document_actions(&mut self, id: DocId, event: patronuspdf_engine::js::DocumentScriptEvent) {
         let before = self.session.get(id).map(|d| d.edit_generation());
         let out = self.session.run_document_actions(id, event);
         if self.session.get(id).map(|d| d.edit_generation()) != before
@@ -320,10 +320,10 @@ impl PdfCraftApp {
             return;
         }
         let source = self.session.get(id).and_then(|d| d.path.clone());
-        match pdfcraft_engine::js::resolve_javascript_document_path(source.as_deref().map(std::path::Path::new), path) {
+        match patronuspdf_engine::js::resolve_javascript_document_path(source.as_deref().map(std::path::Path::new), path) {
             Ok(path) => {
                 self.pending_remote_link =
-                    Some(crate::PendingRemoteLink { source: id, path, destination: pdfcraft_render::RemoteDestination::Default })
+                    Some(crate::PendingRemoteLink { source: id, path, destination: patronuspdf_render::RemoteDestination::Default })
             }
             Err(e) => self.notify_fmt("Couldn't follow linked PDF: {reason}", &[("reason", &e.to_string())]),
         }
@@ -436,7 +436,7 @@ fn buttons(ui: &mut egui::Ui, primary: &str, others: &[&str]) -> Option<String> 
 }
 
 /// The JavaScript console. Returns `true` to close.
-pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> bool {
+pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PatronusPdfApp, t: &Tokens) -> bool {
     ui.label(egui::RichText::new(tl!("JavaScript Console")).font(theme::semibold(18.0)));
     ui.add_space(6.0);
     if !app.session.javascript() {
@@ -477,7 +477,7 @@ pub(crate) fn console_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens)
 }
 
 /// Document JavaScripts: list, edit, add and delete. Returns `true` to close.
-pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> bool {
+pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PatronusPdfApp, t: &Tokens) -> bool {
     ui.label(egui::RichText::new(tl!("Document JavaScripts")).font(theme::semibold(18.0)));
     ui.add_space(6.0);
     let scripts = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.document_scripts()).unwrap_or_default();
@@ -538,13 +538,13 @@ mod tests {
         if !crate::i18n::needs_catalogs() {
             return;
         }
-        let date_language = |code: &str| pdfcraft_engine::dates::DATE_LANGUAGES.iter().find(|l| l.code == code).expect("date language");
+        let date_language = |code: &str| patronuspdf_engine::dates::DATE_LANGUAGES.iter().find(|l| l.code == code).expect("date language");
         let hindi = date_language("hi");
         assert_eq!(date_language_picker_name(hindi, |_| true), hindi.name, "the native name is kept when it can be drawn");
         assert_eq!(date_language_picker_name(hindi, |_| false), "Hindi", "no Devanagari face: show the English name");
         let chinese = date_language("zh-hans");
         assert_eq!(date_language_picker_name(chinese, |_| false), "Simplified Chinese");
-        for language in &pdfcraft_engine::dates::DATE_LANGUAGES {
+        for language in &patronuspdf_engine::dates::DATE_LANGUAGES {
             assert!(!date_language_picker_name(language, |_| false).is_empty(), "{}", language.code);
         }
     }

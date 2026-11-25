@@ -6,10 +6,10 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use pdfcraft_annot::{Meta, NewAnnotation, Shape, Style, add_annotation, rect_quad};
-use pdfcraft_cos::Document;
-use pdfcraft_redact::apply;
-use pdfcraft_testkit::{Pdf, stream_obj};
+use patronuspdf_annot::{Meta, NewAnnotation, Shape, Style, add_annotation, rect_quad};
+use patronuspdf_cos::Document;
+use patronuspdf_redact::apply;
+use patronuspdf_testkit::{Pdf, stream_obj};
 
 /// One page drawing a form `draws` times under a mark, the form's `/Matrix` an array of `entries`
 /// zeros, written in its dictionary or, `by_reference`, as object 6.

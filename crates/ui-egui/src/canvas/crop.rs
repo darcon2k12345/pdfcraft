@@ -2,8 +2,8 @@
 //! rectangle; double-click a page to open Set Page Boxes for it.
 
 use egui::{Color32, CornerRadius, Pos2, Rect, Stroke};
-use pdfcraft_engine::{BoxSpec, Edit, PageBox};
-use pdfcraft_render::DocInfo;
+use patronuspdf_engine::{BoxSpec, Edit, PageBox};
+use patronuspdf_render::DocInfo;
 
 use crate::canvas::{DocView, PageXform};
 use crate::page_cursor::Layer;

@@ -1,7 +1,7 @@
 //! App-managed print colour for `doc_print` (`color_management` app) and the installed printer
 //! profiles it can name (`print_color_profiles`).
 
-use pdfcraft_engine::print::colour::{self, Intent, ManagedColour, PrinterProfile};
+use patronuspdf_engine::print::colour::{self, Intent, ManagedColour, PrinterProfile};
 use serde_json::{Value, json};
 
 use crate::{Args, Automation, Result, ToolError, failed};

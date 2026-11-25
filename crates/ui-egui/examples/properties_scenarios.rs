@@ -11,8 +11,8 @@ use std::sync::Arc;
 use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use pdfcraft_engine::{DocId, Edit, Session};
-use pdfcraft_ui_egui::{Dialog, PdfCraftApp};
+use patronuspdf_engine::{DocId, Edit, Session};
+use patronuspdf_ui_egui::{Dialog, PatronusPdfApp};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -66,7 +66,7 @@ fn fixture(title: &str) -> Result<Arc<Vec<u8>>, String> {
 }
 
 /// Expose actual engine metadata, edit generation and history labels for subset assertions.
-fn document_state(doc: &pdfcraft_engine::Document) -> Value {
+fn document_state(doc: &patronuspdf_engine::Document) -> Value {
     let custom: serde_json::Map<String, Value> = doc.custom_info().into_iter().map(|(k, v)| (k, json!(v))).collect();
     let custom_count = custom.len();
     json!({
@@ -79,7 +79,7 @@ fn document_state(doc: &pdfcraft_engine::Document) -> Value {
 }
 
 struct Adapter {
-    h: Harness<'static, PdfCraftApp>,
+    h: Harness<'static, PatronusPdfApp>,
     originals: Vec<(DocId, Arc<Vec<u8>>)>,
     reopened: Option<Value>,
     artifacts: Option<PathBuf>,
@@ -88,7 +88,7 @@ struct Adapter {
 impl Adapter {
     /// Open two independent fixtures and create a deterministic 60 Hz headless UI harness.
     fn new(artifacts: Option<PathBuf>) -> Result<Self, String> {
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         app.set_option("language", "en")?;
         let mut originals = Vec::new();
         for (name, title) in [("A.pdf", "Original"), ("B.pdf", "Second document")] {
@@ -195,7 +195,7 @@ impl Adapter {
                 self.h.state_mut().session.undo(id).map_err(|e| e.to_string())?;
             }
             Event::Switch { document } => {
-                // Scenario document numbers are 1-based, like PdfCraft's automation pages.
+                // Scenario document numbers are 1-based, like Patronus PDF's automation pages.
                 let index = document.checked_sub(1).ok_or("document numbers start at 1")?;
                 if self.h.state().views.get(index).is_none() {
                     return Err("document is not open".into());

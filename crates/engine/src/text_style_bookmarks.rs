@@ -7,8 +7,8 @@
 //! subsets of one font), the size the text is shown at, and whether it is bold and italic.
 //! Lines are taken in reading order down each page: top to bottom, then left to right.
 
-use pdfcraft_cos::Document;
-use pdfcraft_organize::OutlineEntry;
+use patronuspdf_cos::Document;
+use patronuspdf_organize::OutlineEntry;
 
 /// How a line of text looks.
 #[derive(Clone, Debug, PartialEq)]
@@ -97,12 +97,12 @@ fn without_subset_tag(name: &str) -> &str {
 /// The text lines of `doc`'s first [`MAX_PAGES`] pages, each page's in reading order. Text that
 /// is only whitespace, or whose size can't be read, is left out.
 fn lines(doc: &Document) -> Vec<Line> {
-    let pages = pdfcraft_organize::page_count(doc).unwrap_or(0).min(MAX_PAGES);
-    let rotations = pdfcraft_organize::page_rotations(doc).unwrap_or_default();
+    let pages = patronuspdf_organize::page_count(doc).unwrap_or(0).min(MAX_PAGES);
+    let rotations = patronuspdf_organize::page_rotations(doc).unwrap_or_default();
     let mut out = Vec::new();
     for page in 0..pages {
         let rotation = rotations.get(page).copied().unwrap_or(0);
-        let Ok(found) = pdfcraft_edit::text_lines(doc, page) else { continue };
+        let Ok(found) = patronuspdf_edit::text_lines(doc, page) else { continue };
         let mut on_page: Vec<Line> = found
             .into_iter()
             .filter_map(|l| {

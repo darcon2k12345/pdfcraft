@@ -1,14 +1,14 @@
-//! pdfcraft-automation — agent control for PdfCraft (architecture §13).
+//! patronuspdf-automation — agent control for Patronus PDF (architecture §13).
 //!
 //! - **Layer:** L7. Headless: depends on the engine, never on a UI toolkit.
 //! - [`Automation`] is a tool set over an engine [`Session`]: open, inspect, render, extract and
 //!   find text, edit pages and metadata, undo/redo, save, combine, extract and split. Every tool
 //!   has a JSON Schema ([`tools`]) and takes and returns JSON, so the same table drives the MCP
-//!   server ([`mcp`]), `pdfcraft-cli run` and (later) the UI control channel.
+//!   server ([`mcp`]), `patronuspdf-cli run` and (later) the UI control channel.
 //! - Pages are **1-based** in every tool, as people number them. Rectangles are in PDF points
 //!   with the origin at the top-left of the displayed page.
 //! - An optional root directory confines every path a tool reads or writes. Separately,
-//!   [`file_access::AutomationRoots`] (`pdfcraft-cli mcp --automation-read-root` and
+//!   [`file_access::AutomationRoots`] (`patronuspdf-cli mcp --automation-read-root` and
 //!   `--automation-write-root`) holds a read folder and a write folder, each left out meaning no
 //!   access of its kind.
 
@@ -42,12 +42,12 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use pdfcraft_engine::{BlockKey, CombineSource, DocId, Document, Edit, Session, TextBlock, block_overlapping, commands};
-use pdfcraft_platform::staging::{StagingName, staging_suffixes};
-use pdfcraft_render::{PageRenderer, PageText, RenderConfig, RenderRequest, RequestKind};
+use patronuspdf_engine::{BlockKey, CombineSource, DocId, Document, Edit, Session, TextBlock, block_overlapping, commands};
+use patronuspdf_platform::staging::{StagingName, staging_suffixes};
+use patronuspdf_render::{PageRenderer, PageText, RenderConfig, RenderRequest, RequestKind};
 use serde_json::{Value, json};
 
-pub use pdfcraft_render::Pixels;
+pub use patronuspdf_render::Pixels;
 pub use tools::{ToolDef, tools};
 
 use text_cache::TextCache;
@@ -79,11 +79,11 @@ use paths::{write_atomic_synced, write_atomic_with};
 
 struct OcrReview {
     handle: u64,
-    guard: pdfcraft_engine::ocr::OcrGuard,
-    pages: Vec<pdfcraft_engine::ocr::OcrPage>,
+    guard: patronuspdf_engine::ocr::OcrGuard,
+    pages: Vec<patronuspdf_engine::ocr::OcrPage>,
 }
 
-/// A headless PdfCraft session driven by tool calls.
+/// A headless Patronus PDF session driven by tool calls.
 pub struct Automation {
     session: Session,
     root: Option<PathBuf>,
@@ -103,7 +103,7 @@ pub struct Automation {
     ocr_reviews: HashMap<DocId, OcrReview>,
     next_ocr_review: u64,
     /// What object_copy copied, for object_paste into any open document.
-    objects_clipboard: Option<pdfcraft_engine::ObjectClipboard>,
+    objects_clipboard: Option<patronuspdf_engine::ObjectClipboard>,
 }
 
 impl Default for Automation {
@@ -168,7 +168,7 @@ impl Automation {
         &self.session
     }
 
-    /// Save `bytes` that a caller writes on the session's behalf, such as `pdfcraft-cli run`
+    /// Save `bytes` that a caller writes on the session's behalf, such as `patronuspdf-cli run`
     /// saving a rendered page. With a root, it is confined like a tool's own output (a relative
     /// path resolves inside it). Written atomically either way (#2166), except to something
     /// that is not a regular file, such as `/dev/stdout` or a pipe, which is written as given.

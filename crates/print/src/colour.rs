@@ -238,7 +238,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_fifo_named_like_a_profile_is_skipped() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-print-fifo-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-print-fifo-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let fifo = dir.join("printer.icc");
         let _ = std::fs::remove_file(&fifo);
@@ -315,7 +315,7 @@ mod tests {
     /// profiles, other files and broken ones; a name finds one by description or file name.
     #[test]
     fn installed_profiles_are_rgb_and_grey_ones() {
-        let dir = std::env::temp_dir().join(format!("pdfcraft-print-profiles-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("patronuspdf-print-profiles-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("vendor").join("deeper")).unwrap();
         std::fs::write(dir.join("office.ICC"), Builtin::Srgb.profile().to_bytes().as_slice()).unwrap();

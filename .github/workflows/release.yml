@@ -35,8 +35,8 @@ jobs:
     uses: storytold/craft-common-actions/.github/workflows/release.yml@main
     with:
       dry-run: ${{ github.event_name == 'schedule' }}
-      app-name: pdfcraft
-      app-title: PdfCraft
+      app-name: patronuspdf
+      app-title: Patronus PDF
       craft-fonts-ref: b076417b5880bd4154bd22f00695b1d28c6bea83
       version: ${{ inputs.version }}
       contributors-artifact: ${{ needs.credits.outputs.artifact-name }}

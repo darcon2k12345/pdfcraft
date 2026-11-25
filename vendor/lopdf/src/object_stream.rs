@@ -10,22 +10,22 @@ use log::warn;
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
 
-/// PdfCraft patch: index entries read from one object stream (the same clamp `pdfcraft_cos`
+/// Patronus PDF patch: index entries read from one object stream (the same clamp `patronuspdf_cos`
 /// applies to `/N`). Entries past it are ignored, so a huge index block cannot allocate an entry
 /// list or parse a member per entry.
 pub(crate) const MAX_OBJECT_STREAM_MEMBERS: usize = 1_000_000;
 
-/// PdfCraft patch: objects (every member and everything nested in it) one load may build from
+/// Patronus PDF patch: objects (every member and everything nested in it) one load may build from
 /// all of its object streams together, about one per object of the largest cross-reference
-/// table `pdfcraft_cos` accepts (8,388,607). Each stream is bounded by the decompression limit,
+/// table `patronuspdf_cos` accepts (8,388,607). Each stream is bounded by the decompression limit,
 /// but a file may hold many, and every two decoded bytes can be an object of a hundred bytes or
 /// more; this keeps the worst case near a gigabyte instead of tens.
 pub(crate) const MAX_LOAD_NODES: usize = 1 << 23;
 
-/// PdfCraft patch: the objects parsing may still build, shared by every object stream one load
+/// Patronus PDF patch: the objects parsing may still build, shared by every object stream one load
 /// parses (and by rayon workers, hence atomic). Each member reserves its share before parsing
 /// and refunds what it did not use, so concurrent members cannot overshoot the total. Public so
-/// PdfCraft's tests can load object streams from a small budget.
+/// Patronus PDF's tests can load object streams from a small budget.
 ///
 /// The loaders parse their object streams one after another in object-number order, and a
 /// stream whose members could run the budget out parses them in index order (see
@@ -116,12 +116,12 @@ impl ObjectStream {
     /// decoded content if it would exceed `max_decompressed_size` bytes. `None`
     /// means no limit (the behavior of [`ObjectStream::new`]).
     ///
-    /// PdfCraft patch: members are built from a budget of `MAX_LOAD_NODES` objects of their own.
+    /// Patronus PDF patch: members are built from a budget of `MAX_LOAD_NODES` objects of their own.
     pub fn new_with_limit(stream: &Stream, max_decompressed_size: Option<usize>) -> Result<ObjectStream> {
         Self::new_within(stream, max_decompressed_size, &NodeBudget::new(MAX_LOAD_NODES))
     }
 
-    /// PdfCraft patch: [`ObjectStream::new_with_limit`], building members from `budget`, which a
+    /// Patronus PDF patch: [`ObjectStream::new_with_limit`], building members from `budget`, which a
     /// load shares between all of its object streams. A member that would exceed its share, or
     /// any member once the budget is spent, is skipped with a warning.
     ///
@@ -135,7 +135,7 @@ impl ObjectStream {
         Self::new_members_within(stream, max_decompressed_size, budget, |_| true)
     }
 
-    /// PdfCraft patch: [`ObjectStream::new_within`], parsing only the members whose object
+    /// Patronus PDF patch: [`ObjectStream::new_within`], parsing only the members whose object
     /// number `keep` accepts. The others are never parsed, so they spend nothing from `budget`:
     /// a loader passes the members it would add (not placed in another stream by the
     /// cross-reference table, and not already loaded), and a lookup the one member it wants.
@@ -166,7 +166,7 @@ impl ObjectStream {
         let index_block = content.get(..first_offset).ok_or(Error::InvalidOffset(first_offset))?;
 
         let numbers_str = std::str::from_utf8(index_block).map_err(|e| Error::InvalidObjectStream(e.to_string()))?;
-        // PdfCraft patch: read at most `MAX_OBJECT_STREAM_MEMBERS` index entries.
+        // Patronus PDF patch: read at most `MAX_OBJECT_STREAM_MEMBERS` index entries.
         let numbers: Vec<_> = numbers_str
             .split_whitespace()
             .take(2 * MAX_OBJECT_STREAM_MEMBERS)
@@ -182,7 +182,7 @@ impl ObjectStream {
             warn!("object stream: /N {n} exceeds {MAX_OBJECT_STREAM_MEMBERS}; later members are ignored")
         }
 
-        // PdfCraft patch: bound members by the next distinct offset and parse each offset
+        // Patronus PDF patch: bound members by the next distinct offset and parse each offset
         // only once, so overlapping or duplicate entries cannot amplify decoded content.
         let mut extents = BTreeMap::new();
         for (index, chunk) in numbers[..len].chunks(2).enumerate() {
@@ -199,7 +199,7 @@ impl ObjectStream {
             end = offset;
         }
 
-        // PdfCraft patch: find each member's bytes first, in index order, so the members can be
+        // Patronus PDF patch: find each member's bytes first, in index order, so the members can be
         // charged to the budget before any is parsed.
         let mut members = Vec::new();
         for (index, chunk) in numbers[..len].chunks(2).enumerate() {
@@ -232,7 +232,7 @@ impl ObjectStream {
             members.push((id, start, extent_end));
         }
 
-        // PdfCraft patch: each member builds at most `MAX_OBJECT_NODES` objects, reserved from
+        // Patronus PDF patch: each member builds at most `MAX_OBJECT_NODES` objects, reserved from
         // `from`; once that is spent the remaining members are skipped unparsed. Every object
         // takes at least one byte, so a member reserves no more than its length.
         let share = |&(_, start, end): &(u32, usize, usize)| parser::MAX_OBJECT_NODES.min(end - start);

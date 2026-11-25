@@ -15,7 +15,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object};
 
 /// How many dictionaries one page's search reads, across its resources, XObjects, patterns, Type
 /// 3 fonts and appearance streams. An object [`Shared`] holds counts as one read.
@@ -431,7 +431,7 @@ fn blends(doc: &Document, b: &Object) -> bool {
 mod tests {
     use std::sync::Arc;
 
-    use pdfcraft_cos::Document;
+    use patronuspdf_cos::Document;
 
     use super::{Shared, page_names_blending_space, page_painting};
     use crate::{Level, verify};
@@ -461,7 +461,7 @@ mod tests {
             "<< /Type /Page /Parent 2 0 R /Group << /S /Transparency /CS [/CalRGB << /WhitePoint [0.9505 1 1.089] >>] >> /Resources << /ExtGState << /G0 << /SMask << /Type /Mask /S /Luminosity /G 4 0 R >> >> >> >> >>",
             "<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << /ExtGState << /G1 << /BM /MaskCustom >> >> >> /Length 0 >>\nstream\n\nendstream",
         ]);
-        let page = &pdfcraft_model::pages(&doc)[0];
+        let page = &patronuspdf_model::pages(&doc)[0];
         let painting = page_painting(&doc, &page.dict, &mut Shared::default());
         assert!(painting.transparency);
         assert_eq!(painting.unknown_blend_modes, ["MaskCustom"]);
@@ -479,7 +479,7 @@ mod tests {
             "<< /Type /XObject /Subtype 5 0 R /Width 1 /Height 1 /SMaskInData 1 /Length 0 >>\nstream\n\nendstream",
             "/Image",
         ]);
-        let page = &pdfcraft_model::pages(&doc)[0];
+        let page = &patronuspdf_model::pages(&doc)[0];
         assert!(page_painting(&doc, &page.dict, &mut Shared::default()).transparency);
 
         // Indirect `/Transparency` group kind `/S` on a form XObject.
@@ -490,7 +490,7 @@ mod tests {
             "<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] /Group << /S 5 0 R >> /Length 0 >>\nstream\n\nendstream",
             "/Transparency",
         ]);
-        let page = &pdfcraft_model::pages(&doc)[0];
+        let page = &patronuspdf_model::pages(&doc)[0];
         assert!(page_painting(&doc, &page.dict, &mut Shared::default()).transparency);
 
         // Indirect `/Type3` subtype on a font with translucent resources and an unknown blend mode.
@@ -501,7 +501,7 @@ mod tests {
             "<< /Type /Font /Subtype 5 0 R /Resources << /ExtGState << /G << /ca 0.5 /BM /T3Mode >> >> >> >>",
             "/Type3",
         ]);
-        let page = &pdfcraft_model::pages(&doc)[0];
+        let page = &patronuspdf_model::pages(&doc)[0];
         let painting = page_painting(&doc, &page.dict, &mut Shared::default());
         assert!(painting.transparency);
         assert_eq!(painting.unknown_blend_modes, ["T3Mode"]);
@@ -525,7 +525,7 @@ mod tests {
             ),
             "/DeviceRGB",
         ]);
-        let pages = pdfcraft_model::pages(&doc);
+        let pages = patronuspdf_model::pages(&doc);
         assert!(page_names_blending_space(&doc, &pages[0].dict));
         assert!(page_names_blending_space(&doc, &pages[1].dict));
         assert!(!page_names_blending_space(&doc, &pages[2].dict));
@@ -540,7 +540,7 @@ mod tests {
             "<< /Type /Page /Parent 2 0 R /Resources << /XObject << /Fm 4 0 R >> >> >>",
             "<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] /Group << /S /Transparency >> /Length 0 >>\nstream\n\nendstream",
         ]);
-        let page = &pdfcraft_model::pages(&doc)[0];
+        let page = &patronuspdf_model::pages(&doc)[0];
         assert!(page_painting(&doc, &page.dict, &mut Shared::default()).transparency);
         assert!(!crate::page_uses_transparency(&doc, &page.dict));
 
@@ -551,7 +551,7 @@ mod tests {
             "<< /Type /Page /Parent 2 0 R /Resources << /XObject << /Fm 4 0 R >> >> >>",
             "<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] /Group << /S /Transparency >> /Resources << /ExtGState << /G << /ca 0.5 >> >> >> /Length 0 >>\nstream\n\nendstream",
         ]);
-        let page = &pdfcraft_model::pages(&doc)[0];
+        let page = &patronuspdf_model::pages(&doc)[0];
         assert!(crate::page_uses_transparency(&doc, &page.dict));
     }
 }

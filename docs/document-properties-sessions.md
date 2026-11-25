@@ -13,7 +13,7 @@ the same document; they never rebase accepted edits or pending Custom Name/Value
 
 [`edit-session`](https://github.com/PerchAnton/edit-session) 0.1.0-alpha.2 is a
 dependency-free `no_std` library. The [vendor ledger](../vendor/README.md#edit-session) records the snapshot and its source revision.
-It checks freshness and consumes a draft once. PdfCraft retains its form validation,
+It checks freshness and consumes a draft once. Patronus PDF retains its form validation,
 permission checks, PDF serialization and undo history. The UI bridge is
 `crates/ui-egui/src/properties_session.rs`; it stores small property values, not PDF bytes.
 
@@ -32,7 +32,7 @@ open queueing are separate work.
 
 ## Replaying the real dialog
 
-The consumer owns `crates/ui-egui/examples/properties_scenarios.rs`, built in PdfCraft's
+The consumer owns `crates/ui-egui/examples/properties_scenarios.rs`, built in Patronus PDF's
 workspace so it uses the same vendored patches and UI as the app. It is a development
 example, not a shipped executable. It runs the real egui controls through `egui_kittest`,
 then reports actual draft/document/history state as JSONL protocol 1.
@@ -48,9 +48,9 @@ From this repository, with Python 3.10+ and Rust 1.99.1:
 ```sh
 git clone https://github.com/PerchAnton/interaction-check ../interaction-check
 git -C ../interaction-check checkout 7722d66c0ede7855ff58d1df3d1632fd4e5e66a5
-cargo build --locked -j 2 -p pdfcraft-ui-egui --example properties_scenarios
+cargo build --locked -j 2 -p patronuspdf-ui-egui --example properties_scenarios
 mkdir -p log/properties-interactions
-PDFCRAFT_SYSTEM_FONTS=0 PDFCRAFT_LOCALE=en-US \
+PATRONUSPDF_SYSTEM_FONTS=0 PATRONUSPDF_LOCALE=en-US \
   python3 ../interaction-check/interaction_check.py --timeout 30 \
   --report log/properties-interactions/report.json \
   --junit log/properties-interactions/junit.xml \
@@ -75,7 +75,7 @@ the freshness check immediately before commit without an intervening UI frame.
 
 For optional local screenshots and `saved.pdf`, append `--artifacts DIR` after the
 adapter executable while running **one** scenario. This requires an available GPU or
-software renderer. Keep `PDFCRAFT_SYSTEM_FONTS=0`; generated artifacts stay under ignored
+software renderer. Keep `PATRONUSPDF_SYSTEM_FONTS=0`; generated artifacts stay under ignored
 `log/`. The headless UI proves widget/engine behavior, not native OS input or PDF fidelity
 in a separate reader. Existing renderer and interoperability tests remain necessary.
 
@@ -84,7 +84,7 @@ in a separate reader. Existing renderer and interoperability tests remain necess
 The app builds from the vendored Rust source. The shared Cargo source rules apply to the entire lockfile.
 The ordinary Rust suite exercises stale edits, Undo and inspection tabs. Running the extended replay is
 an explicit developer choice. It uses a separate checkout and runs outside the app and its shared CI.
-Maintainers can review the snapshot or choose to implement the small draft guard in PdfCraft itself.
+Maintainers can review the snapshot or choose to implement the small draft guard in Patronus PDF itself.
 This integration can be evaluated independently of craft-common-actions #84.
 
 ## Revision history

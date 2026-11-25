@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use lopdf::{Document, Object, Stream, dictionary};
-use pdfcraft_render::{PageRenderer, RenderConfig, RenderRequest, RequestKind};
+use patronuspdf_render::{PageRenderer, RenderConfig, RenderRequest, RequestKind};
 
 const INTER_TTF: &[u8] = include_bytes!("../../../assets/fonts/Inter-Regular.ttf");
 

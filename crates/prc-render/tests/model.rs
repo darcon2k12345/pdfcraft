@@ -2,7 +2,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use craft_prc::PrcFile;
-use pdfcraft_prc_render::{Camera, Image, RenderOptions, assemble, render};
+use patronuspdf_prc_render::{Camera, Image, RenderOptions, assemble, render};
 use std::io::Write as _;
 
 /// An MSB-first bit sink: the inverse of the PRC bit reader, for the few values these tests write.

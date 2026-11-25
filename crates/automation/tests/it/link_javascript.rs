@@ -2,7 +2,7 @@
 //! script, link_run_javascript runs it with ordered answers and reports requests, never
 //! carrying them out.
 
-use pdfcraft_automation::{Automation, Content};
+use patronuspdf_automation::{Automation, Content};
 use serde_json::{Value, json};
 
 fn tool(a: &mut Automation, name: &str, args: Value) -> Value {
@@ -40,7 +40,7 @@ fn link_run_javascript_answers_menus_and_reports_requests() {
         format!("<< /Type /Annot /Subtype /Link /Rect [20 20 180 60] /Border [0 0 0] /A << /S /JavaScript /JS ({script}) >> >>"),
         "<< /Type /Annot /Subtype /Link /Rect [20 80 180 120] /Border [0 0 0] /A << /S /JavaScript /JS (missing\\(\\);) >> >>".into(),
     ]);
-    let dir = std::env::temp_dir().join(format!("pdfcraft-link-js-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-link-js-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("link.pdf"), pdf).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();

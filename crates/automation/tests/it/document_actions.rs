@@ -2,7 +2,7 @@
 //! from #344): the open action runs on doc_open, Will Save on doc_save, Will Print on
 //! doc_print, and js_event runs a widget's pointer and focus scripts, all in one realm.
 
-use pdfcraft_automation::{Automation, Content};
+use patronuspdf_automation::{Automation, Content};
 use serde_json::{Value, json};
 
 fn tool(a: &mut Automation, name: &str, args: Value) -> Value {
@@ -51,7 +51,7 @@ fn log(a: &mut Automation, doc: u64) -> Value {
 
 #[test]
 fn open_will_save_will_print_and_field_events_share_the_document_realm() {
-    let dir = std::env::temp_dir().join(format!("pdfcraft-document-actions-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-document-actions-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("form.pdf"), form()).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap().with_clock(|| 1_700_000_000);
@@ -105,7 +105,7 @@ fn js_event_runs_the_field_its_field_id_names() {
         format!("<< /Type /Annot /Subtype /Widget /FT /Tx /T (dup) /V () /Rect [20 200 180 220] /P 3 0 R /F 4 {} >>", enter("first;")),
         format!("<< /Type /Annot /Subtype /Widget /FT /Tx /T (dup) /V () /Rect [20 150 180 170] /P 3 0 R /F 4 {} >>", enter("second;")),
     ]);
-    let dir = std::env::temp_dir().join(format!("pdfcraft-js-event-dup-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("patronuspdf-js-event-dup-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("dup.pdf"), pdf).unwrap();
     let mut a = Automation::new().with_root(&dir).unwrap();

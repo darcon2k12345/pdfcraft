@@ -3,8 +3,8 @@
 
 use std::sync::Arc;
 
-use pdfcraft_cos::{Document, ObjRef, Object, PdfString, SaveOptions, Stream, write_incremental};
-use pdfcraft_sign::{Modification, SignOptions, Status, TrustStore, kind, pkcs12, signatures};
+use patronuspdf_cos::{Document, ObjRef, Object, PdfString, SaveOptions, Stream, write_incremental};
+use patronuspdf_sign::{Modification, SignOptions, Status, TrustStore, kind, pkcs12, signatures};
 
 fn data(name: &str) -> Vec<u8> {
     std::fs::read(format!("{}/tests/data/{name}", env!("CARGO_MANIFEST_DIR"))).unwrap()
@@ -60,13 +60,13 @@ fn form(lock: &str) -> Vec<u8> {
 fn signed(lock: &str) -> (Vec<u8>, TrustStore) {
     let id = pkcs12::open(&data("rsa-aes.p12"), "test").unwrap();
     let opts = SignOptions { field: Some("Approval".into()), date: "D:20261002120000+01'00'".into(), ..SignOptions::default() };
-    let bytes = pdfcraft_sign::sign(&open(&form(lock)), &id, &opts).unwrap();
+    let bytes = patronuspdf_sign::sign(&open(&form(lock)), &id, &opts).unwrap();
     let mut trust = TrustStore::default();
     trust.certs.push(id.certificate.clone());
     (bytes, trust)
 }
 
-fn approval(bytes: &[u8], trust: &TrustStore) -> pdfcraft_sign::SignatureInfo {
+fn approval(bytes: &[u8], trust: &TrustStore) -> patronuspdf_sign::SignatureInfo {
     signatures(&open(bytes), bytes, trust).into_iter().find(|s| s.field == "Approval").unwrap()
 }
 
@@ -89,7 +89,7 @@ fn fill(num: u32, value: &str) -> impl FnOnce(&mut Document) {
 /// Repaint "amount" without touching its value.
 fn repaint_amount(doc: &mut Document) {
     let body = b"BT /Helv 10 Tf (999999) Tj ET".to_vec();
-    let mut d = pdfcraft_cos::Dict::new();
+    let mut d = patronuspdf_cos::Dict::new();
     d.set(b"Type".to_vec(), Object::name("XObject"));
     d.set(b"Subtype".to_vec(), Object::name("Form"));
     d.set(b"BBox".to_vec(), Object::Array(vec![Object::Int(0), Object::Int(0), Object::Int(100), Object::Int(20)]));
@@ -97,12 +97,12 @@ fn repaint_amount(doc: &mut Document) {
     doc.set(r(AMOUNT_AP), Object::Stream(Stream::from_raw(d, body)));
 }
 
-fn assert_locked(s: &pdfcraft_sign::SignatureInfo, what: &str) {
+fn assert_locked(s: &patronuspdf_sign::SignatureInfo, what: &str) {
     assert_eq!(s.status, Status::Invalid, "{what}: {:?}", s.details);
     assert!(matches!(&s.modification, Modification::Disallowed(k) if k.contains(&kind::LOCKED_FIELD)), "{what}: {:?}", s.modification);
 }
 
-fn assert_fill_allowed(s: &pdfcraft_sign::SignatureInfo, what: &str) {
+fn assert_fill_allowed(s: &patronuspdf_sign::SignatureInfo, what: &str) {
     assert_eq!((s.status, s.modification.clone()), (Status::Valid, Modification::Allowed(vec![kind::FORM_FILL])), "{what}: {:?}", s.details);
 }
 
@@ -166,7 +166,7 @@ fn removing_or_shadowing_a_locked_field_changes_it() {
     });
     assert_locked(&approval(&removed, &trust), "amount removed from the form");
     let shadowed = edit_after(&bytes, |doc| {
-        let mut d = pdfcraft_cos::Dict::new();
+        let mut d = patronuspdf_cos::Dict::new();
         d.set(b"FT".to_vec(), Object::name("Tx"));
         d.set(b"T".to_vec(), Object::String(PdfString::text("amount")));
         d.set(b"V".to_vec(), Object::String(PdfString::text("999999")));
@@ -205,13 +205,13 @@ fn an_all_lock_covers_the_signatures_own_widget() {
     let (bytes, trust) = signed("/Lock << /Type /SigFieldLock /Action /All >>");
     let repainted = edit_after(&bytes, |doc| {
         let body = b"0 0 1 rg 0 0 130 50 re f".to_vec();
-        let mut d = pdfcraft_cos::Dict::new();
+        let mut d = patronuspdf_cos::Dict::new();
         d.set(b"Type".to_vec(), Object::name("XObject"));
         d.set(b"Subtype".to_vec(), Object::name("Form"));
         d.set(b"BBox".to_vec(), Object::Array(vec![Object::Int(0), Object::Int(0), Object::Int(130), Object::Int(50)]));
         d.set(b"Length".to_vec(), Object::Int(body.len() as i64));
         let ap = doc.add(Object::Stream(Stream::from_raw(d, body)));
-        let mut n = pdfcraft_cos::Dict::new();
+        let mut n = patronuspdf_cos::Dict::new();
         n.set(b"N".to_vec(), Object::Ref(ap));
         doc.update_dict(r(5), |w| w.set(b"AP".to_vec(), Object::Dict(n))).unwrap();
     });
@@ -223,7 +223,7 @@ fn an_all_lock_covers_the_signatures_own_widget() {
 fn a_new_field_below_a_locked_one_changes_it() {
     let (bytes, trust) = signed("/Lock << /Type /SigFieldLock /Action /Include /Fields [(address)] >>");
     let grown = edit_after(&bytes, |doc| {
-        let mut d = pdfcraft_cos::Dict::new();
+        let mut d = patronuspdf_cos::Dict::new();
         d.set(b"T".to_vec(), Object::String(PdfString::text("postcode")));
         d.set(b"Parent".to_vec(), Object::Ref(r(10)));
         d.set(b"V".to_vec(), Object::String(PdfString::text("LS1")));

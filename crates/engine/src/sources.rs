@@ -20,18 +20,18 @@ pub struct Combined {
 /// process for seconds, so callers keep it off the frame thread. Desktop only: on the web it
 /// returns an error.
 pub fn office_to_pdf(name: &str, bytes: &Arc<Vec<u8>>) -> Result<Arc<Vec<u8>>, EditError> {
-    let pdf = Arc::new(pdfcraft_create::office_to_pdf(name, bytes)?);
+    let pdf = Arc::new(patronuspdf_create::office_to_pdf(name, bytes)?);
     open_source(name, &pdf)?;
     Ok(pdf)
 }
 
 /// Parse another PDF to copy pages from.
-pub(crate) fn open_source(name: &str, bytes: &Arc<Vec<u8>>) -> Result<pdfcraft_cos::Document, EditError> {
+pub(crate) fn open_source(name: &str, bytes: &Arc<Vec<u8>>) -> Result<patronuspdf_cos::Document, EditError> {
     open_source_with(name, bytes, None)
 }
 
 /// [`open_source`], authenticating with `password` (user or owner) for an encrypted file.
-pub(crate) fn open_source_with(name: &str, bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Result<pdfcraft_cos::Document, EditError> {
+pub(crate) fn open_source_with(name: &str, bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Result<patronuspdf_cos::Document, EditError> {
     source_document(bytes, password).map_err(|p| EditError::Source(format!("{name}: {p}")))
 }
 
@@ -39,34 +39,34 @@ pub(crate) fn open_source_with(name: &str, bytes: &Arc<Vec<u8>>, password: Optio
 /// allows assembly is accepted when `dest` will be saved under the very same protection (file
 /// key and `/Encrypt` values), as when pages cut or copied from a document are pasted back into
 /// it: they never leave its protection (#5081).
-pub(crate) fn open_source_into(name: &str, bytes: &Arc<Vec<u8>>, dest: &pdfcraft_cos::Document) -> Result<pdfcraft_cos::Document, EditError> {
-    let same_protection = |src: &pdfcraft_cos::Document| match (src.security(), dest.output_handler()) {
+pub(crate) fn open_source_into(name: &str, bytes: &Arc<Vec<u8>>, dest: &patronuspdf_cos::Document) -> Result<patronuspdf_cos::Document, EditError> {
+    let same_protection = |src: &patronuspdf_cos::Document| match (src.security(), dest.output_handler()) {
         (Some(s), Some(d)) => s.file_key() == d.file_key() && s.dict() == d.dict(),
         _ => false,
     };
-    let permitted = |src: &pdfcraft_cos::Document| src.permissions().is_none_or(|p| p.extract_pages() || (p.assemble() && same_protection(src)));
+    let permitted = |src: &patronuspdf_cos::Document| src.permissions().is_none_or(|p| p.extract_pages() || (p.assemble() && same_protection(src)));
     source_document_if(bytes, None, permitted).map_err(|p| EditError::Source(format!("{name}: {p}")))
 }
 
 /// Import the comments of `src` onto the pages of `doc` with the same numbers.
-pub(crate) fn import_pdf_comments(doc: &mut pdfcraft_cos::Document, src: &pdfcraft_cos::Document) -> Result<(), EditError> {
-    if pdfcraft_organize::import_comments(doc, src)? == 0 {
-        return Err(pdfcraft_xfdf::DataError::NothingImported.into());
+pub(crate) fn import_pdf_comments(doc: &mut patronuspdf_cos::Document, src: &patronuspdf_cos::Document) -> Result<(), EditError> {
+    if patronuspdf_organize::import_comments(doc, src)? == 0 {
+        return Err(patronuspdf_xfdf::DataError::NothingImported.into());
     }
     Ok(())
 }
 
 /// Parse another PDF to import comments from, whatever its permissions allow.
-pub(crate) fn comment_source(bytes: &Arc<Vec<u8>>) -> Result<pdfcraft_cos::Document, SourceProblem> {
-    match std::panic::catch_unwind(|| pdfcraft_cos::Document::open(bytes.clone())) {
+pub(crate) fn comment_source(bytes: &Arc<Vec<u8>>) -> Result<patronuspdf_cos::Document, SourceProblem> {
+    match std::panic::catch_unwind(|| patronuspdf_cos::Document::open(bytes.clone())) {
         Ok(Ok(d)) => Ok(d),
-        Ok(Err(pdfcraft_cos::CosError::NeedsPassword)) => Err(SourceProblem::Password),
+        Ok(Err(patronuspdf_cos::CosError::NeedsPassword)) => Err(SourceProblem::Password),
         Ok(Err(e)) => Err(SourceProblem::Unreadable(e.to_string())),
         Err(_) => Err(SourceProblem::Unreadable("the file could not be read".into())),
     }
 }
 
-fn source_document(bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Result<pdfcraft_cos::Document, SourceProblem> {
+fn source_document(bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Result<patronuspdf_cos::Document, SourceProblem> {
     source_document_if(bytes, password, |d| d.permissions().is_none_or(|p| p.extract_pages()))
 }
 
@@ -74,13 +74,13 @@ fn source_document(bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Result<pdfcr
 fn source_document_if(
     bytes: &Arc<Vec<u8>>,
     password: Option<&str>,
-    permitted: impl Fn(&pdfcraft_cos::Document) -> bool,
-) -> Result<pdfcraft_cos::Document, SourceProblem> {
-    match std::panic::catch_unwind(|| pdfcraft_cos::Document::open_with_password(bytes.clone(), password)) {
+    permitted: impl Fn(&patronuspdf_cos::Document) -> bool,
+) -> Result<patronuspdf_cos::Document, SourceProblem> {
+    match std::panic::catch_unwind(|| patronuspdf_cos::Document::open_with_password(bytes.clone(), password)) {
         Ok(Ok(d)) if !permitted(&d) => Err(SourceProblem::NotPermitted),
         Ok(Ok(d)) => Ok(d),
-        Ok(Err(pdfcraft_cos::CosError::NeedsPassword)) => Err(SourceProblem::Password),
-        Ok(Err(pdfcraft_cos::CosError::WrongPassword)) => Err(SourceProblem::WrongPassword),
+        Ok(Err(patronuspdf_cos::CosError::NeedsPassword)) => Err(SourceProblem::Password),
+        Ok(Err(patronuspdf_cos::CosError::WrongPassword)) => Err(SourceProblem::WrongPassword),
         Ok(Err(e)) => Err(SourceProblem::Unreadable(e.to_string())),
         Err(_) => Err(SourceProblem::Unreadable("the file could not be read".into())),
     }
@@ -96,6 +96,6 @@ pub fn combine_source_check(bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Res
 /// The number of pages of `bytes`, opened with `password` (user or owner) if given, whatever
 /// its permissions allow; `None` when it can't be read.
 pub fn source_page_count(bytes: &Arc<Vec<u8>>, password: Option<&str>) -> Option<usize> {
-    let doc = std::panic::catch_unwind(|| pdfcraft_cos::Document::open_with_password(bytes.clone(), password)).ok()?.ok()?;
-    pdfcraft_organize::page_count(&doc).ok()
+    let doc = std::panic::catch_unwind(|| patronuspdf_cos::Document::open_with_password(bytes.clone(), password)).ok()?.ok()?;
+    patronuspdf_organize::page_count(&doc).ok()
 }

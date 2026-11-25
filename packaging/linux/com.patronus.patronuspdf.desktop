@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Patronus PDF
+GenericName=PDF Editor
+Comment=Read, organize, combine, split and secure PDFs
+Exec=patronuspdf %U
+TryExec=patronuspdf
+Icon=com.patronus.patronuspdf
+Terminal=false
+StartupNotify=true
+StartupWMClass=com.patronus.patronuspdf
+Categories=Office;Viewer;
+Keywords=pdf;viewer;editor;annotate;sign;forms;merge;split;
+MimeType=application/pdf;

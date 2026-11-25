@@ -10,9 +10,9 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use pdfcraft_content::{Matrix, Op};
-use pdfcraft_cos::{Dict, Document, ObjRef, Object};
-use pdfcraft_fonts::pdf::Metrics;
+use patronuspdf_content::{Matrix, Op};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object};
+use patronuspdf_fonts::pdf::Metrics;
 
 /// A line this much larger than body text reads as a heading.
 const HEADING_SIZE_RATIO: f64 = 1.15;
@@ -352,7 +352,7 @@ mod tests {
         font.set(b"BaseFont".to_vec(), Object::name("Helvetica-Bold"));
         let mut resources = Dict::new();
         resources.set(b"F1".to_vec(), Object::Dict(font));
-        let ops = pdfcraft_content::parse(content).ops;
+        let ops = patronuspdf_content::parse(content).ops;
         let at = |name: &[u8]| -> Vec<usize> { ops.iter().enumerate().filter(|(_, o)| o.op == name).map(|(i, _)| i).collect() };
         let spans: Vec<(usize, usize)> = at(b"BT").into_iter().zip(at(b"ET")).collect();
         evidence(&doc, &mut Fonts::default(), &resources, &ops, &spans)

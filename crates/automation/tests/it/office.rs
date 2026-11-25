@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use pdfcraft_automation::{Automation, Content, ToolError};
+use patronuspdf_automation::{Automation, Content, ToolError};
 use serde_json::{Value, json};
 
 fn auto(dir: &Path) -> Automation {

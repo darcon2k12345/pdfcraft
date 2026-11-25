@@ -426,7 +426,7 @@ impl ScriptSession {
             self.worker_lifetime = Arc::downgrade(&lifetime);
             let executing = self.executing.clone();
             std::thread::Builder::new()
-                .name("pdfcraft-document-js".into())
+                .name("patronuspdf-document-js".into())
                 .stack_size(crate::run::DOCUMENT_WORKER_STACK)
                 .spawn(move || {
                     let _lifetime = lifetime;
@@ -808,7 +808,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn persistent_workers_do_not_reserve_a_gibibyte_per_document() {
-        const CHILD: &str = "PDFCRAFT_WORKER_RESERVATION_TEST_CHILD";
+        const CHILD: &str = "PATRONUSPDF_WORKER_RESERVATION_TEST_CHILD";
         if std::env::var_os(CHILD).is_none() {
             let result = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "session::tests::persistent_workers_do_not_reserve_a_gibibyte_per_document", "--nocapture"])
@@ -841,7 +841,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn document_worker_contains_hostile_and_boundary_scripts() {
-        const CHILD: &str = "PDFCRAFT_WORKER_STACK_TEST_CHILD";
+        const CHILD: &str = "PATRONUSPDF_WORKER_STACK_TEST_CHILD";
         if std::env::var_os(CHILD).is_none() {
             let result = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "session::tests::document_worker_contains_hostile_and_boundary_scripts", "--nocapture"])
@@ -888,7 +888,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn document_worker_bounds_unbracketed_expression_chains() {
-        const CHILD: &str = "PDFCRAFT_EXPRESSION_CHAIN_CHILD";
+        const CHILD: &str = "PATRONUSPDF_EXPRESSION_CHAIN_CHILD";
         let Ok(case) = std::env::var(CHILD) else {
             for case in 0..5 {
                 let result = std::process::Command::new(std::env::current_exe().unwrap())
@@ -1062,7 +1062,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn document_worker_capacity_is_bounded_and_reusable() {
-        const CHILD: &str = "PDFCRAFT_WORKER_CAPACITY_CHILD";
+        const CHILD: &str = "PATRONUSPDF_WORKER_CAPACITY_CHILD";
         if std::env::var_os(CHILD).is_none() {
             let out = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", "session::tests::document_worker_capacity_is_bounded_and_reusable"])

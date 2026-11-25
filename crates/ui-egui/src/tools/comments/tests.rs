@@ -180,7 +180,7 @@ fn a_kept_comment_is_found_where_a_delete_moved_it() {
     assert_eq!((view.editing, view.editor_focus), (None, None), "the editor closes with the reply it was open on");
 }
 
-use pdfcraft_render::TextGlyph;
+use patronuspdf_render::TextGlyph;
 
 /// One glyph per character, `w` points wide, on a line of `em`-point text whose baseline is at `y`, drawn
 /// along `direction` (a unit vector in view space, y down).
@@ -443,7 +443,7 @@ fn context_menu_colour_submenu_keeps_its_picker_open_and_a_swatch_closes_the_men
         }],
         ..Default::default()
     };
-    let mut view = DocView::new(pdfcraft_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
+    let mut view = DocView::new(patronuspdf_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
     view.comments.selected = Some((0, 0));
     let prefs = CommentPrefs::default();
     let mut h = egui_kittest::Harness::new_ui_state(
@@ -516,7 +516,7 @@ fn proportional_corners_keep_the_opposite_anchor_and_edges_stretch_one_axis() {
 fn tools_round_trip_through_their_commands() {
     for t in ALL {
         assert_eq!(CommentTool::from_command(t.command()), Some(t));
-        assert!(pdfcraft_engine::commands::command(t.command()).is_some(), "{} is registered", t.command());
+        assert!(patronuspdf_engine::commands::command(t.command()).is_some(), "{} is registered", t.command());
         assert!(icons::exists(t.icon()), "icon {}", t.icon());
         assert!(GROUPS[t.group()].contains(&t));
     }
@@ -693,7 +693,7 @@ fn stale_comment_state_is_cleared_and_delete_never_hits_non_comment_slots() {
         annotations: vec![annot(1, "c1"), annot(2, "c2")],
         ..Default::default()
     };
-    let mut view = DocView::new(pdfcraft_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
+    let mut view = DocView::new(patronuspdf_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
     view.comments.selected = Some((0, 2));
     view.comments.open_editor(0, 2, "draft".into());
     view.comments.composer = Some(Composer { page: 0, at: [10.0, 10.0], kind: ComposerKind::Edit(2), text: "body".into(), focus: false });
@@ -779,7 +779,7 @@ fn an_unnamed_shift_clears_state_for_the_old_index() {
         annotations: vec![annot(1), annot(2)],
         ..Default::default()
     };
-    let mut view = DocView::new(pdfcraft_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
+    let mut view = DocView::new(patronuspdf_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
     view.comments.selected = Some((0, 1));
     view.comments.open_editor(0, 1, "the first note".into());
     view.comments.composer = Some(Composer { page: 0, at: [10.0, 10.0], kind: ComposerKind::Edit(1), text: "the first note".into(), focus: false });
@@ -889,7 +889,7 @@ fn comment_marker_wins_over_an_overlapping_body_for_pick_and_hover() {
     assert_eq!(cx.comment_at(marker.center()).map(|a| a.index), Some(0));
     let ptr = PagePointer { pos: Some(marker.center()), ..PagePointer::default() };
     let cx = PageCx { ptr: &ptr, ..cx };
-    let mut view = DocView::new(pdfcraft_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
+    let mut view = DocView::new(patronuspdf_engine::DocId(1), &info, crate::canvas::ViewDefaults::default());
     super::input::describe(&cx, &mut view);
     let ctx = egui::Context::default();
     assert_eq!(view.cursor.resolve(&ctx, QuickTool::Select).as_deref(), Some("Highlight\nAnchor"));
@@ -902,8 +902,8 @@ fn comment_marker_wins_over_an_overlapping_body_for_pick_and_hover() {
 #[test]
 fn insert_text_icon_is_distinct_from_edit_text_and_matches_its_command() {
     let insert = CommentTool::Caret.icon();
-    let edit = pdfcraft_engine::commands::command("edit.edit_text").unwrap().icon;
-    let command = pdfcraft_engine::commands::command("comment.caret").unwrap().icon;
+    let edit = patronuspdf_engine::commands::command("edit.edit_text").unwrap().icon;
+    let command = patronuspdf_engine::commands::command("comment.caret").unwrap().icon;
     assert_ne!(insert, edit, "adjacent tools need distinct icons");
     assert_eq!(insert, command, "the annotation toolbar and command use the same icon");
     assert!(crate::widgets::icons::exists(insert));

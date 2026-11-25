@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, SaveOptions, write_full};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object, SaveOptions, write_full};
 
 use super::*;
 use crate::pages;

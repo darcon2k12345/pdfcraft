@@ -6,7 +6,7 @@
 //! names, flags and opacity equal values computed in this file from the input plus ISO 32000-2.
 //! Two things make that more than "compare an object to itself": the expectations never read the
 //! pre-save document, and the number tokens are re-parsed from raw `Vec<u8>` by `support::bytes`,
-//! a strict scanner that is not `pdfcraft-cos`.
+//! a strict scanner that is not `patronuspdf-cos`.
 //!
 //! Geometry comes from a half-point grid (`x = k / 2`, |k| ≤ 450). Every such value has an exact
 //! decimal form and survives Flate, `f64` arithmetic and the writer's shortest-round-trip
@@ -23,8 +23,8 @@ mod support {
     pub mod fixture;
 }
 
-use pdfcraft_annot::{LineEnding, Markup, Meta, NewAnnotation, NoteIcon, Shape, Style, add_annotation, props, summaries};
-use pdfcraft_cos::Document;
+use patronuspdf_annot::{LineEnding, Markup, Meta, NewAnnotation, NoteIcon, Shape, Style, add_annotation, props, summaries};
+use patronuspdf_cos::Document;
 use proptest::prelude::*;
 
 use support::bytes;

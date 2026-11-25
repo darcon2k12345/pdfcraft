@@ -436,12 +436,12 @@ pub const COMMANDS: &[CommandSpec] = &[
     c("prepress.hairlines", "Fix hairlines…", None, None, Modification, "minus"),
     c("page.properties", "Page properties…", PAGES, None, Modification, "info"),
     c("help.shortcuts", "Keyboard shortcuts", HELP, None, Nothing, "circle-help"),
-    c("help.discord", "Join the ArtCraft Discord", HELP, None, Nothing, "messages-square"),
-    c("help.app_page", "PdfCraft web page", HELP, None, Nothing, "globe"),
-    c("help.github", "PdfCraft on GitHub", HELP, None, Nothing, "code-xml"),
-    c("help.website", "ArtCraft website", HELP, None, Nothing, "external-link"),
+    c("help.discord", "Community Discussions", HELP, None, Nothing, "messages-square"),
+    c("help.app_page", "Patronus PDF releases", HELP, None, Nothing, "globe"),
+    c("help.github", "Patronus PDF on GitHub", HELP, None, Nothing, "code-xml"),
+    c("help.website", "Patronus on GitHub", HELP, None, Nothing, "external-link"),
     c("help.check_updates", "Check for updates…", HELP, None, Nothing, "cloud"),
-    c("help.about", "About PdfCraft", HELP, None, Nothing, "info"),
+    c("help.about", "About Patronus PDF", HELP, None, Nothing, "info"),
 ];
 
 pub fn command(id: &str) -> Option<&'static CommandSpec> {

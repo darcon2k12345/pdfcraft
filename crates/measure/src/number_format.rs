@@ -8,7 +8,7 @@
 //! cut off (`/T`). With miles, feet, and inches in eighths, 1.4505 mi shows as
 //! "1 mi 2,378 ft 7 5/8 in".
 
-use pdfcraft_cos::{Dict, Document, Object, PdfString};
+use patronuspdf_cos::{Dict, Document, Object, PdfString};
 use serde::Serialize;
 
 /// Most elements one number format array is read with (miles, yards, feet and inches are four).
@@ -385,7 +385,7 @@ mod tests {
 
     /// A file of a catalog, an empty page tree and `objects`, numbered from 3.
     fn doc_with(objects: &[&str]) -> Document {
-        let pdf = pdfcraft_testkit::Pdf::new().obj("<< /Type /Catalog /Pages 2 0 R >>").obj("<< /Type /Pages /Kids [] /Count 0 >>").objs(objects);
+        let pdf = patronuspdf_testkit::Pdf::new().obj("<< /Type /Catalog /Pages 2 0 R >>").obj("<< /Type /Pages /Kids [] /Count 0 >>").objs(objects);
         Document::open(Arc::new(pdf.build())).unwrap()
     }
 
@@ -393,7 +393,7 @@ mod tests {
     fn parsed(objects: &[&str], array: &str) -> Result<Vec<NumberFormat>, &'static str> {
         let doc = doc_with(&[objects, &[array]].concat());
         let num = u32::try_from(objects.len() + 3).unwrap();
-        read(&doc, &Object::Ref(pdfcraft_cos::ObjRef { num, generation: 0 }))
+        read(&doc, &Object::Ref(patronuspdf_cos::ObjRef { num, generation: 0 }))
     }
 
     /// The miles, feet and eighths of inches that show "1 mi 2,378 ft 7 5/8 in".

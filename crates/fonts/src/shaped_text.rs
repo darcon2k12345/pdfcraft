@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_cos::{Dict, Document, Object, PdfString, Stream};
+use patronuspdf_cos::{Dict, Document, Object, PdfString, Stream};
 
 use crate::{GlyphError, GlyphOutline, ShapedCluster, ShapedScript, latin_has, literal, shape_latin, shape_thai, shaped_glyph};
 
@@ -396,7 +396,7 @@ pub fn add_type3_font(
     doc: &mut Document,
     clusters: &[&ShapedCluster],
     outlines: &HashMap<(ShapedScript, u32), GlyphOutline>,
-) -> pdfcraft_cos::ObjRef {
+) -> patronuspdf_cos::ObjRef {
     let font = type3_font(clusters, outlines, &mut |o| Object::Ref(doc.add(o)));
     doc.add(Object::Dict(font))
 }
@@ -463,7 +463,7 @@ fn type3_font(clusters: &[&ShapedCluster], outlines: &HashMap<(ShapedScript, u32
             },
             |f| f.family,
         ),
-        None => "PdfCraft Shaped Text",
+        None => "Patronus PDF Shaped Text",
     };
     let mut descriptor = Dict::new();
     descriptor.set(b"Type".to_vec(), Object::name("FontDescriptor"));

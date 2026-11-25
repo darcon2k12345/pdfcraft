@@ -7,7 +7,7 @@ use crate::canvas::{DocView, Fit, PageLayout};
 use crate::panes::{Place, TabDrop};
 use crate::tab_context::Action;
 use crate::theme::{self, ThemePreference, Tokens};
-use crate::{Dialog, Mode, PdfCraftApp, PropsTab, RightPanel, icons, widgets, window_controls};
+use crate::{Dialog, Mode, PatronusPdfApp, PropsTab, RightPanel, icons, widgets, window_controls};
 
 /// Height of the tab strip when it doubles as the macOS title bar (#789). AppKit draws the traffic
 /// lights itself, centred in the standard 28 pt title-bar band at the top of the window, and moving
@@ -32,7 +32,7 @@ const TAB_HEIGHT: f32 = 30.0;
 const STRIP_BUTTON: f32 = 28.0;
 
 /// Whether AppKit lays the traffic lights out from the right end of the title bar, or `None` when
-/// no window can say yet. It does when the system language is right-to-left, whatever PdfCraft's
+/// no window can say yet. It does when the system language is right-to-left, whatever Patronus PDF's
 /// own interface language is, so the window is asked rather than the interface language
 /// (Apple: `NSWindow.windowTitlebarLayoutDirection`, for apps with controls under the title bar).
 #[cfg(target_os = "macos")]
@@ -51,7 +51,7 @@ fn mac_lights_on_right() -> Option<bool> {
 
 /// Draw the window's tab strip: home and open controls, shrinkable and scrollable document tabs with drag
 /// reordering, and platform window controls.
-pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+pub fn tab_strip(app: &mut PatronusPdfApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     // macOS: the strip is the 28 pt title bar, so the traffic lights are centred in it; tabs and
     // buttons shrink to keep a margin above and below.
@@ -61,7 +61,7 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     }
     // With the lights at the right (a right-to-left system language), the strip is the mirror
     // image of the usual one: Home beside the lights, the tabs and Open after it, and the
-    // Discord, shortcuts and theme buttons at the far end.
+    // Community, shortcuts and theme buttons at the far end.
     let mirrored = mac && app.titlebar_lights_right == Some(true);
     let (left, right) = match (mac, mirrored) {
         (true, false) => (MAC_CONTENT_LEFT as i8, 10),
@@ -108,8 +108,8 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     app.active = None;
                     app.combine_tab.focused = false;
                 }
-                // Reserve the three icon buttons, Discord and their gaps outside the scrolling tabs.
-                let controls_width = ui.fonts_mut(|f| f.layout_no_wrap("Discord".into(), theme::medium(13.0), t.text).size().x)
+                // Reserve the three icon buttons, Community and their gaps outside the scrolling tabs.
+                let controls_width = ui.fonts_mut(|f| f.layout_no_wrap("Community".into(), theme::medium(13.0), t.text).size().x)
                     + 3.0 * button
                     + 54.0
                     + window_controls::width(&controls.right);
@@ -151,7 +151,7 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 let state = (app.active_ids().map(|(_, id)| id), app.views.len(), app.combine_showing());
                 let changed = ui.data_mut(|data| {
                     let id = ui.scope_id().with("active_tab");
-                    let changed = data.get_temp::<(Option<pdfcraft_engine::DocId>, usize, bool)>(id) != Some(state);
+                    let changed = data.get_temp::<(Option<patronuspdf_engine::DocId>, usize, bool)>(id) != Some(state);
                     data.insert_temp(id, state);
                     changed
                 });
@@ -327,7 +327,10 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                         app.dialog = Some(Dialog::Shortcuts);
                     }
                     // One click to the community, from anywhere in the app.
-                    if widgets::ghost_button_sized(ui, "messages-square", "Discord", tab_h).on_hover_text(pdfcraft_engine::links::DISCORD).clicked() {
+                    if widgets::ghost_button_sized(ui, "messages-square", "Community", tab_h)
+                        .on_hover_text(patronuspdf_engine::links::DISCORD)
+                        .clicked()
+                    {
                         app.execute("help.discord");
                     }
                 });
@@ -337,7 +340,7 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
 
 /// The Combine files tab, when it is open: after the document tabs in reading order (drawn first
 /// when they read from the right). Its index can't clash with theirs.
-fn combine_tab(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, cap: Option<f32>, height: f32, changed: bool) {
+fn combine_tab(app: &mut PatronusPdfApp, ui: &mut egui::Ui, t: &Tokens, cap: Option<f32>, height: f32, changed: bool) {
     if !app.combine_tab.open {
         return;
     }
@@ -372,7 +375,7 @@ fn combine_tab(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, cap: Option
 }
 
 /// The right-click menu on the title bar's theme button.
-fn appearance_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+fn appearance_menu(app: &mut PatronusPdfApp, ui: &mut egui::Ui) {
     if ui.button(tl!("Appearance settings…")).clicked() {
         app.dialog = Some(Dialog::Preferences);
         ui.close();
@@ -380,7 +383,7 @@ fn appearance_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
 }
 
 /// A document tab's right-click menu, in any strip: the choice is left in `action`.
-fn tab_menu(app: &PdfCraftApp, ui: &mut egui::Ui, index: usize, action: &mut Option<Action>) {
+fn tab_menu(app: &PatronusPdfApp, ui: &mut egui::Ui, index: usize, action: &mut Option<Action>) {
     let Some(view) = app.views.get(index) else { return };
     let (tab, id) = (view.view_key(), view.id);
     if ui.button(tl!("Close Tab")).clicked() {
@@ -421,7 +424,7 @@ fn tab_menu(app: &PdfCraftApp, ui: &mut egui::Ui, index: usize, action: &mut Opt
 /// there (`crate::panes`). `busy` is a close or menu choice this frame, which wins. Returns the
 /// pointer's x while the tab moves along the strip, for scrolling at the strip's edges.
 fn tab_drag(
-    app: &mut PdfCraftApp,
+    app: &mut PatronusPdfApp,
     ui: &egui::Ui,
     slots: &[(usize, Rect)],
     dragged: Option<(usize, bool)>,
@@ -470,7 +473,7 @@ fn tab_drag(
 
 /// The tab strip of split view's second pane, in `strip`: its tabs share the width (no scrolling),
 /// and are clicked, closed, moved along and dragged to the other pane as in the main strip.
-pub(crate) fn pane_tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui, strip: Rect, place: Place) {
+pub(crate) fn pane_tab_strip(app: &mut PatronusPdfApp, ui: &mut egui::Ui, strip: Rect, place: Place) {
     let t = Tokens::get(ui.ctx());
     ui.painter().rect_filled(strip, 0.0, t.titlebar);
     ui.painter().hline(strip.x_range(), strip.bottom() - 0.5, Stroke::new(1.0, t.divider));
@@ -714,7 +717,7 @@ const MODE_BAR_RIGHT: f32 = 3.0 * 32.0 + 3.0 * 4.0 + 8.0;
 /// Narrowest search field the mode bar shows; below it the field becomes an icon button.
 const MODE_BAR_SEARCH_MIN: f32 = 140.0;
 
-pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+pub fn mode_bar(app: &mut PatronusPdfApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     // The document in the active tab may hide the menu or the tools (`crate::viewer_prefs`).
     let hidden = app.hidden_interface();
@@ -772,7 +775,7 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     ui.add_enabled_ui(has_doc, |ui| {
                         let tip = crate::commands::command_tip(ui.ctx(), tl!("Print ({key})"), "print.dialog");
                         // A document that forbids printing says so here, before the dialog (#2669).
-                        let may_print = !has_doc || pdfcraft_engine::commands::command("print.dialog").is_some_and(|c| app.command_enabled(c));
+                        let may_print = !has_doc || patronuspdf_engine::commands::command("print.dialog").is_some_and(|c| app.command_enabled(c));
                         let mut print = ui.add_enabled_ui(may_print, |ui| icons::button(ui, "printer", 32.0, false, &tip)).inner;
                         if !may_print {
                             print = print.on_disabled_hover_text(crate::print_refused());
@@ -827,7 +830,7 @@ fn rail_field(ui: &mut egui::Ui, t: &Tokens, edit: egui::TextEdit<'_>) -> egui::
 
 /// Draw the right tool rail with page navigation, history, zoom, rotation and page-display controls for the
 /// active view.
-pub fn right_rail(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+pub fn right_rail(app: &mut PatronusPdfApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let Some((index, id)) = app.active_ids() else { return };
     let Some(doc) = app.session.get(id) else { return };

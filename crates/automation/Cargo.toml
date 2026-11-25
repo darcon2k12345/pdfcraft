@@ -1,6 +1,6 @@
 [package]
-name = "pdfcraft-automation"
-description = "Agent control for PdfCraft: a headless tool set over the engine and an MCP server"
+name = "patronuspdf-automation"
+description = "Agent control for Patronus PDF: a headless tool set over the engine and an MCP server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,13 +9,13 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-engine = { workspace = true }
-pdfcraft-cos = { workspace = true }
-pdfcraft-render = { workspace = true }
-pdfcraft-organize = { workspace = true }
-pdfcraft-platform = { workspace = true }
+patronuspdf-engine = { workspace = true }
+patronuspdf-cos = { workspace = true }
+patronuspdf-render = { workspace = true }
+patronuspdf-organize = { workspace = true }
+patronuspdf-platform = { workspace = true }
 craft-prc = { workspace = true }
-pdfcraft-prc-render = { workspace = true }
+patronuspdf-prc-render = { workspace = true }
 serde_json = { workspace = true }
 sha2 = "0.11"
 tempfile = "3.27"
@@ -36,10 +36,10 @@ craft-image-codecs = { workspace = true }
 # Word exports read back as Word reads them.
 craft-docx = { workspace = true }
 craft-wordmodel = { workspace = true }
-pdfcraft-fonts = { workspace = true }
+patronuspdf-fonts = { workspace = true }
 flate2.workspace = true
-pdfcraft-model = { workspace = true }
-pdfcraft-xfa = { workspace = true }
+patronuspdf-model = { workspace = true }
+patronuspdf-xfa = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 rustix = { version = "1", features = ["fs"] }

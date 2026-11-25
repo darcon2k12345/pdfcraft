@@ -10,9 +10,9 @@
 use std::collections::HashSet;
 
 use egui::{Color32, CornerRadius, Pos2, Rect, Stroke, vec2};
-use pdfcraft_cos::ObjRef;
-use pdfcraft_engine::{Edit, FieldValue, FormField, FormFieldKind, FormWidget, field_flags, form_appearance};
-use pdfcraft_render::DocInfo;
+use patronuspdf_cos::ObjRef;
+use patronuspdf_engine::{Edit, FieldValue, FormField, FormFieldKind, FormWidget, field_flags, form_appearance};
+use patronuspdf_render::DocInfo;
 
 use crate::canvas::{DocView, PageToolContext, PageXform, SignTab};
 use crate::page_cursor::Layer;
@@ -90,7 +90,7 @@ pub struct FormView {
     /// A message for the app to show (e.g. "buttons run JavaScript").
     pub notice: Option<FormNotice>,
     /// A push button was clicked: (its field name, exact PDF identity, what it does).
-    pub button: Option<(String, u64, pdfcraft_engine::form_scripts::ButtonAction)>,
+    pub button: Option<(String, u64, patronuspdf_engine::form_scripts::ButtonAction)>,
     /// The focused check box or radio button was clicked. It toggles once no other edit is
     /// queued: the text the click committed goes first, and the toggle is dropped if that text
     /// is refused and its field reopens.
@@ -100,7 +100,7 @@ pub struct FormView {
     pub(crate) keys: Option<(egui::Id, bool)>,
     /// The field and widget that had focus when it was last looked at: when the focus moves, the
     /// one it left runs its XFA exit scripts and the one it reached its enter scripts
-    /// (`PdfCraftApp::run_focus_scripts`).
+    /// (`PatronusPdfApp::run_focus_scripts`).
     pub(crate) focused: Option<(String, Option<ObjRef>, usize)>,
     /// The list box row clicked last, without Shift: (its field name, the row). A Shift-click picks
     /// the rows from it to the one clicked; the field's value can't say which row came last when
@@ -110,9 +110,9 @@ pub struct FormView {
     /// one left runs its Mouse Exit JavaScript and the one reached its Mouse Enter (#269).
     pub(crate) hovered: Option<WidgetRef>,
     /// Pointer triggers waiting to run their widget's JavaScript, in order (field name, widget,
-    /// trigger): `PdfCraftApp::run_field_triggers` runs them after the frame's edit, so a check
+    /// trigger): `PatronusPdfApp::run_field_triggers` runs them after the frame's edit, so a check
     /// box's Mouse Up sees the value its click just stored (#247).
-    pub(crate) triggers: Vec<(WidgetRef, pdfcraft_engine::FieldTrigger)>,
+    pub(crate) triggers: Vec<(WidgetRef, patronuspdf_engine::FieldTrigger)>,
 }
 
 /// A form message for the app to show, with document data kept separate so the visible
@@ -455,12 +455,12 @@ fn usable(f: &FormField, w: &FormWidget, allowed: bool) -> bool {
 /// (`tabs`, with the signature field each one signs), which is drawn over every field and so is
 /// on its own field. Over the page's text too: a check box drawn with a glyph, or set on printed
 /// text, is a button, not text to select. The fields are `doc`'s, shown as its page actions and
-/// timers show them ([`pdfcraft_engine::Document::shown_by_scripts`]).
+/// timers show them ([`patronuspdf_engine::Document::shown_by_scripts`]).
 pub(crate) fn hit(
     xf: &PageXform,
     info: &DocInfo,
     page: usize,
-    doc: &pdfcraft_engine::Document,
+    doc: &patronuspdf_engine::Document,
     tabs: &[(&str, SignTab)],
     allowed: bool,
     p: Pos2,
@@ -491,7 +491,7 @@ pub(crate) type WidgetRef = (String, u64, usize);
 
 /// `f`'s widget `widget` as a trigger names it.
 fn widget_ref(f: &FormField, widget: usize) -> WidgetRef {
-    (f.name.clone(), pdfcraft_engine::js::field_object_id(f.obj), widget)
+    (f.name.clone(), patronuspdf_engine::js::field_object_id(f.obj), widget)
 }
 
 /// The field and widget under the pointer on a page, when a press there would take it.
@@ -510,10 +510,10 @@ pub(crate) fn hover_moved(view: &mut DocView, now: Option<WidgetRef>) {
     }
     let left = std::mem::replace(&mut view.forms.hovered, now.clone());
     if let Some(w) = left {
-        view.forms.triggers.push((w, pdfcraft_engine::FieldTrigger::MouseExit));
+        view.forms.triggers.push((w, patronuspdf_engine::FieldTrigger::MouseExit));
     }
     if let Some(w) = now {
-        view.forms.triggers.push((w, pdfcraft_engine::FieldTrigger::MouseEnter));
+        view.forms.triggers.push((w, patronuspdf_engine::FieldTrigger::MouseEnter));
     }
 }
 
@@ -545,7 +545,7 @@ pub(crate) fn page_input(
     let usable = usable(f, w, allowed);
     // The press runs the widget's Mouse Down JavaScript, as in Acrobat (#269).
     if usable && ptr.pressed().is_some() {
-        view.forms.triggers.push((widget_ref(f, wi), pdfcraft_engine::FieldTrigger::MouseDown));
+        view.forms.triggers.push((widget_ref(f, wi), patronuspdf_engine::FieldTrigger::MouseDown));
     }
     // A text field opens on the press rather than the click, so a drag that starts on it
     // selects its text (#2213).
@@ -570,7 +570,7 @@ pub(crate) fn page_input(
     match f.kind {
         _ if f.read_only() || w.read_only => view.forms.notice = Some(FormNotice::ReadOnly(f.name.clone())),
         FormFieldKind::PushButton => match &f.button {
-            Some(a) => view.forms.button = Some((f.name.clone(), pdfcraft_engine::js::field_object_id(f.obj), a.clone())),
+            Some(a) => view.forms.button = Some((f.name.clone(), patronuspdf_engine::js::field_object_id(f.obj), a.clone())),
             // Its press already ran its mouse-down action.
             None if w.mouse_down => {}
             None => view.forms.notice = Some(FormNotice::NoAction(f.name.clone())),
@@ -580,8 +580,8 @@ pub(crate) fn page_input(
             commit(view, form);
             view.forms.button = Some((
                 f.name.clone(),
-                pdfcraft_engine::js::field_object_id(f.obj),
-                pdfcraft_engine::form_scripts::ButtonAction::Script(script.clone()),
+                patronuspdf_engine::js::field_object_id(f.obj),
+                patronuspdf_engine::form_scripts::ButtonAction::Script(script.clone()),
             ));
         }
         FormFieldKind::Signature => view.sign.field = Some(f.name.clone()),
@@ -611,7 +611,7 @@ pub(crate) fn page_input(
             }
             // A combo box's click runs its Mouse Up JavaScript (#269).
             if f.kind == FormFieldKind::Combo {
-                view.forms.triggers.push((widget_ref(f, wi), pdfcraft_engine::FieldTrigger::MouseUp));
+                view.forms.triggers.push((widget_ref(f, wi), patronuspdf_engine::FieldTrigger::MouseUp));
             }
         }
         FormFieldKind::List => {
@@ -659,7 +659,7 @@ pub(crate) fn page_input(
                 }
             }
             // A list box's click runs its Mouse Up JavaScript after the pick is stored (#269).
-            view.forms.triggers.push((widget_ref(f, wi), pdfcraft_engine::FieldTrigger::MouseUp));
+            view.forms.triggers.push((widget_ref(f, wi), patronuspdf_engine::FieldTrigger::MouseUp));
         }
     }
     true
@@ -761,7 +761,7 @@ const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "Jun
 /// The date picker under a focused date field: a month of days, and a Today button under them.
 /// Returns the picked date, formatted with the field's own format.
 fn calendar(ctx: &egui::Context, view: &mut DocView, field: egui::Rect, fmt: &str, today: (i64, u32, u32)) -> Option<String> {
-    use pdfcraft_engine::form_scripts::{DateTime, format_date, parse_date};
+    use patronuspdf_engine::form_scripts::{DateTime, format_date, parse_date};
     let fx = view.forms.focus.as_mut()?;
     let current = parse_date(&fx.text, fmt);
     // A whole date typed since the last frame moves the calendar to it; half a date, or text
@@ -945,7 +945,7 @@ pub fn field_text_size(painter: &egui::Painter, f: &FormField, w: &FormWidget, t
         let (width, height) = (across - 2.0 * pad, up - 2.0 * pad);
         // Comb cells hold one character each, so only the height limits them, as on the page.
         if f.is_comb() {
-            return pdfcraft_engine::field_comb_auto_text_size(height);
+            return patronuspdf_engine::field_comb_auto_text_size(height);
         }
         let font = |size: f64| egui::FontId::proportional(size as f32);
         let line_width = |size: f64| {
@@ -954,7 +954,7 @@ pub fn field_text_size(painter: &egui::Painter, f: &FormField, w: &FormWidget, t
         // Wrapped as the editor and the page preview wrap it.
         let wrap = width.max(1.0) as f32;
         let wrapped_height = |size: f64| f64::from(painter.layout(text.to_string(), font(size), Color32::BLACK, wrap).size().y);
-        pdfcraft_engine::field_auto_text_size_by(width, height, f.has(field_flags::MULTILINE), line_width, wrapped_height)
+        patronuspdf_engine::field_auto_text_size_by(width, height, f.has(field_flags::MULTILINE), line_width, wrapped_height)
     });
     size as f32
 }
@@ -1060,7 +1060,7 @@ fn paint_unbaked_widget(painter: &egui::Painter, xf: &PageXform, frame: TextFram
 
 /// How the focused text field lays text out, when it is one that doesn't scroll (`DoNotScroll`):
 /// its editor then takes no more than fits ([`overlay`]).
-pub(crate) fn text_box(doc: &pdfcraft_engine::Document, view: &DocView, form: &[FormField]) -> Option<form_appearance::TextBox> {
+pub(crate) fn text_box(doc: &patronuspdf_engine::Document, view: &DocView, form: &[FormField]) -> Option<form_appearance::TextBox> {
     let fx = view.forms.focus.as_ref()?;
     let f = form.iter().find(|f| f.name == fx.name)?;
     let no_scroll = f.kind == FormFieldKind::Text && f.has(field_flags::DO_NOT_SCROLL);
@@ -1368,7 +1368,7 @@ pub(crate) fn overlay(
                     }
                 });
             // Date fields: a calendar under the field (Acrobat's date picker).
-            if let pdfcraft_engine::form_scripts::Format::Date(fmt) = &f.actions.format
+            if let patronuspdf_engine::form_scripts::Format::Date(fmt) = &f.actions.format
                 && let Some(picked) = calendar(ctx, view, rect, fmt, today)
             {
                 if let Some(fx) = view.forms.focus.as_mut() {
@@ -1449,7 +1449,7 @@ pub(crate) fn overlay(
                 edit = toggle_edit(f, focus.widget);
                 // The click's Mouse Up JavaScript runs once the toggle is stored, so it reads the
                 // new value (#247).
-                view.forms.triggers.push((widget_ref(f, focus.widget), pdfcraft_engine::FieldTrigger::MouseUp));
+                view.forms.triggers.push((widget_ref(f, focus.widget), patronuspdf_engine::FieldTrigger::MouseUp));
             } else if space {
                 // Space toggles a check box and selects a radio button, as in browsers: it never
                 // turns the selected button off.

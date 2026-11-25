@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use libfuzzer_sys::fuzz_target;
-use pdfcraft_cos::Document;
-use pdfcraft_preflight::{Level, verify};
+use patronuspdf_cos::Document;
+use patronuspdf_preflight::{Level, verify};
 
 /// Largest input the target parses; a longer input is dropped before `Document::open` copies it.
 const MAX_INPUT: usize = 16 << 20;

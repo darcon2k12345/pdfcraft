@@ -9,12 +9,12 @@ use super::{
 use crate::{EditNotice, MarkKind, print_preview_layers};
 
 /// Add scan cover and ink to edits of invisible OCR text, returning no edit for an unchanged draft.
-fn prepare_ocr_text_edit(editor: &mut crate::history::Editor, info: &pdfcraft_render::DocInfo, edit: Edit) -> Option<Edit> {
+fn prepare_ocr_text_edit(editor: &mut crate::history::Editor, info: &patronuspdf_render::DocInfo, edit: Edit) -> Option<Edit> {
     // Rewriting an OCR word (invisible text over a scan) also hides the scanned word: cover it
     // in the paper's colour and draw the new text in the ink's.
     Some(match edit {
         Edit::EditTextBlock { page, block, text, mut style } => {
-            let plain = style == pdfcraft_edit::BlockStyle::default();
+            let plain = style == patronuspdf_edit::BlockStyle::default();
             // Only invisible text is sampled; the blocks are usually cached from opening it.
             if style.cover.is_none()
                 && let Some(info) = info.pages.get(page)
@@ -46,7 +46,7 @@ fn deletes_pages(edit: &Edit) -> bool {
 }
 
 /// Keep edits to the working copy until both the operation and its script callbacks succeed.
-fn run_checked_edit(next: &mut pdfcraft_cos::Document, edit: &Edit, cx: &mut EditCtx) -> Result<(), EditError> {
+fn run_checked_edit(next: &mut patronuspdf_cos::Document, edit: &Edit, cx: &mut EditCtx) -> Result<(), EditError> {
     let result = guard(|| run_edit(next, edit, cx))
         .unwrap_or_else(|m| Err(EditError::Invalid(format!("{} failed unexpectedly ({m}); the document was not changed", edit.label()))));
     let refusal = cx.js.as_mut().and_then(|runner| runner.refused.take());
@@ -67,10 +67,15 @@ fn discard_edit_callbacks(cx: &EditCtx) {
 }
 
 /// Compare the icon and all of its indirect resources. Conservatively retire on budget exhaustion.
-fn icon_changed(previous: &pdfcraft_cos::Document, restored: &pdfcraft_cos::Document, root: pdfcraft_cos::ObjRef, budget: &mut usize) -> bool {
-    use pdfcraft_cos::Object;
+fn icon_changed(
+    previous: &patronuspdf_cos::Document,
+    restored: &patronuspdf_cos::Document,
+    root: patronuspdf_cos::ObjRef,
+    budget: &mut usize,
+) -> bool {
+    use patronuspdf_cos::Object;
 
-    fn visit(object: &Object, refs: &mut Vec<pdfcraft_cos::ObjRef>, budget: &mut usize, depth: usize) -> Option<()> {
+    fn visit(object: &Object, refs: &mut Vec<patronuspdf_cos::ObjRef>, budget: &mut usize, depth: usize) -> Option<()> {
         *budget = budget.checked_sub(1)?;
         if depth == 128 {
             return None;
@@ -111,11 +116,11 @@ fn icon_changed(previous: &pdfcraft_cos::Document, restored: &pdfcraft_cos::Docu
     false
 }
 
-fn sync_script_history(doc: &Document, previous: &pdfcraft_cos::Document, restored: &pdfcraft_cos::Document) {
+fn sync_script_history(doc: &Document, previous: &patronuspdf_cos::Document, restored: &patronuspdf_cos::Document) {
     if let Ok(mut runtime) = doc.js_runtime.lock() {
         let mut budget = 250_000;
         runtime.retire_changed_icons(|id| {
-            let object = pdfcraft_cos::ObjRef::new((id >> 16) as u32, id as u16);
+            let object = patronuspdf_cos::ObjRef::new((id >> 16) as u32, id as u16);
             icon_changed(previous, restored, object, &mut budget)
         });
         runtime.sync_field_ids(doc.form.iter().map(|f| crate::js::field_object_id(f.obj)));
@@ -131,13 +136,13 @@ impl Session {
     /// Edit a PDF ▸ Edit text: make the grouped text on `page` (0-based) editable, as one undoable
     /// [`Edit::PrepareText`], and say what it prepared, which fonts' maps it repaired and which
     /// groups it left as they were (and why). The counts are this edit's own, not a preview's.
-    pub fn prepare_text(&mut self, id: DocId, page: usize) -> Result<pdfcraft_edit::text::forms::Preparation, EditError> {
+    pub fn prepare_text(&mut self, id: DocId, page: usize) -> Result<patronuspdf_edit::text::forms::Preparation, EditError> {
         self.apply_reporting(id, Edit::PrepareText { page })?
             .ok_or_else(|| EditError::Invalid("preparing grouped text gave no result; the document was not changed".into()))
     }
 
     /// [`Session::apply`], giving back what an [`Edit::PrepareText`] did (`None` for other edits).
-    fn apply_reporting(&mut self, id: DocId, edit: Edit) -> Result<Option<pdfcraft_edit::text::forms::Preparation>, EditError> {
+    fn apply_reporting(&mut self, id: DocId, edit: Edit) -> Result<Option<patronuspdf_edit::text::forms::Preparation>, EditError> {
         let now = self.now();
         let today = self.today();
         let js_off = self.js_off;
@@ -172,7 +177,7 @@ impl Session {
             return Ok(None);
         };
         // Nothing to bake: leave undo history and the dirty flag alone.
-        if matches!(&edit, Edit::FlattenFillSign) && !pdfcraft_annot::has_visible_fill_sign(&editor.cos) {
+        if matches!(&edit, Edit::FlattenFillSign) && !patronuspdf_annot::has_visible_fill_sign(&editor.cos) {
             return Ok(None);
         }
         let mut next = editor.cos.clone();
@@ -203,8 +208,8 @@ impl Session {
             // A batch that deletes a marked page and adds pages cannot be tied back to the marks:
             // a copy of a page may carry the text the redaction removed from the original only.
             // Fail closed.
-            let before: std::collections::HashSet<_> = pdfcraft_model::pages(&editor.cos).iter().map(|p| p.obj).collect();
-            let after: std::collections::HashSet<_> = pdfcraft_model::pages(&next).iter().map(|p| p.obj).collect();
+            let before: std::collections::HashSet<_> = patronuspdf_model::pages(&editor.cos).iter().map(|p| p.obj).collect();
+            let after: std::collections::HashSet<_> = patronuspdf_model::pages(&next).iter().map(|p| p.obj).collect();
             // Either refusal also discards what the batch's field scripts left in the realm.
             if cx.redaction_marks.iter().any(|(o, _)| !after.contains(o)) && after.iter().any(|o| !before.contains(o)) {
                 discard_edit_callbacks(&cx);
@@ -323,7 +328,7 @@ impl Session {
         if !signed && deletes_pages(&edit) {
             next.require_full_save();
         }
-        let rewrites = |c: &pdfcraft_cos::Document| c.full_save_required() || c.encryption_changed();
+        let rewrites = |c: &patronuspdf_cos::Document| c.full_save_required() || c.encryption_changed();
         if signed && ((rewrites(&next) && !rewrites(&editor.cos)) || (next.is_modified() && next.revisions().is_empty())) {
             discard_edit_callbacks(&cx);
             return Err(EditError::SignedRewrite(edit.label().to_string()));
@@ -332,7 +337,7 @@ impl Session {
         // Places applied redactions left that still hold the removed text, and what became of
         // the PDF/A or PDF/UA identification in the XMP they removed: said, not silent.
         notices.extend(cx.redaction_elsewhere.filter(|e| e.total() > 0 || e.unsearched).map(EditNotice::RedactionElsewhere));
-        if cx.redaction_identification != pdfcraft_redact::Identification::default() {
+        if cx.redaction_identification != patronuspdf_redact::Identification::default() {
             notices.push(EditNotice::RedactionIdentification(cx.redaction_identification));
         }
         let previous = std::mem::replace(&mut editor.cos, next);
@@ -519,7 +524,7 @@ impl Session {
             for (field, value) in info_fields(&mut doc.info, &editor.cos) {
                 *field = value;
             }
-            doc.info.custom = pdfcraft_organize::custom_info(&editor.cos);
+            doc.info.custom = patronuspdf_organize::custom_info(&editor.cos);
             doc.info.file_size = bytes.len();
             #[cfg(test)]
             check_refresh_panic();
@@ -537,7 +542,7 @@ impl Session {
             doc.bytes = bytes;
             return Ok(());
         }
-        let mut form = pdfcraft_forms::fields(&editor.cos);
+        let mut form = patronuspdf_forms::fields(&editor.cos);
         xfa::mark_script_buttons(&editor.cos, &mut form);
         let form = Arc::new(form);
         match scope {
@@ -558,7 +563,7 @@ impl Session {
                 for f in &mut doc.info.fields {
                     if let Some(ff) = by_name.get(f.name.as_str()) {
                         f.value = match ff.kind {
-                            pdfcraft_forms::FieldKind::CheckBox | pdfcraft_forms::FieldKind::Radio => {
+                            patronuspdf_forms::FieldKind::CheckBox | patronuspdf_forms::FieldKind::Radio => {
                                 Some(ff.value.first().cloned().unwrap_or_else(|| "Off".into()))
                             }
                             _ if ff.value.is_empty() => None,
@@ -634,7 +639,8 @@ impl Session {
             editor.cos.bytes().clone()
         };
         // The edit must still leave a file the viewer can open; anything else rolls back above.
-        pdfcraft_render::check_pages(bytes.clone(), doc.password.as_deref(), doc.info.pages.len()).map_err(|e| EditError::Reopen(e.to_string()))?;
+        patronuspdf_render::check_pages(bytes.clone(), doc.password.as_deref(), doc.info.pages.len())
+            .map_err(|e| EditError::Reopen(e.to_string()))?;
         let (touches_added, touches_marks) = Self::content_refresh_lists(edit);
         if touches_added || touches_marks {
             doc.marker_scan = OnceLock::new();
@@ -739,7 +745,7 @@ impl Session {
         doc.info = info;
         doc.config.print_layers = print_preview_layers(Some(&editor.cos), &doc.info.layers);
         doc.fonts_stale = false;
-        let mut form = pdfcraft_forms::fields(&editor.cos);
+        let mut form = patronuspdf_forms::fields(&editor.cos);
         xfa::mark_script_buttons(&editor.cos, &mut form);
         doc.form = Arc::new(form);
         if invalidate_markers {
@@ -759,7 +765,7 @@ impl Session {
 
 /// The optional content groups `cos` lists as layers, in order (what the inspection reads: a group
 /// listed twice is one layer, and one that is not a dictionary is none).
-fn layer_ids(cos: &pdfcraft_cos::Document) -> Vec<(u32, u16)> {
+fn layer_ids(cos: &patronuspdf_cos::Document) -> Vec<(u32, u16)> {
     let props =
         cos.trailer().get(b"Root").map(|r| cos.resolve(r)).and_then(|r| r.as_dict().and_then(|r| r.get(b"OCProperties").map(|p| cos.resolve(p))));
     let groups = props.as_deref().and_then(|p| p.as_dict()).and_then(|p| p.get(b"OCGs").map(|g| cos.resolve(g)));
@@ -777,7 +783,7 @@ fn layer_ids(cos: &pdfcraft_cos::Document) -> Vec<(u32, u16)> {
 /// `old`. The numbers say nothing across a rewrite (one may now belong to another layer), so each
 /// layer is matched by name: the nth layer called so in `new` is the nth one called so in `old`
 /// (the writer keeps the `/OCGs` order). A layer with no counterpart keeps the file's own default.
-fn carry_renumbered_layer_choices(old: &[pdfcraft_render::Layer], new: &mut [pdfcraft_render::Layer]) {
+fn carry_renumbered_layer_choices(old: &[patronuspdf_render::Layer], new: &mut [patronuspdf_render::Layer]) {
     let mut seen: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
     for layer in new {
         let nth = seen.entry(layer.name.as_str()).or_insert(0);
@@ -799,7 +805,7 @@ fn take_xfa_output(doc: &mut Document, out: js::JsOutput, ran_away: bool) {
 }
 
 /// What `edit`, taking `prev` to `next`, wants said: never silent (app-agents.md rule 13).
-fn edit_notices(edit: &Edit, prev: &pdfcraft_cos::Document, next: &pdfcraft_cos::Document) -> Vec<EditNotice> {
+fn edit_notices(edit: &Edit, prev: &patronuspdf_cos::Document, next: &patronuspdf_cos::Document) -> Vec<EditNotice> {
     // What it drew with `?` (a value or comment text its font can't draw, stored as typed).
     let mut notices: Vec<EditNotice> = if matches!(scope_of(edit), Scope::Form | Scope::Comments | Scope::Full) {
         guard(|| undrawn_notices(prev, next)).unwrap_or_default().into_iter().map(EditNotice::Undrawn).collect()
@@ -808,7 +814,7 @@ fn edit_notices(edit: &Edit, prev: &pdfcraft_cos::Document, next: &pdfcraft_cos:
     };
     // Pages whose own white backdrop Remove background couldn't turn back on.
     if matches!(edit, Edit::RemoveMarks { kind: MarkKind::Background }) {
-        let pages = guard(|| pdfcraft_edit::backdrops_left_off(next)).unwrap_or_default();
+        let pages = guard(|| patronuspdf_edit::backdrops_left_off(next)).unwrap_or_default();
         if !pages.is_empty() {
             notices.push(EditNotice::BackdropsLeftOff { pages });
         }

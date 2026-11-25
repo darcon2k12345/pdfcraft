@@ -1,13 +1,13 @@
 //! Export a PDF ▸ Image ▸ Export all images, and Edit ▸ Save image as: the images that pages
 //! use, as files. JPEG images are written unchanged; other images, and JPEG images with
 //! transparency or with CMYK samples a viewer would read inverted, are decoded and written as PNG with their soft mask, stencil mask or colour
-//! key as alpha. Images PdfCraft can't decode yet (JPEG 2000, separations) are
+//! key as alpha. Images Patronus PDF can't decode yet (JPEG 2000, separations) are
 //! reported, never silently left out.
 
 use std::collections::HashSet;
 
-use pdfcraft_cos::{Dict, Document, ImageBudget, MAX_DECODED, ObjRef, Object, Stream};
-use pdfcraft_filters::FilterError;
+use patronuspdf_cos::{Dict, Document, ImageBudget, MAX_DECODED, ObjRef, Object, Stream};
+use patronuspdf_filters::FilterError;
 
 /// One image, ready to write.
 #[derive(Clone, Debug, PartialEq)]
@@ -51,7 +51,7 @@ pub fn extract_images(doc: &Document, pages: &[usize], min_side: u32) -> ImageEx
 /// [`extract_images`] within `budget`, and holding `max_bytes` of files. An image past either is
 /// left out, with the reason.
 pub(crate) fn extract_images_within(doc: &Document, pages: &[usize], min_side: u32, budget: &mut ImageBudget, max_bytes: usize) -> ImageExport {
-    let all = pdfcraft_model::pages(doc);
+    let all = patronuspdf_model::pages(doc);
     let mut out = ImageExport::default();
     let mut seen = HashSet::new();
     let mut held = 0usize;
@@ -154,7 +154,7 @@ fn image(doc: &Document, s: &Stream, budget: &mut ImageBudget) -> Result<(&'stat
     let jpeg_data = if jpeg && f.len() > 1 {
         let direct = doc.with_direct_parms(s);
         let chain = direct.filters();
-        let Some(((pdfcraft_filters::Filter::Dct, _), prefix)) = chain.split_last() else {
+        let Some(((patronuspdf_filters::Filter::Dct, _), prefix)) = chain.split_last() else {
             return Err("invalid JPEG filter chain".into());
         };
         std::borrow::Cow::Owned(budget.decode_chain(prefix, &s.raw, MAX_DECODED).map_err(|e| e.to_string())?)

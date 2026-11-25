@@ -1,4 +1,4 @@
-# Where PdfCraft falls short of Acrobat Pro
+# Where Patronus PDF falls short of Acrobat Pro
 
 > **Last reviewed:** 2026-11-11 | **Last updated:** 2026-11-11 | **Change:** minor (gap 8: known residual risk for the LibreOffice sidecar, sandbox tracked in #6953; estimates unchanged)
 > **Last reviewed:** 2026-10-28 | **Last updated:** 2026-10-28 | **Change:** minor (M10, #4119 partial: Enhance scanned file cleans scanned pages in place: background removal, edge shadow removal, despeckle; estimates unchanged)
@@ -114,7 +114,7 @@ update the numbers.
   and smaller body lines (#1756) and cells in different columns (#1680, #2478) are still grouped
   by the same geometry. A row that a list item wraps onto stays with that item. Estimates are unchanged.
 
-- **Missing:** robust in-place editing of text PdfCraft didn't write: subset fonts without the
+- **Missing:** robust in-place editing of text Patronus PDF didn't write: subset fonts without the
   needed glyphs, CJK and right-to-left text, rotated text, lists, superscript/subscript, keeping
   structure tags, find and replace beyond plain paragraphs (form fields, comments, matches across
   paragraphs); vector and object editing; arrange and align.
@@ -204,7 +204,7 @@ update the numbers.
   but Impress has no such setting and the process's network access isn't sandboxed);
   `create.export-xlsx`, `create.export-pptx`,
   `create.from-html` planned.
-- **Known residual risk:** conversion runs the user's installed LibreOffice. PdfCraft
+- **Known residual risk:** conversion runs the user's installed LibreOffice. Patronus PDF
   opens no connection itself. Macros are disabled, untrusted referer links are blocked,
   and Writer and Calc never update links. Impress has no link-update setting, and the
   `soffice` process isn't network-sandboxed, so linked content in presentations could be
@@ -247,12 +247,12 @@ update the numbers.
   into structure trees with unusual layouts (only a direct Document root with a direct
   ParentTree Nums array is extended),
   visual Tags, Order and Content panels, Reading Order tool, table editor, Make Accessible action,
-  Read Out Loud; full keyboard operation of PdfCraft itself and a screen-reader audit.
+  Read Out Loud; full keyboard operation of Patronus PDF itself and a screen-reader audit.
 - **Evidence:** all 32 checker rules, figure alt text, tag property and sibling order edits, and
   a bounded auto-tag preview exist. Apply writes valid structure and parent-tree links for
   text-only files, tagging headings by size and weight; it refuses mixed content and existing tags;
   `a11y.keyboard-only` (P0) planned, `a11y.app-screen-reader` partial.
-- **Impact:** most untagged files still need another editor to build their structure; PdfCraft itself is
+- **Impact:** most untagged files still need another editor to build their structure; Patronus PDF itself is
   not yet usable without a mouse.
 - **Estimate:** 40–70 h. **Doc:** [target-app-parity.md](target-app-parity.md).
 
@@ -304,7 +304,7 @@ update the numbers.
   another purely because `pdftotext` makes it in one place and not the other. The corpus-wide
   first reading has not been taken yet.
 - **Evidence:** text extraction (word-F1 0.98 against `pdftotext`) and now rendering (above); qpdf
-  checks written output on every CI run since `PDFCRAFT_ORACLES_REQUIRED`. Acrobat captures must
+  checks written output on every CI run since `PATRONUSPDF_ORACLES_REQUIRED`. Acrobat captures must
   stay local in `plan/acrobat/` (clean-room, clean-room.md).
 - **Still missing:** Acrobat itself as the reference rather than other open renderers; form
   calculation and signature validation; the interop suite that opens every kind of output we write
@@ -451,7 +451,7 @@ update the numbers.
 | 2026-10-12 | minor | #1316: replacing a line or paragraph keeps a neighbouring line whose glyph box overlaps. Gap 3 remains. Estimates unchanged. |
 | 2026-10-12 | minor | Exclusive image crops resize with their pixels across nested states, intervening operators and content streams; shared clips remain fixed. Synthetic engine/tool regressions and private image save/reopen checks; estimates unchanged. |
 | 2026-10-12 | minor | Gap 13: measured large-file memory; edits no longer keep the previous working file while writing the next (peak 3 → 2 copies); file-backed input recorded as blocked on gap 2 |
-| 2026-10-11 | minor | Closed gap 4: the web build prints through the browser's print dialog (sheets drawn by PdfCraft at 150–300 dpi, one per printed page); number kept |
+| 2026-10-11 | minor | Closed gap 4: the web build prints through the browser's print dialog (sheets drawn by Patronus PDF at 150–300 dpi, one per printed page); number kept |
 | 2026-10-11 | minor | Word invoice failure #773 has synthetic regression coverage; broader Office conversion remains gap 8. |
 | 2026-10-11 | minor | Contributor fork: mixed-style visual regions, source-font space reuse and a read-only textless background. Embedded sfnt source faces and Mac subset Unicode mappings keep edit baselines stable; live frames follow Apply/Save geometry as text grows or shrinks. Engine/tool/UI regressions and private all-page checks cover the changes; full matching font import, CFF, range styles, shaping and private Chinese typing checks added; legacy programs and general fidelity remain open; estimates unchanged |
 | 2026-10-11 | patch | Gap 2: 23 hayro-interpret and 10 hayro patches after axial and radial shadings became native gradients (backport of hayro 0.8) |

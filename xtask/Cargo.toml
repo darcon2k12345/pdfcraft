@@ -9,8 +9,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-pdfcraft-oracle = { workspace = true }
-pdfcraft-cos = { workspace = true }
+patronuspdf-oracle = { workspace = true }
+patronuspdf-cos = { workspace = true }
 anyhow = "1"
 lopdf = "0.45"
 craft-image-codecs = { workspace = true }

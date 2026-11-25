@@ -25,11 +25,11 @@ mod support {
     pub mod fixture;
 }
 
-use pdfcraft_annot::{
+use patronuspdf_annot::{
     AnnotError, AttachIcon, LineEnding, Markup, Meta, NewAnnotation, NoteIcon, OverlayFont, OverlayLook, ReviewState, Shape, StampKind, Style,
     StyleChange, add_annotation, add_reply, delete_annotation, links, page_refs, props, set_locked, set_review_state, set_style, summaries,
 };
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, SaveOptions};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object, SaveOptions};
 
 use support::bytes;
 use support::fixture::{
@@ -277,7 +277,7 @@ fn shapes_keep_rectangles_fills_borders_and_stamp_identity() {
         assert_eq!(name_of(&reopened, &st, b"Subtype").as_deref(), Some("Stamp"), "{path:?}");
         assert_eq!(name_of(&reopened, &st, b"Name").as_deref(), Some("Approved"), "{path:?}: a standard stamp keeps its Table 184 name");
         assert_eq!(nums(&reopened, &st, b"Rect").as_deref(), Some(&[40.0, 600.0, 180.0, 650.0][..]), "{path:?}");
-        assert!(st.contains(b"PCStamp"), "{path:?}: PdfCraft's own artwork is marked as such");
+        assert!(st.contains(b"PCStamp"), "{path:?}: Patronus PDF's own artwork is marked as such");
         assert_eq!(str_of(&reopened, &st, b"PCByLine").as_deref(), Some("Ada"), "{path:?}");
         if !matches!(path, Save::FullStreams) {
             assert_eq!(bytes::numbers_of(&file, "IC").first(), Some(&vec![0.0, 0.5, 0.0]), "{path:?}");
@@ -690,7 +690,7 @@ fn locked_flag_survives_and_still_refuses_edits_after_reopen() {
         assert_eq!(d.int(b"F"), Some(FLAG_PRINT | FLAG_READONLY), "{path:?}: Print plus ReadOnly (bit 8)");
         assert_eq!(props(&reopened, 0, 0).map(|p| p.locked), Some(true), "{path:?}");
         let mut try_move = reopened.clone();
-        let e = pdfcraft_annot::move_annotation(&mut try_move, 0, 0, 5.0, 5.0, &meta("nope")).err();
+        let e = patronuspdf_annot::move_annotation(&mut try_move, 0, 0, 5.0, 5.0, &meta("nope")).err();
         assert_eq!(e, Some(AnnotError::Invalid("the comment is locked".into())), "{path:?}: moving a locked comment refuses");
         let mut try_delete = reopened.clone();
         assert!(delete_annotation(&mut try_delete, 0, 0).is_err(), "{path:?}: deleting a locked comment refuses");
@@ -791,7 +791,7 @@ fn removing_all_links_keeps_comments() {
 
 // ── data the crate does not understand, and nothing at all ─────────────────────────────────────
 
-/// A stranger's file can hold inline annotation dictionaries and keys PdfCraft has never heard of.
+/// A stranger's file can hold inline annotation dictionaries and keys Patronus PDF has never heard of.
 /// Fidelity says they are preserved rather than dropped (`CLAUDE.md`: preserve unknown data).
 #[test]
 fn inline_annotations_and_unknown_keys_survive_every_save_path() {
@@ -989,9 +989,9 @@ fn a_full_rewrite_into_object_streams_describes_the_same_comments_as_a_plain_tab
 
     // The plain-table output is bigger here: object streams compress, which is the point of them.
     let opts = SaveOptions { mod_date: None, id_seed: 0x5052_494E_5443_5241, object_streams: true, drop_unlinked: false, id_entropy: None };
-    let packed_bytes = pdfcraft_cos::write_full(&doc, &opts).expect("writes");
+    let packed_bytes = patronuspdf_cos::write_full(&doc, &opts).expect("writes");
     assert!(
-        packed_bytes.len() < pdfcraft_cos::write_full(&doc, &SaveOptions { object_streams: false, ..opts }).expect("writes").len(),
+        packed_bytes.len() < patronuspdf_cos::write_full(&doc, &SaveOptions { object_streams: false, ..opts }).expect("writes").len(),
         "the packed file should be smaller"
     );
 }

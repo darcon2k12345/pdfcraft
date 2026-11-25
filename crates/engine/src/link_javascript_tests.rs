@@ -79,7 +79,7 @@ fn open_pdf(pdf: Vec<u8>) -> (Session, DocId) {
 fn a_link_runs_its_javascript_in_the_document_realm() {
     let script = "note\\(event.type + ':' + event.name + ':' + \\(event.target === this\\) + ':' + this.pageNum\\); this.pageNum = 0;";
     let (mut s, id) = open(script);
-    let link = s.get(id).unwrap().info.links.iter().find(|l| matches!(l.target, pdfcraft_render::LinkTarget::JavaScript(_))).cloned().unwrap();
+    let link = s.get(id).unwrap().info.links.iter().find(|l| matches!(l.target, patronuspdf_render::LinkTarget::JavaScript(_))).cloned().unwrap();
     assert_eq!((link.page, link.index), (1, 1));
     let o = s.run_link_javascript(id, 1, 1, &[]).unwrap();
     assert_eq!(o.error, None);

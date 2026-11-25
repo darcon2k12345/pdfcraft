@@ -493,7 +493,7 @@ pub const MAX_BRACKET: usize = 100;
 
 pub const MAX_NESTING_DEPTH: usize = 100;
 
-/// PdfCraft patch: a valid stream /Length resolves in at most three lookups (the length, the object stream holding
+/// Patronus PDF patch: a valid stream /Length resolves in at most three lookups (the length, the object stream holding
 /// it, and that stream's own /Length); longer lookup chains overflowed the stack.
 const MAX_LOOKUP_DEPTH: usize = 16;
 
@@ -851,7 +851,7 @@ impl Reader<'_> {
             .collect();
 
         let mut object_streams = Vec::new();
-        // PdfCraft patch: one object budget for every object stream this load parses.
+        // Patronus PDF patch: one object budget for every object stream this load parses.
         let node_budget = NodeBudget::new(MAX_LOAD_NODES);
 
         for (obj_num, entry) in entries {
@@ -898,7 +898,7 @@ impl Reader<'_> {
                 }
             }
 
-            // PdfCraft patch: object streams in object-number order, so the members a spent node
+            // Patronus PDF patch: object streams in object-number order, so the members a spent node
             // budget skips are the same on every load.
             let mut streams_to_process: BTreeMap<u32, Vec<(u32, u16)>> = BTreeMap::new();
             for (obj_num, container_id, index) in object_streams {
@@ -912,7 +912,7 @@ impl Reader<'_> {
                 if let Some(container_obj) = self.document.objects.get(&(container_id, 0))
                     && let Ok(stream) = container_obj.as_stream()
                 {
-                    // PdfCraft patch: parse only the members the table places in this stream, so
+                    // Patronus PDF patch: parse only the members the table places in this stream, so
                     // the others spend nothing from the budget.
                     let listed: BTreeSet<u32> = objects_in_stream.iter().map(|&(obj_num, _)| obj_num).collect();
                     let keep = |obj_num: u32| listed.contains(&obj_num);
@@ -1025,7 +1025,7 @@ impl Reader<'_> {
 
                 if let Ok(stream) = object.as_stream() {
                     if stream.dict.has_type(b"ObjStm") && !is_encrypted {
-                        // PdfCraft patch: object streams are expanded after this parallel pass,
+                        // Patronus PDF patch: object streams are expanded after this parallel pass,
                         // one at a time in object-number order (below).
                         let mut object_stream_ids = object_stream_ids.lock().unwrap_or_else(PoisonError::into_inner);
                         object_stream_ids.push(object_id);
@@ -1064,7 +1064,7 @@ impl Reader<'_> {
                 .collect::<Result<BTreeMap<_, _>>>()?;
         }
 
-        // PdfCraft patch: expand the object streams one at a time in object-number order, from one
+        // Patronus PDF patch: expand the object streams one at a time in object-number order, from one
         // node budget for the whole load, so many streams, each inside the decompression limit,
         // cannot together build billions of objects, and the members a spent budget skips are the
         // same on every load. A stream parses only the members it would add: none the table
@@ -1196,7 +1196,7 @@ impl Reader<'_> {
             _ => return Err(Error::MissingXrefEntry),
         };
 
-        // PdfCraft patch: require an in-file container (PDF 7.5.7) and retain the caller's cycle history through
+        // Patronus PDF patch: require an in-file container (PDF 7.5.7) and retain the caller's cycle history through
         // indirect stream /Length lookups; `get_object` caps the depth of that history.
         if !matches!(
             self.document.reference_table.get(container_id),
@@ -1209,7 +1209,7 @@ impl Reader<'_> {
         let container_id = (container_id, 0);
         let container_obj = self.get_object(container_id, already_seen)?;
         let container_stream = container_obj.as_stream()?;
-        // PdfCraft patch: a lookup parses only the member it wants, from one object's budget
+        // Patronus PDF patch: a lookup parses only the member it wants, from one object's budget
         // rather than a load's, so the members before it can't spend that budget first.
         let budget = NodeBudget::new(parser::MAX_OBJECT_NODES);
         let mut object_stream =
@@ -1220,7 +1220,7 @@ impl Reader<'_> {
     }
 
     pub fn get_object(&self, id: ObjectId, already_seen: &mut HashSet<ObjectId>) -> Result<Object> {
-        // PdfCraft patch: each top-level lookup starts with an empty set and every nested lookup adds one object, so
+        // Patronus PDF patch: each top-level lookup starts with an empty set and every nested lookup adds one object, so
         // the set's size is the depth of the lookup chain.
         if already_seen.len() >= MAX_LOOKUP_DEPTH {
             warn!("lookup chain deeper than {MAX_LOOKUP_DEPTH} at object {} {}", id.0, id.1);
@@ -1671,7 +1671,7 @@ impl Reader<'_> {
     /// Newest backwards-scanned `trailer` whose `/Root` references a scanned object, one whose
     /// `/Root` is the catalog first.
     fn find_latest_trailer(&self, xref: &Xref) -> Option<(usize, Dictionary)> {
-        // PdfCraft patch: (#2365) an in-file /Root must also match its generation, as
+        // Patronus PDF patch: (#2365) an in-file /Root must also match its generation, as
         // `get_offset` requires when the root is loaded.
         let usable = |dict: &Dictionary| {
             dict.get(b"Root")
@@ -1681,7 +1681,7 @@ impl Reader<'_> {
                     entry => entry.is_some(),
                 })
         };
-        // PdfCraft patch: (#2365) a candidate whose /Root is the catalog (`/Type /Catalog` or
+        // Patronus PDF patch: (#2365) a candidate whose /Root is the catalog (`/Type /Catalog` or
         // `/Pages`) beats one whose /Root is another dictionary, such as /Info, wherever it is;
         // the other kind is still taken when nothing better is there (an FDF's /Root).
         let is_catalog = |dict: &Dictionary| {
@@ -1724,7 +1724,7 @@ impl Reader<'_> {
                 }
             }
         }
-        // PdfCraft patch: (#2365) a file whose only trailer is a cross-reference stream has
+        // Patronus PDF patch: (#2365) a file whose only trailer is a cross-reference stream has
         // no `trailer` keyword, so the scan above found nothing and the rebuild failed; its
         // /Info and /ID were then lost. Such a stream's dictionary is the trailer, and the
         // latest one in the file wins, as a later `trailer` keyword would.

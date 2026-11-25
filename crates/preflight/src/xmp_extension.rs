@@ -25,7 +25,7 @@
 
 use crate::xmp::NsScope;
 use craft_xml::El;
-use pdfcraft_cos::ObjRef;
+use patronuspdf_cos::ObjRef;
 
 const RDF: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 const EXTENSION: &str = "http://www.aiim.org/pdfa/ns/extension/";

@@ -2,8 +2,8 @@ use super::{Args, Automation, Result, ToolError, Value, failed, json, with_warni
 
 /// A script's request to the viewer as the JSON that running a script reports (page numbers
 /// 1-based); a side panel goes by its fixed id.
-fn request_json(r: &pdfcraft_engine::js::Request) -> Value {
-    use pdfcraft_engine::js::Request as R;
+fn request_json(r: &patronuspdf_engine::js::Request) -> Value {
+    use patronuspdf_engine::js::Request as R;
     match r {
         R::Reset(n) => json!({ "reset": n }),
         R::Print => json!({ "print": true }),
@@ -57,13 +57,13 @@ fn field_id(a: &Args) -> Result<Option<u64>> {
 
 /// A message a script showed, as `js_run` reports it: its text, title (null when it gave none),
 /// icon and buttons.
-pub(crate) fn alert_json(m: &pdfcraft_engine::js::Message) -> Value {
+pub(crate) fn alert_json(m: &patronuspdf_engine::js::Message) -> Value {
     json!({ "message": m.text, "title": m.title, "icon": m.icon.name(), "buttons": m.buttons.name() })
 }
 
 /// What scripts that ran unasked (a document's Will Save or Will Print actions) showed, said
 /// or asked for, as tools report it.
-pub(crate) fn js_output_json(out: &pdfcraft_engine::js::JsOutput) -> Value {
+pub(crate) fn js_output_json(out: &patronuspdf_engine::js::JsOutput) -> Value {
     json!({
         "alerts": out.alerts.iter().map(alert_json).collect::<Vec<_>>(),
         "console": out.console,
@@ -105,7 +105,7 @@ impl Automation {
         let (page, index) = (one_based("page")?, one_based("index")?);
         let doc = self.doc(a)?;
         let id = doc.id;
-        if !doc.info.links.iter().any(|l| l.page == page && l.index == index && matches!(l.target, pdfcraft_render::LinkTarget::JavaScript(_))) {
+        if !doc.info.links.iter().any(|l| l.page == page && l.index == index && matches!(l.target, patronuspdf_render::LinkTarget::JavaScript(_))) {
             return Err(failed(format!("page {} has no JavaScript link {} (see link_list)", page + 1, index + 1)));
         }
         let (o, edit) = self.session.with_own_js_output(id, |s| s.run_link_javascript(id, page, index, &answers)).map_err(failed)?;
@@ -138,7 +138,7 @@ impl Automation {
         }
         let start = self.session.script_clock(id).unwrap_or(0.0);
         let end = start + ms;
-        let mut total = pdfcraft_engine::ScriptRun::default();
+        let mut total = patronuspdf_engine::ScriptRun::default();
         while total.ran < MAX_RUNS {
             let Some(at) = self.session.next_timer(id).filter(|at| *at <= end) else { break };
             let run = self.session.run_timers_at_most(id, at.max(start), MAX_RUNS - total.ran);
@@ -159,7 +159,7 @@ impl Automation {
         Ok(out)
     }
 
-    fn script_run_json(&mut self, id: pdfcraft_engine::DocId, run: &pdfcraft_engine::ScriptRun) -> Value {
+    fn script_run_json(&mut self, id: patronuspdf_engine::DocId, run: &patronuspdf_engine::ScriptRun) -> Value {
         let reqs: Vec<Value> = run.output.requests.iter().map(request_json).collect();
         let alerts: Vec<Value> = run.output.alerts.iter().map(alert_json).collect();
         let pages: Vec<usize> = run.pages.iter().map(|p| p + 1).collect();
@@ -177,7 +177,7 @@ impl Automation {
     /// `js_set_document_script`: set the document-level script `name` to `script`, or remove it
     /// when `script` is left out, as one undoable edit; returns the document's scripts.
     pub(crate) fn js_set_document_script(&mut self, a: &Args) -> Result<Value> {
-        let edit = pdfcraft_engine::Edit::SetDocumentScript { name: a.str("name")?.into(), script: a.opt_str("script")?.map(str::to_string) };
+        let edit = patronuspdf_engine::Edit::SetDocumentScript { name: a.str("name")?.into(), script: a.opt_str("script")?.map(str::to_string) };
         let id = self.doc(a)?.id;
         let warnings = self.apply_with_warnings(id, edit)?;
         Ok(with_warnings(self.js_document_scripts(a)?, warnings))
@@ -186,7 +186,7 @@ impl Automation {
     /// `form_set_script`: set field `field`'s JavaScript for `event` to `script`, or remove it when
     /// `script` is left out, as one undoable edit; returns the console output and errors.
     pub(crate) fn form_set_script(&mut self, a: &Args) -> Result<Value> {
-        let edit = pdfcraft_engine::Edit::SetFieldScript {
+        let edit = patronuspdf_engine::Edit::SetFieldScript {
             name: a.str("field")?.into(),
             event: a.str("event")?.into(),
             script: a.opt_str("script")?.map(str::to_string),
@@ -200,7 +200,7 @@ impl Automation {
     /// focus, running its XFA scripts for that event; returns whether the form changed and what
     /// the scripts showed or asked for.
     pub(crate) fn form_focus(&mut self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::js::FieldFocus;
+        use patronuspdf_engine::js::FieldFocus;
         let focus = match a.str("event")? {
             "enter" => FieldFocus::Enter,
             "exit" => FieldFocus::Exit,
@@ -230,14 +230,14 @@ impl Automation {
     /// whether the form changed and what the script showed or asked for.
     pub(crate) fn js_event(&mut self, a: &Args) -> Result<Value> {
         let event = a.str("event")?;
-        let trigger = pdfcraft_engine::FieldTrigger::from_id(event).ok_or_else(|| {
+        let trigger = patronuspdf_engine::FieldTrigger::from_id(event).ok_or_else(|| {
             ToolError::InvalidArgs(format!("event must be mouse_enter, mouse_exit, mouse_down, mouse_up, on_focus or on_blur, not {event:?}"))
         })?;
         let name = a.str("field")?;
         let identity = field_id(a)?;
         let doc = self.doc(a)?;
         let field =
-            doc.form.iter().find(|f| f.name == name && identity.is_none_or(|i| pdfcraft_engine::js::field_object_id(f.obj) == i)).ok_or_else(
+            doc.form.iter().find(|f| f.name == name && identity.is_none_or(|i| patronuspdf_engine::js::field_object_id(f.obj) == i)).ok_or_else(
                 || match identity {
                     Some(i) => failed(format!("there is no field named {name:?} with field_id {i} (see form_fields)")),
                     None => failed(format!("there is no field named {name:?} (see form_fields)")),
@@ -249,7 +249,7 @@ impl Automation {
             0 => ToolError::InvalidArgs(format!("{name:?} has no widget")),
             n => ToolError::InvalidArgs(format!("widget must be 1 to {n} for {name:?}")),
         })?;
-        let (id, object) = (doc.id, pdfcraft_engine::js::field_object_id(field.obj));
+        let (id, object) = (doc.id, patronuspdf_engine::js::field_object_id(field.obj));
         // Only this event's output: what opening or an earlier tool left waiting stays.
         let (changed, out) =
             self.session.with_own_js_output(id, |s| s.field_trigger_target(id, name, Some(object), widget, trigger)).map_err(failed)?;
@@ -266,7 +266,7 @@ impl Automation {
             let path = self.resolve(p, false)?;
             files.push((p.to_string(), crate::read_input_bytes(&path).map_err(|e| failed(format!("{p}: {e}")))?));
         }
-        let csv = pdfcraft_engine::merge_data_files(&files).map_err(failed)?;
+        let csv = patronuspdf_engine::merge_data_files(&files).map_err(failed)?;
         let target = self.resolve(a.str("path")?, true)?;
         write_atomic(&target, csv.as_bytes())?;
         let columns = csv.lines().next().map_or(0, |h| h.split(',').count());
@@ -281,9 +281,9 @@ impl Automation {
             .iter()
             .map(|(p, c)| {
                 let (kind, comb) = match c.kind {
-                    pdfcraft_engine::detect::Kind::Text => ("text", None),
-                    pdfcraft_engine::detect::Kind::CheckBox => ("checkbox", None),
-                    pdfcraft_engine::detect::Kind::Comb { cells } => ("text", Some(cells)),
+                    patronuspdf_engine::detect::Kind::Text => ("text", None),
+                    patronuspdf_engine::detect::Kind::CheckBox => ("checkbox", None),
+                    patronuspdf_engine::detect::Kind::Comb { cells } => ("text", Some(cells)),
                 };
                 let mut v = json!({ "page": p + 1, "kind": kind, "name": c.name, "rect": c.rect.map(|v| (v * 100.0).round() / 100.0) });
                 if let Some(cells) = comb {
@@ -301,7 +301,7 @@ impl Automation {
     }
 
     pub(crate) fn form_actions(&self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::FieldAction as A;
+        use patronuspdf_engine::FieldAction as A;
         let list: Vec<Value> = self
             .doc(a)?
             .field_actions(a.str("field")?)
@@ -326,7 +326,7 @@ impl Automation {
     }
 
     pub(crate) fn form_set_actions(&mut self, a: &Args) -> Result<Value> {
-        use pdfcraft_engine::{FieldAction as A, FieldTrigger as T};
+        use patronuspdf_engine::{FieldAction as A, FieldTrigger as T};
         let items = a.get("actions").and_then(Value::as_array).ok_or_else(|| ToolError::InvalidArgs("actions must be an array".into()))?;
         let bad = |m: String| ToolError::InvalidArgs(m);
         let names = |v: &Value| -> Vec<String> {
@@ -358,8 +358,10 @@ impl Automation {
             acts.push((t, act));
         }
         let name = a.str("field")?.to_string();
-        let edit =
-            pdfcraft_engine::Edit::SetFieldProps { name, props: Box::new(pdfcraft_engine::FieldProps { actions: Some(acts), ..Default::default() }) };
+        let edit = patronuspdf_engine::Edit::SetFieldProps {
+            name,
+            props: Box::new(patronuspdf_engine::FieldProps { actions: Some(acts), ..Default::default() }),
+        };
         let id = self.doc(a)?.id;
         let warnings = self.apply_with_warnings(id, edit)?;
         Ok(with_warnings(self.form_actions(a)?, warnings))
@@ -374,7 +376,7 @@ impl Automation {
 }
 
 /// Adds what `run` did to `total`.
-fn merge_runs(total: &mut pdfcraft_engine::ScriptRun, run: pdfcraft_engine::ScriptRun) {
+fn merge_runs(total: &mut patronuspdf_engine::ScriptRun, run: patronuspdf_engine::ScriptRun) {
     total.ran += run.ran;
     total.edited |= run.edited;
     total.layers |= run.layers;

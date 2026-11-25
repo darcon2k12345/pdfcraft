@@ -1745,7 +1745,6 @@ dependencies = [
 [[package]]
 name = "craft-update"
 version = "0.1.0"
-source = "git+https://github.com/storytold/craft-libs?rev=e2dc681a3#e2dc681a3ad8a47038da2f11ddd2c5e1c0454991"
 dependencies = [
  "chrono",
  "dunce",
@@ -4914,18 +4913,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 
 [[package]]
-name = "pbkdf2"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "112d82ceb8c5bf524d9af484d4e4970c9fd5a0cc15ba14ad93dccd28873b0629"
-dependencies = [
- "digest 0.11.3",
- "hmac",
-]
-
-[[package]]
-name = "pdfcraft"
-version = "0.21.1"
+name = "patronuspdf"
+version = "0.21.2"
 dependencies = [
  "chrono",
  "craft-update",
@@ -4933,9 +4922,9 @@ dependencies = [
  "egui",
  "fmv-macos-events",
  "log",
- "pdfcraft-engine",
- "pdfcraft-platform",
- "pdfcraft-ui-egui",
+ "patronuspdf-engine",
+ "patronuspdf-platform",
+ "patronuspdf-ui-egui",
  "pollster 1.0.1",
  "raw-window-handle",
  "serde_json",
@@ -4949,43 +4938,43 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-a11y"
-version = "0.21.1"
+name = "patronuspdf-a11y"
+version = "0.21.2"
 dependencies = [
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-annot"
-version = "0.21.1"
+name = "patronuspdf-annot"
+version = "0.21.2"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-geom",
- "pdfcraft-model",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
+ "patronuspdf-geom",
+ "patronuspdf-model",
  "proptest",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-audit"
-version = "0.21.1"
+name = "patronuspdf-audit"
+version = "0.21.2"
 dependencies = [
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-edit",
- "pdfcraft-model",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-edit",
+ "patronuspdf-model",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-automation"
-version = "0.21.1"
+name = "patronuspdf-automation"
+version = "0.21.2"
 dependencies = [
  "base64 0.23.1",
  "craft-cms 0.1.0 (git+https://github.com/storytold/craft-libs?rev=e2dc681a3)",
@@ -4996,15 +4985,15 @@ dependencies = [
  "craft-prc",
  "craft-wordmodel 0.1.0 (git+https://github.com/storytold/craft-libs?rev=b8eaa8e2f3561f9fa27fcf3b7f67ce915e93caa3)",
  "flate2",
- "pdfcraft-cos",
- "pdfcraft-engine",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-organize",
- "pdfcraft-platform",
- "pdfcraft-prc-render",
- "pdfcraft-render",
- "pdfcraft-xfa",
+ "patronuspdf-cos",
+ "patronuspdf-engine",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
+ "patronuspdf-organize",
+ "patronuspdf-platform",
+ "patronuspdf-prc-render",
+ "patronuspdf-render",
+ "patronuspdf-xfa",
  "rustix 1.1.6",
  "serde_json",
  "sha2 0.11.1",
@@ -5012,52 +5001,52 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-cli"
-version = "0.21.1"
+name = "patronuspdf-cli"
+version = "0.21.2"
 dependencies = [
  "base64 0.23.1",
  "craft-image-codecs",
- "pdfcraft-audit",
- "pdfcraft-automation",
- "pdfcraft-cos",
- "pdfcraft-engine",
- "pdfcraft-platform",
- "pdfcraft-preflight",
- "pdfcraft-render",
+ "patronuspdf-audit",
+ "patronuspdf-automation",
+ "patronuspdf-cos",
+ "patronuspdf-engine",
+ "patronuspdf-platform",
+ "patronuspdf-preflight",
+ "patronuspdf-render",
  "rustix 1.1.6",
  "serde_json",
  "winresource",
 ]
 
 [[package]]
-name = "pdfcraft-compare"
-version = "0.21.1"
+name = "patronuspdf-compare"
+version = "0.21.2"
 
 [[package]]
-name = "pdfcraft-content"
-version = "0.21.1"
+name = "patronuspdf-content"
+version = "0.21.2"
 dependencies = [
  "craft-pdf",
  "hayro-syntax",
 ]
 
 [[package]]
-name = "pdfcraft-cos"
-version = "0.21.1"
+name = "patronuspdf-cos"
+version = "0.21.2"
 dependencies = [
  "craft-pdf",
  "hayro-syntax",
- "pdfcraft-crypt",
- "pdfcraft-filters",
- "pdfcraft-oracle",
- "pdfcraft-testkit",
+ "patronuspdf-crypt",
+ "patronuspdf-filters",
+ "patronuspdf-oracle",
+ "patronuspdf-testkit",
  "proptest",
  "serde_json",
 ]
 
 [[package]]
-name = "pdfcraft-create"
-version = "0.21.1"
+name = "patronuspdf-create"
+version = "0.21.2"
 dependencies = [
  "craft-image-codecs",
  "craft-jpeg 0.1.0 (git+https://github.com/storytold/craft-libs?rev=e2dc681a3)",
@@ -5066,36 +5055,36 @@ dependencies = [
  "hayro-ccitt",
  "hayro-syntax",
  "image",
- "pdfcraft-cos",
- "pdfcraft-filters",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-xfa",
+ "patronuspdf-cos",
+ "patronuspdf-filters",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
+ "patronuspdf-xfa",
  "rustix 1.1.6",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-crypt"
-version = "0.21.1"
+name = "patronuspdf-crypt"
+version = "0.21.2"
 dependencies = [
  "craft-pdf",
  "proptest",
 ]
 
 [[package]]
-name = "pdfcraft-edit"
-version = "0.21.1"
+name = "patronuspdf-edit"
+version = "0.21.2"
 dependencies = [
  "hayro-syntax",
  "icu_segmenter",
  "kurbo 0.13.1",
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-render",
+ "patronuspdf-annot",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
+ "patronuspdf-render",
  "proptest",
  "sha2 0.11.1",
  "thiserror 2.0.21",
@@ -5103,8 +5092,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-engine"
-version = "0.21.1"
+name = "patronuspdf-engine"
+version = "0.21.2"
 dependencies = [
  "chrono",
  "craft-cms 0.1.0 (git+https://github.com/storytold/craft-libs?rev=e2dc681a3)",
@@ -5115,33 +5104,33 @@ dependencies = [
  "icu_properties",
  "idna",
  "image",
- "pdfcraft-a11y",
- "pdfcraft-annot",
- "pdfcraft-audit",
- "pdfcraft-compare",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-create",
- "pdfcraft-edit",
- "pdfcraft-export",
- "pdfcraft-filters",
- "pdfcraft-fonts",
- "pdfcraft-forms",
- "pdfcraft-geom",
- "pdfcraft-js",
- "pdfcraft-measure",
- "pdfcraft-model",
- "pdfcraft-ocr",
- "pdfcraft-optimize",
- "pdfcraft-organize",
- "pdfcraft-preflight",
- "pdfcraft-print",
- "pdfcraft-redact",
- "pdfcraft-render",
- "pdfcraft-sign",
- "pdfcraft-testkit",
- "pdfcraft-xfa",
- "pdfcraft-xfdf",
+ "patronuspdf-a11y",
+ "patronuspdf-annot",
+ "patronuspdf-audit",
+ "patronuspdf-compare",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-create",
+ "patronuspdf-edit",
+ "patronuspdf-export",
+ "patronuspdf-filters",
+ "patronuspdf-fonts",
+ "patronuspdf-forms",
+ "patronuspdf-geom",
+ "patronuspdf-js",
+ "patronuspdf-measure",
+ "patronuspdf-model",
+ "patronuspdf-ocr",
+ "patronuspdf-optimize",
+ "patronuspdf-organize",
+ "patronuspdf-preflight",
+ "patronuspdf-print",
+ "patronuspdf-redact",
+ "patronuspdf-render",
+ "patronuspdf-sign",
+ "patronuspdf-testkit",
+ "patronuspdf-xfa",
+ "patronuspdf-xfdf",
  "rustix 1.1.6",
  "thiserror 2.0.21",
  "unicode-segmentation",
@@ -5149,8 +5138,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-export"
-version = "0.21.1"
+name = "patronuspdf-export"
+version = "0.21.2"
 dependencies = [
  "craft-docx",
  "craft-html 0.1.0 (git+https://github.com/storytold/craft-libs?rev=1546550b0d4b79b8156a1fefaac8b3b317a4aee0)",
@@ -5166,8 +5155,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-filters"
-version = "0.21.1"
+name = "patronuspdf-filters"
+version = "0.21.2"
 dependencies = [
  "craft-pdf",
  "proptest",
@@ -5175,68 +5164,68 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-fonts"
-version = "0.21.1"
+name = "patronuspdf-fonts"
+version = "0.21.2"
 dependencies = [
  "craft-pdf",
  "harfrust",
- "pdfcraft-cos",
+ "patronuspdf-cos",
  "skrifa 0.44.0",
  "unicode-bidi",
 ]
 
 [[package]]
-name = "pdfcraft-forms"
-version = "0.21.1"
+name = "patronuspdf-forms"
+version = "0.21.2"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
  "proptest",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-geom"
-version = "0.21.1"
+name = "patronuspdf-geom"
+version = "0.21.2"
 
 [[package]]
-name = "pdfcraft-js"
-version = "0.21.1"
+name = "patronuspdf-js"
+version = "0.21.2"
 dependencies = [
  "boa_engine",
  "chrono",
 ]
 
 [[package]]
-name = "pdfcraft-measure"
-version = "0.21.1"
+name = "patronuspdf-measure"
+version = "0.21.2"
 dependencies = [
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-model",
- "pdfcraft-testkit",
+ "patronuspdf-annot",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-model",
+ "patronuspdf-testkit",
  "serde",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-model"
-version = "0.21.1"
+name = "patronuspdf-model"
+version = "0.21.2"
 dependencies = [
- "pdfcraft-cos",
+ "patronuspdf-cos",
 ]
 
 [[package]]
-name = "pdfcraft-ocr"
-version = "0.21.1"
+name = "patronuspdf-ocr"
+version = "0.21.2"
 dependencies = [
  "craft-image-codecs",
  "ocrs",
- "pdfcraft-fonts",
+ "patronuspdf-fonts",
  "rten",
  "rten-imageproc",
  "serde_json",
@@ -5246,51 +5235,51 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-ocr-worker"
-version = "0.21.1"
+name = "patronuspdf-ocr-worker"
+version = "0.21.2"
 dependencies = [
  "js-sys",
- "pdfcraft-ocr",
+ "patronuspdf-ocr",
  "wasm-bindgen",
  "web-sys",
 ]
 
 [[package]]
-name = "pdfcraft-optimize"
-version = "0.21.1"
+name = "patronuspdf-optimize"
+version = "0.21.2"
 dependencies = [
  "craft-image-codecs",
  "craft-jpeg 0.1.0 (git+https://github.com/storytold/craft-libs?rev=e2dc681a3)",
  "image",
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-filters",
- "pdfcraft-model",
- "pdfcraft-render",
+ "patronuspdf-annot",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-filters",
+ "patronuspdf-model",
+ "patronuspdf-render",
  "proptest",
  "thiserror 2.0.21",
  "thread-priority",
 ]
 
 [[package]]
-name = "pdfcraft-oracle"
-version = "0.21.1"
+name = "patronuspdf-oracle"
+version = "0.21.2"
 
 [[package]]
-name = "pdfcraft-organize"
-version = "0.21.1"
+name = "patronuspdf-organize"
+version = "0.21.2"
 dependencies = [
  "hayro-syntax",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-oracle",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-oracle",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-platform"
-version = "0.21.1"
+name = "patronuspdf-platform"
+version = "0.21.2"
 dependencies = [
  "async-channel",
  "futures-lite",
@@ -5300,8 +5289,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-prc-render"
-version = "0.21.1"
+name = "patronuspdf-prc-render"
+version = "0.21.2"
 dependencies = [
  "craft-prc",
  "flate2",
@@ -5309,51 +5298,51 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-preflight"
-version = "0.21.1"
+name = "patronuspdf-preflight"
+version = "0.21.2"
 dependencies = [
  "craft-cms 0.1.0 (git+https://github.com/storytold/craft-libs?rev=8503f24cb845268f47f97e829491114fe9ad1bfa)",
  "craft-xml 0.1.0 (git+https://github.com/storytold/craft-libs?rev=1546550b0d4b79b8156a1fefaac8b3b317a4aee0)",
  "flate2",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-model",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-model",
 ]
 
 [[package]]
-name = "pdfcraft-print"
-version = "0.21.1"
+name = "patronuspdf-print"
+version = "0.21.2"
 dependencies = [
  "craft-cms 0.1.0 (git+https://github.com/storytold/craft-libs?rev=e2dc681a3)",
  "craft-print",
  "log",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-model",
- "pdfcraft-render",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-model",
+ "patronuspdf-render",
  "skrifa 0.44.0",
  "thiserror 2.0.21",
  "winprint 0.2.1 (git+https://github.com/storytold/winprint.rs?rev=5f80b9baf6b58937c401656634e42d33f00ddf49)",
 ]
 
 [[package]]
-name = "pdfcraft-redact"
-version = "0.21.1"
+name = "patronuspdf-redact"
+version = "0.21.2"
 dependencies = [
  "aho-corasick",
  "craft-xml 0.1.0 (git+https://github.com/storytold/craft-libs?rev=1546550b0d4b79b8156a1fefaac8b3b317a4aee0)",
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-edit",
- "pdfcraft-filters",
- "pdfcraft-fonts",
- "pdfcraft-forms",
- "pdfcraft-geom",
- "pdfcraft-model",
- "pdfcraft-render",
- "pdfcraft-testkit",
- "pdfcraft-xfa",
+ "patronuspdf-annot",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-edit",
+ "patronuspdf-filters",
+ "patronuspdf-fonts",
+ "patronuspdf-forms",
+ "patronuspdf-geom",
+ "patronuspdf-model",
+ "patronuspdf-render",
+ "patronuspdf-testkit",
+ "patronuspdf-xfa",
  "regex",
  "sha2 0.11.1",
  "thiserror 2.0.21",
@@ -5361,8 +5350,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-render"
-version = "0.21.1"
+name = "patronuspdf-render"
+version = "0.21.2"
 dependencies = [
  "bytemuck",
  "craft-pdf",
@@ -5373,11 +5362,11 @@ dependencies = [
  "kurbo 0.13.1",
  "log",
  "lopdf",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-geom",
- "pdfcraft-testkit",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
+ "patronuspdf-geom",
+ "patronuspdf-testkit",
  "serde",
  "skrifa 0.44.0",
  "thiserror 2.0.21",
@@ -5386,8 +5375,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-sign"
-version = "0.21.1"
+name = "patronuspdf-sign"
+version = "0.21.2"
 dependencies = [
  "aes",
  "aws-lc-rs",
@@ -5406,13 +5395,13 @@ dependencies = [
  "p256",
  "p384",
  "p521",
+ "patronuspdf-annot",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
+ "patronuspdf-testkit",
  "pbkdf2",
- "pdfcraft-annot",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-testkit",
  "rc2",
  "ripemd",
  "rsa",
@@ -5426,12 +5415,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-testkit"
-version = "0.21.1"
+name = "patronuspdf-testkit"
+version = "0.21.2"
 
 [[package]]
-name = "pdfcraft-ui-egui"
-version = "0.21.1"
+name = "patronuspdf-ui-egui"
+version = "0.21.2"
 dependencies = [
  "arboard",
  "base64 0.23.1",
@@ -5459,15 +5448,15 @@ dependencies = [
  "objc2 0.6.5",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
- "pdfcraft-content",
- "pdfcraft-cos",
- "pdfcraft-engine",
- "pdfcraft-fonts",
- "pdfcraft-model",
- "pdfcraft-ocr",
- "pdfcraft-platform",
- "pdfcraft-render",
- "pdfcraft-xfa",
+ "patronuspdf-content",
+ "patronuspdf-cos",
+ "patronuspdf-engine",
+ "patronuspdf-fonts",
+ "patronuspdf-model",
+ "patronuspdf-ocr",
+ "patronuspdf-platform",
+ "patronuspdf-render",
+ "patronuspdf-xfa",
  "plist",
  "pollster 1.0.1",
  "proptest",
@@ -5490,48 +5479,58 @@ dependencies = [
 ]
 
 [[package]]
-name = "pdfcraft-web"
-version = "0.21.1"
+name = "patronuspdf-web"
+version = "0.21.2"
 dependencies = [
  "craft-web-api",
  "craft-web-host",
  "eframe",
  "egui",
  "js-sys",
- "pdfcraft-ui-egui",
+ "patronuspdf-ui-egui",
  "serde_json",
  "wasm-bindgen-futures",
  "web-sys",
 ]
 
 [[package]]
-name = "pdfcraft-xfa"
-version = "0.21.1"
+name = "patronuspdf-xfa"
+version = "0.21.2"
 dependencies = [
  "base64 0.23.1",
  "craft-image-codecs",
  "craft-xfa",
  "craft-xml 0.1.0 (git+https://github.com/storytold/craft-libs?rev=1546550b0d4b79b8156a1fefaac8b3b317a4aee0)",
- "pdfcraft-cos",
- "pdfcraft-fonts",
+ "patronuspdf-cos",
+ "patronuspdf-fonts",
  "sha2 0.11.1",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "pdfcraft-xfdf"
-version = "0.21.1"
+name = "patronuspdf-xfdf"
+version = "0.21.2"
 dependencies = [
  "base64 0.23.1",
  "craft-csv",
  "craft-xfdf",
  "craft-xml 0.1.0 (git+https://github.com/storytold/craft-libs?rev=1546550b0d4b79b8156a1fefaac8b3b317a4aee0)",
- "pdfcraft-annot",
- "pdfcraft-cos",
- "pdfcraft-forms",
- "pdfcraft-model",
+ "patronuspdf-annot",
+ "patronuspdf-cos",
+ "patronuspdf-forms",
+ "patronuspdf-model",
  "proptest",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pbkdf2"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "112d82ceb8c5bf524d9af484d4e4970c9fd5a0cc15ba14ad93dccd28873b0629"
+dependencies = [
+ "digest 0.11.3",
+ "hmac",
 ]
 
 [[package]]
@@ -9241,8 +9240,8 @@ dependencies = [
  "chrono",
  "craft-image-codecs",
  "lopdf",
- "pdfcraft-cos",
- "pdfcraft-oracle",
+ "patronuspdf-cos",
+ "patronuspdf-oracle",
  "serde",
  "serde_json",
  "sha2 0.11.1",

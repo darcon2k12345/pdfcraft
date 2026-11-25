@@ -1,4 +1,4 @@
-# pdfcraft-create
+# patronuspdf-create
 
 Layer L4. Create a PDF (Acrobat's Create a PDF tool), execution plan M10.2:
 
@@ -8,7 +8,7 @@ Layer L4. Create a PDF (Acrobat's Create a PDF tool), execution plan M10.2:
   (`/DCTDecode`, grey, RGB or Adobe-inverted CMYK); PNG is decoded and stored with Flate,
   with transparency as a soft mask. A picture of only pure black and white (a 1-bit PNG or TIFF,
   eight-bit grey, a two-colour palette, RGB without a profile) is stored at one bit per pixel, as
-  CCITT Group 4 or Flate, whichever is smaller as stored (`pdfcraft_filters::encode_g4`). An ICC profile in the file (JPEG `APP2 ICC_PROFILE`, PNG
+  CCITT Group 4 or Flate, whichever is smaller as stored (`patronuspdf_filters::encode_g4`). An ICC profile in the file (JPEG `APP2 ICC_PROFILE`, PNG
   `iCCP`) that matches the image's colour space is kept as an `/ICCBased` colour space with
   the device space as `/Alternate`; images with the same profile share one profile object.
   JPEG metadata scanning skips marker fill bytes and reads application segments after the
@@ -22,13 +22,13 @@ Layer L4. Create a PDF (Acrobat's Create a PDF tool), execution plan M10.2:
   can't draw is set in the bundled Inter face instead (Latin, Greek and Cyrillic letters), with
   the same page, margins, wrapping and form feeds; text Inter can't draw either is refused,
   naming the line and the character, never set as `?`.
-- `from_text_escaped(text, …)`: the same for reports PdfCraft generates from documents
+- `from_text_escaped(text, …)`: the same for reports Patronus PDF generates from documents
   (comment summaries, compare reports): text Inter draws is set in it; otherwise the characters
   Helvetica can't draw are written as `[U+XXXX]` and the first line says so (`ESCAPED_NOTE`).
 
-Every function returns a `pdfcraft_cos::Document`; the caller writes it.
+Every function returns a `patronuspdf_cos::Document`; the caller writes it.
 
-Office documents (`office.rs`) are the exception: PdfCraft doesn't read Word, Excel, PowerPoint,
+Office documents (`office.rs`) are the exception: Patronus PDF doesn't read Word, Excel, PowerPoint,
 OpenDocument or RTF itself. `is_office(name, bytes)` recognises them (an `OFFICE_EXTENSIONS`
 name and an OLE, ZIP or RTF signature; `source_kind` reports `SourceKind::Office`), and
 `office_to_pdf(name, bytes)` returns PDF bytes made by an installed LibreOffice, run headless as
@@ -37,14 +37,14 @@ a separate process: a private temporary folder (owner-only on Unix; the document
 links blocked and Writer and Calc set never to update linked content (sections, files, external
 data) on load, no console window on Windows, and a stop after `TIMEOUT` (120 s) or as soon as the
 output grows past 512 MB (the whole process tree is stopped, not only `soffice`). LibreOffice is
-found through `PDFCRAFT_SOFFICE`, the `PATH`, then the usual install folders (`libreoffice()`).
+found through `PATRONUSPDF_SOFFICE`, the `PATH`, then the usual install folders (`libreoffice()`).
 A snap-installed LibreOffice is not among those folders: its private `/tmp` cannot see the work
 folder. Where `/snap/bin` is on the `PATH` it can still be found there, so point
-`PDFCRAFT_SOFFICE` at a non-snap install if conversions fail. It takes seconds, so callers keep it
+`PATRONUSPDF_SOFFICE` at a non-snap install if conversions fail. It takes seconds, so callers keep it
 off the frame thread. On the web it returns an error.
 
 Impress has no setting for linked content, and the profile settings are LibreOffice's own:
-PdfCraft doesn't sandbox the process's network access. Converting test documents whose linked
+Patronus PDF doesn't sandbox the process's network access. Converting test documents whose linked
 sections, pictures and external cell references point at a local listener made no connection,
 with or without the Writer and Calc settings (LibreOffice 26.8.1, Windows, 2026-10-26), so the settings are a
 second line of defence rather than a measured fix.
@@ -53,9 +53,9 @@ second line of defence rather than a measured fix.
 offer, so detection and pickers agree.
 
 Image export and Save Image As apply each lossless image's Decode pair before converting its color components.
-JBIG2 images and masks are decoded through `pdfcraft_cos::ImageBudget` (`pdfcraft_filters::decode_jbig2_within`), behind
+JBIG2 images and masks are decoded through `patronuspdf_cos::ImageBudget` (`patronuspdf_filters::decode_jbig2_within`), behind
 other filters too, with the `/JBIG2Globals` of their own `/DecodeParms` entry, as `JBIG2Decode` gives them: black as 0. An image
-whose JBIG2 page isn't its size (PdfCraft's renderer draws the whole page into the image; the page is refused before it is decoded),
+whose JBIG2 page isn't its size (Patronus PDF's renderer draws the whole page into the image; the page is refused before it is decoded),
 or whose globals can't be read or decode to more than 32 MiB (they are decoded before the page's size is known, so they have a
 limit of their own), is skipped, and such a mask is left out and the image exported opaque, as JPX and CCITT masks are.
 Past what one export may decode, which its images share, filters, decoders and pixels alike (`ImageBudget`; a JPEG when it has to be
@@ -67,7 +67,7 @@ Soft-mask Decode intervals map samples to opacity before the mask is resized, in
 The existing 16-bit path still uses each sample's high byte.
 JPEG image Decode handling remains limited.
 ICC transforms and calibrated color conversion remain outside this export path.
-CCITT fax images (Group 3 and 4) are decoded for export through `pdfcraft_cos::Document::decoded_image` with their
+CCITT fax images (Group 3 and 4) are decoded for export through `patronuspdf_cos::Document::decoded_image` with their
 `/DecodeParms` (`/Columns` has to be the image's width; up to `/Height` rows, whatever `/Rows` says), behind other filters such as
 `ASCII85Decode` too. Byte-aligned Group 3 rows are read by their end-of-line codes, whether the fill starts each code on a byte or
 ends it on one, when the data starts with one (T.4 sends one before the first row), and on bytes otherwise, whatever `/EndOfLine`

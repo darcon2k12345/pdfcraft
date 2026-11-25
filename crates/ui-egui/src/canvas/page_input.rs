@@ -2,7 +2,7 @@
 //! router, the text layer, and what is drawn over the page after its text.
 
 use egui::{Color32, CornerRadius, Pos2, Rect, Stroke};
-use pdfcraft_render::{DocInfo, LinkTarget, PageText};
+use patronuspdf_render::{DocInfo, LinkTarget, PageText};
 
 use super::area::{SignTab, paint_sign_tab, sign_tab_at, sign_tabs};
 use super::{
@@ -44,7 +44,7 @@ pub(crate) struct PageToolContext<'a> {
     pub xf: &'a PageXform,
     pub ptr: &'a PagePointer,
     pub page: usize,
-    pub doc: &'a pdfcraft_engine::Document,
+    pub doc: &'a patronuspdf_engine::Document,
     pub info: &'a DocInfo,
     /// This frame's keys as the pages see them.
     pub keys: PageKeys,
@@ -282,8 +282,8 @@ pub(super) fn page_tool_input(ui: &mut egui::Ui, view: &mut DocView, frame: &mut
 /// signs; none unless `shown`.
 fn page_sign_tabs<'a>(
     ui: &egui::Ui,
-    doc: &'a pdfcraft_engine::Document,
-    form: &[pdfcraft_engine::FormField],
+    doc: &'a patronuspdf_engine::Document,
+    form: &[patronuspdf_engine::FormField],
     info: &DocInfo,
     slot: &PageSlot,
     can_fill: bool,
@@ -463,9 +463,9 @@ fn right_click(hits: &PageHits<'_>, under: &[crate::page_router::Hit], view: &mu
 /// Edit text's paragraphs and pictures on page `i`, kept while the document is unchanged.
 fn edit_inventory(
     view: &mut DocView,
-    doc: &pdfcraft_engine::Document,
+    doc: &patronuspdf_engine::Document,
     i: usize,
-) -> (Vec<pdfcraft_engine::TextBlock>, Vec<pdfcraft_engine::PageImage>) {
+) -> (Vec<patronuspdf_engine::TextBlock>, Vec<patronuspdf_engine::PageImage>) {
     let generation = doc.edit_generation();
     let lines = match view.edit_lines.get(&i) {
         Some((g, l)) if *g == generation => l.clone(),
@@ -486,9 +486,9 @@ struct PageHits<'a> {
     info: &'a DocInfo,
     tool: QuickTool,
     pcx: &'a comments::PageCx<'a>,
-    form: &'a [pdfcraft_engine::FormField],
+    form: &'a [patronuspdf_engine::FormField],
     /// Its document: what its scripts show while it is read (`Document::shown_by_scripts`).
-    doc: &'a pdfcraft_engine::Document,
+    doc: &'a patronuspdf_engine::Document,
     can_fill: bool,
     can_modify: bool,
     /// Edit a PDF is open: added text and pictures can be picked up.
@@ -497,11 +497,11 @@ struct PageHits<'a> {
     field_tool: Option<crate::prepare::FieldTool>,
     /// Prepare may draw and move fields (not while a table is being set up).
     prepare_allowed: bool,
-    added: &'a [pdfcraft_engine::Added],
+    added: &'a [patronuspdf_engine::Added],
     /// The document's links, as the engine lists them (the Link tool edits every one).
-    doc_links: &'a [pdfcraft_engine::LinkItem],
-    lines: &'a [pdfcraft_engine::TextBlock],
-    images: &'a [pdfcraft_engine::PageImage],
+    doc_links: &'a [patronuspdf_engine::LinkItem],
+    lines: &'a [patronuspdf_engine::TextBlock],
+    images: &'a [patronuspdf_engine::PageImage],
     /// The pages' visible area (the picture's rotate knob stays inside it).
     clip: Rect,
     /// Addresses written as plain page text open like links (#4207).
@@ -519,7 +519,7 @@ impl PageHits<'_> {
 
     /// The hits at `p`, bottom up ([`Self::hits`]). For a press with Shift or ⌘ in Edit text, the
     /// page's `objects` ([`crate::object_ui::ObjectSelection::inventory`]), which take it whole.
-    fn at(&self, view: &DocView, p: Pos2, objects: Option<&Result<Vec<pdfcraft_engine::EditableObject>, String>>) -> Vec<crate::page_router::Hit> {
+    fn at(&self, view: &DocView, p: Pos2, objects: Option<&Result<Vec<patronuspdf_engine::EditableObject>, String>>) -> Vec<crate::page_router::Hit> {
         self.hits(view, p, false, objects)
     }
 
@@ -570,7 +570,7 @@ impl PageHits<'_> {
         view: &DocView,
         p: Pos2,
         context: bool,
-        objects: Option<&Result<Vec<pdfcraft_engine::EditableObject>, String>>,
+        objects: Option<&Result<Vec<patronuspdf_engine::EditableObject>, String>>,
     ) -> Vec<crate::page_router::Hit> {
         let PageHits {
             page,
@@ -942,7 +942,7 @@ pub(super) fn veiled(view: &DocView) -> bool {
 }
 
 /// The page and index of `l` when clicking it runs a JavaScript action (#2081).
-fn javascript_link(l: &pdfcraft_render::Link) -> Option<(usize, usize)> {
+fn javascript_link(l: &patronuspdf_render::Link) -> Option<(usize, usize)> {
     matches!(l.target, LinkTarget::JavaScript(_)).then_some((l.page, l.index))
 }
 
@@ -1129,14 +1129,21 @@ pub(super) fn page_overlays(ui: &mut egui::Ui, view: &mut DocView, frame: &mut P
     }
 }
 
-fn paint_field_highlights(painter: &egui::Painter, xf: &PageXform, info: &DocInfo, form: &[pdfcraft_engine::FormField], page: usize, enabled: bool) {
+fn paint_field_highlights(
+    painter: &egui::Painter,
+    xf: &PageXform,
+    info: &DocInfo,
+    form: &[patronuspdf_engine::FormField],
+    page: usize,
+    enabled: bool,
+) {
     if !enabled {
         return;
     }
     // A push button holds no value, so it is left as drawn (the frames and controls of a LaTeX
     // `animate` animation are push buttons).
-    for field in form.iter().filter(|f| f.kind != pdfcraft_engine::FormFieldKind::PushButton) {
-        let required = field.has(pdfcraft_engine::field_flags::REQUIRED);
+    for field in form.iter().filter(|f| f.kind != patronuspdf_engine::FormFieldKind::PushButton) {
+        let required = field.has(patronuspdf_engine::field_flags::REQUIRED);
         for widget in field.widgets.iter().filter(|widget| widget.page == Some(page) && !widget.hidden && !widget.read_only) {
             let rect = widget.rect;
             let screen_rect = xf.user_rect(info, page, [rect[0] as f32, rect[1] as f32, rect[2] as f32, rect[3] as f32]);

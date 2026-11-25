@@ -5,7 +5,7 @@
 
 use std::collections::BTreeMap;
 
-use pdfcraft_js::{Outcome, Request};
+use patronuspdf_js::{Outcome, Request};
 
 use crate::js::{JsOutput, Runtime, calculation_scripts, field_state};
 use crate::{DocId, Document, EditError, Session};
@@ -33,7 +33,7 @@ pub(crate) struct LiveView {
     timers: Vec<Due>,
     /// The realm the timers were set in: a fresh realm (an edit's reset, Revert, a full
     /// save) starts without them.
-    timers_of: Option<std::sync::Weak<std::sync::Mutex<pdfcraft_js::session::ScriptSession>>>,
+    timers_of: Option<std::sync::Weak<std::sync::Mutex<patronuspdf_js::session::ScriptSession>>>,
     /// `display` page actions and timers gave fields, by name, over the document's own flags.
     shown: BTreeMap<String, i32>,
     /// Icons page actions and timers gave push buttons (`buttonSetIcon`), by name: the icon's
@@ -56,7 +56,7 @@ impl LiveView {
 
     /// Keep the timers realm `runtime` reported after a run: new ones count from the clock,
     /// cleared ones go.
-    fn schedule(&mut self, runtime: &Runtime, reported: &[pdfcraft_js::Timer]) {
+    fn schedule(&mut self, runtime: &Runtime, reported: &[patronuspdf_js::Timer]) {
         let clock = self.clock;
         let timers = self.timers(runtime);
         timers.retain(|d| reported.iter().any(|t| t.id == d.id));
@@ -91,8 +91,8 @@ impl ScriptRun {
 }
 
 /// The document's layers as scripts see them (`getOCGs`), in the viewer's order.
-pub(crate) fn js_layers(info: &pdfcraft_render::DocInfo) -> Vec<pdfcraft_js::Layer> {
-    info.layers.iter().map(|l| pdfcraft_js::Layer { name: l.name.clone(), on: l.visible, initial: l.initial }).collect()
+pub(crate) fn js_layers(info: &patronuspdf_render::DocInfo) -> Vec<patronuspdf_js::Layer> {
+    info.layers.iter().map(|l| patronuspdf_js::Layer { name: l.name.clone(), on: l.visible, initial: l.initial }).collect()
 }
 
 /// A field as scripts see it: as the document has it, but shown as page actions and timers
@@ -100,10 +100,10 @@ pub(crate) fn js_layers(info: &pdfcraft_render::DocInfo) -> Vec<pdfcraft_js::Lay
 /// the frame on screen.
 pub(crate) fn live_state(
     doc: &Document,
-    cos: &pdfcraft_cos::Document,
-    f: &pdfcraft_forms::Field,
-    info: &pdfcraft_js::DocInfo,
-) -> pdfcraft_js::FieldState {
+    cos: &patronuspdf_cos::Document,
+    f: &patronuspdf_forms::Field,
+    info: &patronuspdf_js::DocInfo,
+) -> patronuspdf_js::FieldState {
     let mut s = field_state(cos, f, info);
     if let Some(d) = doc.live.shown.get(&f.name) {
         s.display = *d;
@@ -116,22 +116,22 @@ pub(crate) fn live_state(
 
 /// Whether a field with this `display` shows on screen.
 fn on_screen(display: i32) -> bool {
-    display == pdfcraft_js::DISPLAY_VISIBLE || display == pdfcraft_js::DISPLAY_NO_PRINT
+    display == patronuspdf_js::DISPLAY_VISIBLE || display == patronuspdf_js::DISPLAY_NO_PRINT
 }
 
 /// A widget's object as the renderer names it, when its number fits.
-fn object(w: &pdfcraft_forms::Widget) -> Option<(i32, i32)> {
+fn object(w: &patronuspdf_forms::Widget) -> Option<(i32, i32)> {
     Some((i32::try_from(w.obj.num).ok()?, i32::from(w.obj.generation)))
 }
 
 /// The viewer's render configuration: the document's, with installed fonts, and the fields as
 /// page actions and timers show them. Exports and printing use `doc.config`, without them.
-pub(crate) fn screen_config(doc: &Document) -> pdfcraft_render::RenderConfig {
+pub(crate) fn screen_config(doc: &Document) -> patronuspdf_render::RenderConfig {
     with_live_view(doc, crate::display_config(&doc.config))
 }
 
 /// `config` with the fields as page actions and timers show them.
-pub(crate) fn with_live_view(doc: &Document, config: pdfcraft_render::RenderConfig) -> pdfcraft_render::RenderConfig {
+pub(crate) fn with_live_view(doc: &Document, config: patronuspdf_render::RenderConfig) -> patronuspdf_render::RenderConfig {
     let live = &doc.live;
     let annotations: Vec<(i32, i32, bool)> = doc
         .form
@@ -150,12 +150,12 @@ pub(crate) fn with_live_view(doc: &Document, config: pdfcraft_render::RenderConf
         })
         .flatten()
         .collect();
-    pdfcraft_render::RenderConfig { annotations: std::sync::Arc::new(annotations), appearances: std::sync::Arc::new(appearances), ..config }
+    patronuspdf_render::RenderConfig { annotations: std::sync::Arc::new(annotations), appearances: std::sync::Arc::new(appearances), ..config }
 }
 
 /// Draw the viewer with how fields show now.
 fn use_live_view(doc: &mut Document) {
-    doc.renderer = pdfcraft_render::RenderPool::new(doc.display.clone(), crate::render_threads(), screen_config(doc));
+    doc.renderer = patronuspdf_render::RenderPool::new(doc.display.clone(), crate::render_threads(), screen_config(doc));
 }
 
 /// Turn layers on or off as a script set them (`ocg.state`), as the Layers panel does: how the
@@ -181,7 +181,7 @@ type IconChanges = Vec<(String, Option<u64>)>;
 
 /// The `display` and icon changes in `o`, against the fields as they were (`states`), taken out
 /// of it: shown in the view instead of written into the document.
-fn take_view_changes(states: &[pdfcraft_js::FieldState], o: &mut Outcome) -> (Vec<(String, i32)>, IconChanges) {
+fn take_view_changes(states: &[patronuspdf_js::FieldState], o: &mut Outcome) -> (Vec<(String, i32)>, IconChanges) {
     let mut shown = Vec::new();
     let mut icons = Vec::new();
     for a in &mut o.changed {
@@ -227,19 +227,19 @@ impl Session {
         &mut self,
         id: DocId,
         script: &str,
-        event: pdfcraft_js::Event,
+        event: patronuspdf_js::Event,
         timer: Option<u32>,
-    ) -> Result<(std::sync::Arc<Vec<pdfcraft_js::FieldState>>, Outcome), EditError> {
+    ) -> Result<(std::sync::Arc<Vec<patronuspdf_js::FieldState>>, Outcome), EditError> {
         let doc = self.get(id).ok_or(EditError::NoDocument)?;
         let cos = doc.editor.as_ref().map(|e| e.cos.clone()).ok_or_else(|| EditError::ReadOnly(doc.read_only_reason.clone().unwrap_or_default()))?;
         let mut runner = crate::js::JsRunner::new(&cos, &doc.name, self.field_highlight);
         runner.doc.zoom = doc.js_zoom;
         runner.doc.page = doc.live.page.unwrap_or(doc.js_page);
         runner.doc.layers = js_layers(&doc.info);
-        let fields = pdfcraft_forms::fields(&cos);
+        let fields = patronuspdf_forms::fields(&cos);
         let states: Vec<_> = fields.iter().map(|f| live_state(doc, &cos, f, &runner.doc)).collect();
         let states = std::sync::Arc::new(states);
-        let job = pdfcraft_js::session::Job {
+        let job = patronuspdf_js::session::Job {
             script: script.into(),
             event,
             doc: runner.doc,
@@ -257,7 +257,7 @@ impl Session {
     /// a reset, changes the document (one undoable step). A timer runs unasked and again and
     /// again, so what it asks of the viewer (alerts, printing, navigation, links) goes to the
     /// console instead.
-    fn live_step(&mut self, id: DocId, script: &str, event: pdfcraft_js::Event, timer: Option<u32>, run: &mut ScriptRun) {
+    fn live_step(&mut self, id: DocId, script: &str, event: patronuspdf_js::Event, timer: Option<u32>, run: &mut ScriptRun) {
         let (states, mut o) = match self.run_live(id, script, event, timer) {
             Ok(r) => r,
             Err(e) => return run.output.errors.push(e.to_string()),
@@ -333,14 +333,14 @@ impl Session {
         }
         let before = doc.live.page.replace(page);
         let Some(cos) = doc.editor.as_ref().map(|e| e.cos.clone()) else { return run };
-        use pdfcraft_forms::PageEvent;
-        let mut scripts: Vec<(&str, pdfcraft_forms::PageScript)> = Vec::new();
+        use patronuspdf_forms::PageEvent;
+        let mut scripts: Vec<(&str, patronuspdf_forms::PageScript)> = Vec::new();
         if let Some(p) = before {
-            scripts.extend(pdfcraft_forms::page_scripts(&cos, p, PageEvent::Close).into_iter().map(|s| ("Close", s)));
+            scripts.extend(patronuspdf_forms::page_scripts(&cos, p, PageEvent::Close).into_iter().map(|s| ("Close", s)));
         }
-        scripts.extend(pdfcraft_forms::page_scripts(&cos, page, PageEvent::Open).into_iter().map(|s| ("Open", s)));
+        scripts.extend(patronuspdf_forms::page_scripts(&cos, page, PageEvent::Open).into_iter().map(|s| ("Open", s)));
         for (name, s) in scripts {
-            let event = pdfcraft_js::Event { kind: "Page".into(), target: s.field, ..pdfcraft_js::Event::doc(name) };
+            let event = patronuspdf_js::Event { kind: "Page".into(), target: s.field, ..patronuspdf_js::Event::doc(name) };
             self.live_step(id, &s.script, event, None, &mut run);
         }
         run
@@ -391,7 +391,7 @@ impl Session {
                 timers.remove(i);
             }
             run.ran += 1;
-            let event = pdfcraft_js::Event { kind: "App".into(), ..pdfcraft_js::Event::doc("Timer") };
+            let event = patronuspdf_js::Event { kind: "App".into(), ..patronuspdf_js::Event::doc("Timer") };
             self.live_step(id, "", event, Some(due.id), &mut run);
         }
         run

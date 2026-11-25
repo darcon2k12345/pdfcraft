@@ -6,7 +6,7 @@ const MAX_LAYER_STATE: usize = 1024;
 
 /// A push button's mouse-up action (`/A`, or `/AA /U`, on the field or its widget).
 fn button_action(doc: &Document, d: &Dict, widgets: &[ObjRef], scripts: &mut DecodeBudget) -> Option<af::ButtonAction> {
-    // A button PdfCraft generated for an XFA image field (`/PCXfaImage true`, no PDF action):
+    // A button Patronus PDF generated for an XFA image field (`/PCXfaImage true`, no PDF action):
     // clicking it picks a picture, as `buttonImportIcon()` does.
     if matches!(d.get(b"PCXfaImage").map(|o| doc.resolve(o)).as_deref(), Some(Object::Bool(true))) {
         return Some(af::ButtonAction::ImportIcon);
@@ -320,7 +320,7 @@ pub(crate) fn page_refs(doc: &Document) -> Vec<ObjRef> {
 
 /// Depth-first walk over the leaf pages under `top`. It keeps one cursor per open `/Kids` array,
 /// never one entry per child, so a child listed many times or shared between nodes is skipped by
-/// the seen check without being queued first (`pdfcraft_model::pages` walks the same way).
+/// the seen check without being queued first (`patronuspdf_model::pages` walks the same way).
 /// Cycles end at the seen check and at most a million nodes are visited.
 pub(crate) struct PageWalk<'a> {
     doc: &'a Document,
@@ -409,7 +409,7 @@ pub struct Fields {
 /// Read all terminal fields and the page-only adoption count in one enumeration.
 ///
 /// The last reading on this thread is kept with the state of the document it read
-/// ([`pdfcraft_cos::ReadState`], which every change to the document replaces), and a document
+/// ([`patronuspdf_cos::ReadState`], which every change to the document replaces), and a document
 /// that still reads as that state gets a copy of it instead of a new walk. One form edit reads
 /// the fields in several steps (filling, recalculating, the XFA data, the view), most of them
 /// with nothing changed since the step before: on a form with a thousand fields each walk takes
@@ -439,7 +439,7 @@ pub fn fields_with_adopted(doc: &Document) -> Fields {
 thread_local! {
     /// The last [`fields_with_adopted`] on this thread, with the state of the document it read.
     /// One entry: one form's fields, and the objects that document had changed when it was read.
-    static LAST_READING: std::cell::RefCell<Option<(pdfcraft_cos::ReadState, Fields)>> = const { std::cell::RefCell::new(None) };
+    static LAST_READING: std::cell::RefCell<Option<(patronuspdf_cos::ReadState, Fields)>> = const { std::cell::RefCell::new(None) };
     /// Whole-form walks ([`enumerate`]) on this thread.
     static FORM_READS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }

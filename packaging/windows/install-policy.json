@@ -1,12 +1,12 @@
 {
-  "id": "pdfcraft",
-  "name": "PdfCraft",
+  "id": "patronuspdf",
+  "name": "Patronus PDF",
   "upgradeCode": "EA00C367-7270-4C50-9D8B-A7A5C88AD27F",
   "sources": [
-    "pdfcraft.wxs",
+    "patronuspdf.wxs",
     "installer-ui.wxs"
   ],
-  "icon": "assets/app-icon/pdfcraft.ico",
+  "icon": "assets/app-icon/patronuspdf.ico",
   "localization": [],
   "extensions": [],
   "payloads": [
@@ -14,315 +14,315 @@
     "LICENSE-MIT",
     "LICENSE-document.txt",
     "NOTICE",
-    "pdfcraft-cli.exe",
-    "pdfcraft.exe"
+    "patronuspdf-cli.exe",
+    "patronuspdf.exe"
   ],
   "registry": [
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\pdfcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\patronuspdf.exe",
       "",
-      "[#PdfcraftExe]"
+      "[#PatronusPdfExe]"
     ],
     [
       "-1",
-      "Software\\Classes\\PdfCraft.Document",
+      "Software\\Classes\\PatronusPdf.Document",
       "",
       "PDF Document"
     ],
     [
       "-1",
-      "Software\\Classes\\PdfCraft.Document\\DefaultIcon",
+      "Software\\Classes\\PatronusPdf.Document\\DefaultIcon",
       "",
-      "\"[#PdfcraftExe]\",-2"
+      "\"[#PatronusPdfExe]\",-2"
     ],
     [
       "-1",
-      "Software\\Classes\\PdfCraft.Document\\shell\\open\\command",
+      "Software\\Classes\\PatronusPdf.Document\\shell\\open\\command",
       "",
-      "\"[#PdfcraftExe]\" \"%1\""
+      "\"[#PatronusPdfExe]\" \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\PdfCraft.Document",
+      "Software\\Classes\\PatronusPdf.Document",
       "TypeOverlay",
       ""
     ],
     [
       "-1",
       "Software\\Classes\\.pdf\\OpenWithProgids",
-      "PdfCraft.Document",
+      "PatronusPdf.Document",
       ""
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\pdfcraft.exe",
+      "Software\\Classes\\Applications\\patronuspdf.exe",
       "FriendlyAppName",
-      "PdfCraft"
+      "Patronus PDF"
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\pdfcraft.exe\\DefaultIcon",
+      "Software\\Classes\\Applications\\patronuspdf.exe\\DefaultIcon",
       "",
-      "\"[#PdfcraftExe]\",-2"
+      "\"[#PatronusPdfExe]\",-2"
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\pdfcraft.exe\\SupportedTypes",
+      "Software\\Classes\\Applications\\patronuspdf.exe\\SupportedTypes",
       ".pdf",
       ""
     ],
     [
       "-1",
-      "Software\\Classes\\Applications\\pdfcraft.exe\\shell\\open\\command",
+      "Software\\Classes\\Applications\\patronuspdf.exe\\shell\\open\\command",
       "",
-      "\"[#PdfcraftExe]\" \"%1\""
+      "\"[#PatronusPdfExe]\" \"%1\""
     ],
     [
       "-1",
-      "Software\\PdfCraft\\Capabilities",
+      "Software\\Patronus PDF\\Capabilities",
       "ApplicationName",
-      "PdfCraft"
+      "Patronus PDF"
     ],
     [
       "-1",
-      "Software\\PdfCraft\\Capabilities",
+      "Software\\Patronus PDF\\Capabilities",
       "ApplicationDescription",
       "Open-source PDF workbench"
     ],
     [
       "-1",
-      "Software\\PdfCraft\\Capabilities",
+      "Software\\Patronus PDF\\Capabilities",
       "ApplicationIcon",
-      "[#PdfcraftExe],0"
+      "[#PatronusPdfExe],0"
     ],
     [
       "-1",
-      "Software\\PdfCraft\\Capabilities\\FileAssociations",
+      "Software\\Patronus PDF\\Capabilities\\FileAssociations",
       ".pdf",
-      "PdfCraft.Document"
+      "PatronusPdf.Document"
     ],
     [
       "-1",
       "Software\\RegisteredApplications",
-      "PdfCraft",
-      "Software\\PdfCraft\\Capabilities"
+      "Patronus PDF",
+      "Software\\Patronus PDF\\Capabilities"
     ],
     [
       "-1",
-      "Software\\PdfCraft\\Shortcuts",
+      "Software\\Patronus PDF\\Shortcuts",
       "StartMenu",
       "#1"
     ],
     [
       "-1",
-      "Software\\PdfCraft\\Shortcuts",
+      "Software\\Patronus PDF\\Shortcuts",
       "Desktop",
       "#1"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\PdfCraft.Edit",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\Patronus PDF.Edit",
       "",
-      "Edit with PdfCraft"
+      "Edit with Patronus PDF"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\PdfCraft.Edit",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\Patronus PDF.Edit",
       "Icon",
-      "\"[#PdfcraftExe]\",0"
+      "\"[#PatronusPdfExe]\",0"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\PdfCraft.Edit",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\Patronus PDF.Edit",
       "MultiSelectModel",
       "Document"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\PdfCraft.Edit\\command",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\Patronus PDF.Edit\\command",
       "",
-      "\"[#PdfcraftExe]\" \"%1\""
+      "\"[#PatronusPdfExe]\" \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\Patronus PDF.CreatePdf",
       "",
-      "Create PDF with PdfCraft\u2026"
+      "Create PDF with Patronus PDF\u2026"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\PdfCraft.CreatePdf",
+      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\Patronus PDF.CreatePdf",
       "MultiSelectModel",
       "Single"
     ],
     [
       "-1",
-      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\PdfCraft.CreatePdf\\command",
+      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\Patronus PDF.CreatePdf\\command",
       "",
-      "\"[#PdfcraftExe]\" --create-images \"%1\""
+      "\"[#PatronusPdfExe]\" --create-images \"%1\""
     ]
   ],
   "mode": "dualScope"

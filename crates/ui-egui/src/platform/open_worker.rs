@@ -6,8 +6,8 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 
 use crate::RecoveryStore;
-use pdfcraft_engine::{OpenContext, PreparedDocument, SourceKind};
-use pdfcraft_render::OpenError;
+use patronuspdf_engine::{OpenContext, PreparedDocument, SourceKind};
+use patronuspdf_render::OpenError;
 
 pub(crate) const MAX_QUEUED_OPENS: usize = 16;
 
@@ -65,7 +65,7 @@ impl OpenWorker {
     pub fn new(#[cfg(test)] gate: Option<Arc<PrepareGate>>) -> std::io::Result<Self> {
         let queue = Arc::new((Mutex::new(Queue { jobs: VecDeque::new(), shutdown: false, repaint: None }), Condvar::new()));
         let worker_queue = queue.clone();
-        std::thread::Builder::new().name("pdfcraft-open".into()).spawn(move || run(worker_queue))?;
+        std::thread::Builder::new().name("patronuspdf-open".into()).spawn(move || run(worker_queue))?;
         Ok(Self {
             queue,
             #[cfg(test)]
@@ -208,7 +208,7 @@ fn prepare(job: Job) -> ResultKind {
             Ok(bytes) => Arc::new(bytes),
             Err(error) => return ResultKind::ReadFailed(error.to_string()),
         },
-        Input::RemotePath(path) => match pdfcraft_engine::read_remote_document(path) {
+        Input::RemotePath(path) => match patronuspdf_engine::read_remote_document(path) {
             Ok(bytes) => Arc::new(bytes),
             Err(error) => return ResultKind::RemoteFailed(error.to_string()),
         },
@@ -218,10 +218,10 @@ fn prepare(job: Job) -> ResultKind {
         },
         Input::Bytes(bytes) => bytes.clone(),
     };
-    match pdfcraft_engine::source_kind(&job.name, &bytes) {
+    match patronuspdf_engine::source_kind(&job.name, &bytes) {
         Some(SourceKind::Image | SourceKind::Text) => return ResultKind::Conversion(bytes),
         // LibreOffice takes seconds: it runs here, and the frame thread only opens the result.
-        Some(SourceKind::Office) => return ResultKind::Converted(pdfcraft_engine::office_to_pdf(&job.name, &bytes).map_err(|e| e.to_string())),
+        Some(SourceKind::Office) => return ResultKind::Converted(patronuspdf_engine::office_to_pdf(&job.name, &bytes).map_err(|e| e.to_string())),
         Some(SourceKind::Pdf) | None => {}
     }
     let result = job.context.prepare_open(job.name, job.path, bytes.clone(), job.password.as_deref().map(String::as_str));

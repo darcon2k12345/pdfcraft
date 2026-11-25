@@ -4,8 +4,8 @@
 use std::collections::HashMap;
 
 use egui::{Color32, Pos2, Rect, Stroke};
-use pdfcraft_engine::{Document, Edit, EditableObject, MAX_MOVE_OBJECTS, ObjectKind, ObjectTarget};
-use pdfcraft_render::DocInfo;
+use patronuspdf_engine::{Document, Edit, EditableObject, MAX_MOVE_OBJECTS, ObjectKind, ObjectTarget};
+use patronuspdf_render::DocInfo;
 
 use crate::canvas::{DocView, PageToolContext, PageXform};
 use crate::page_cursor::Layer;
@@ -534,7 +534,7 @@ pub(crate) fn nudge_keys(ctx: &egui::Context, keys: PageKeys, view: &mut DocView
         && let Some(r) = doc.page_images(page).get(index).map(|im| im.rect)
     {
         let rect = [r[0] + offset[0], r[1] + offset[1], r[2] + offset[0], r[3] + offset[1]];
-        view.pending_edit = Some(Edit::EditPageImage { page, index, change: pdfcraft_engine::ImageEdit::Move(rect) });
+        view.pending_edit = Some(Edit::EditPageImage { page, index, change: patronuspdf_engine::ImageEdit::Move(rect) });
     }
 }
 
@@ -578,7 +578,7 @@ pub(crate) fn paint(painter: &egui::Painter, xf: &PageXform, page: usize, info: 
 }
 
 /// Keep the UI refusal actionable and translated; headless callers retain the detailed error.
-pub(crate) fn move_error(error: &pdfcraft_engine::EditError) -> String {
+pub(crate) fn move_error(error: &patronuspdf_engine::EditError) -> String {
     let detail = error.to_string();
     match detail.as_str() {
         "vertical text cannot be moved in a group" => tl!("Vertical text cannot be moved with this selection.").into(),
@@ -617,16 +617,16 @@ mod tests {
     #[test]
     fn delete_key_removes_selected_object() {
         use crate::canvas::page_pointer::PagePointer;
-        use crate::{PdfCraftApp, canvas::ViewDefaults};
-        use pdfcraft_engine::{DocId, ImageEdit};
-        use pdfcraft_render::PageInfo;
+        use crate::{PatronusPdfApp, canvas::ViewDefaults};
+        use patronuspdf_engine::{DocId, ImageEdit};
+        use patronuspdf_render::PageInfo;
 
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         let bytes = app.session.create_blank(300.0, 400.0, 1).unwrap();
         app.open_bytes("blank.pdf", None, bytes.as_ref().clone()).unwrap();
         let doc = app.session.get(app.views[0].id).unwrap();
 
-        let info = pdfcraft_render::DocInfo {
+        let info = patronuspdf_render::DocInfo {
             pages: vec![PageInfo { width: 300.0, height: 400.0, label: String::new(), crop: [0.0, 0.0, 300.0, 400.0], rotation: 0 }],
             ..Default::default()
         };

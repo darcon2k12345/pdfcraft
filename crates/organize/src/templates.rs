@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString};
+use patronuspdf_cos::{Dict, Document, ObjRef, Object, PdfString};
 
 use crate::{INHERITABLE, OrganizeError, page_count, rebuild, walk};
 

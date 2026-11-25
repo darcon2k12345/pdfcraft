@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-11-03 · **Last updated:** 2026-11-15 · **Change:** minor (Bosnian (`bs`) offered, its catalog from craft-i18n); previously minor (every catalog restated from `cargo xtask i18n-report` on `main` at `14ae839a`: 2,897 strings in the report's denominator; Hindi, Indonesian, Korean, Thai, Lao and Central Kurdish listed with their catalogs. Scores and estimates unchanged) · **Target:** Adobe Acrobat Pro (Acrobat DC, continuous track 26.002.21931, macOS)
 
-Per-language status of PdfCraft's interface against Acrobat Pro's. How translations work and how to
+Per-language status of Patronus PDF's interface against Acrobat Pro's. How translations work and how to
 add a language: [localization.md](localization.md). Summary in [ROADMAP.md](../ROADMAP.md).
 
 ## How this was measured
@@ -83,7 +83,7 @@ help/docs polish: their script work is done, and each catalog lacks 46 strings o
 | Kazakh | `kk` | 2,609 (90.1%) | partial | no |
 | Polish | `pl` | 2,681 (92.5%) | partial | yes |
 | Slovenian | `sl` | 2,618 (90.4%) | partial | no |
-| Bosnian | `bs` | 2,495 entries (craft-i18n `locales/bs/pdfcraft.tsv`; not in the `14ae839a` report, which predates it) | partial; AI-assisted (storytold/craft-i18n#72, #141), not yet reviewed by a native speaker | no |
+| Bosnian | `bs` | 2,495 entries (craft-i18n `locales/bs/patronuspdf.tsv`; not in the `14ae839a` report, which predates it) | partial; AI-assisted (storytold/craft-i18n#72, #141), not yet reviewed by a native speaker | no |
 | Greek | `el` | 2,615 (90.3%) | partial | no |
 | Turkish | `tr` | 2,895 (99.9%) | partial; AI-assisted, judgement calls reviewed by a native speaker, full proofreading pending | yes |
 | Lithuanian | `lt` | 2,851 (98.4%) | partial; community native-speaker review ([#1401](https://github.com/storytold/pdfcraft/pull/1401)) | no |
@@ -99,7 +99,7 @@ help/docs polish: their script work is done, and each catalog lacks 46 strings o
 
 **24 other languages** ship (35 catalogs plus English = **36** interface languages in Preferences).
 Their presence does not imply a detailed linguistic or runtime review.
-Acrobat languages PdfCraft lacks: Danish, Dutch, Swedish, Hebrew. Vietnamese is shipped here but not by Acrobat.
+Acrobat languages Patronus PDF lacks: Danish, Dutch, Swedish, Hebrew. Vietnamese is shipped here but not by Acrobat.
 
 ## Revision history
 

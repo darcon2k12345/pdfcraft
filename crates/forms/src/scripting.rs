@@ -8,7 +8,7 @@
 
 use std::collections::HashSet;
 
-use pdfcraft_cos::{Document, ObjRef, Object, PdfString};
+use patronuspdf_cos::{Document, ObjRef, Object, PdfString};
 
 use crate::{Field, FieldKind, FieldValue, FormError, fields, flags};
 
@@ -230,7 +230,7 @@ fn set_action(doc: &mut Document, f: &Field, trigger: &str, script: &str) -> Res
         "OnBlur" => b"Bl",
         other => return Err(FormError::Invalid(format!("unknown action trigger {other:?}"))),
     };
-    let mut action = pdfcraft_cos::Dict::new();
+    let mut action = patronuspdf_cos::Dict::new();
     action.set(b"S".to_vec(), Object::name("JavaScript"));
     action.set(b"JS".to_vec(), PdfString::text(script));
     let action = doc.add(Object::Dict(action));
@@ -394,7 +394,7 @@ pub(crate) fn apply_changes(
             if icon.is_some_and(|id| id >> 48 != 0) {
                 return Err(FormError::Invalid("invalid button icon handle".into()));
             }
-            let reference = icon.map(|id| pdfcraft_cos::ObjRef::new((id >> 16) as u32, id as u16));
+            let reference = icon.map(|id| patronuspdf_cos::ObjRef::new((id >> 16) as u32, id as u16));
             if let Some(reference) = reference {
                 let obj = doc.get(reference);
                 let valid = match &*obj {
@@ -656,7 +656,7 @@ pub fn page_scripts(doc: &Document, page: usize, event: PageEvent) -> Vec<PageSc
         PageEvent::Open => (b"O", [b"PO", b"PV"]),
         PageEvent::Close => (b"C", [b"PC", b"PI"]),
     };
-    let additional = |d: &pdfcraft_cos::Dict| d.get(b"AA").map(|a| doc.resolve(a)).and_then(|a| a.as_dict().cloned());
+    let additional = |d: &patronuspdf_cos::Dict| d.get(b"AA").map(|a| doc.resolve(a)).and_then(|a| a.as_dict().cloned());
     let mut budget = crate::script_budget();
     let mut out = Vec::new();
     if let Some(action) = additional(pd).and_then(|aa| aa.get(own).cloned())
@@ -685,7 +685,7 @@ pub fn page_scripts(doc: &Document, page: usize, event: PageEvent) -> Vec<PageSc
 }
 
 /// The script of a JavaScript action (`/S /JavaScript`); `None` for any other action.
-fn javascript(doc: &Document, action: &Object, budget: &mut pdfcraft_cos::DecodeBudget) -> Option<String> {
+fn javascript(doc: &Document, action: &Object, budget: &mut patronuspdf_cos::DecodeBudget) -> Option<String> {
     let a = doc.resolve(action);
     if a.as_dict()?.name(b"S")? != b"JavaScript" {
         return None;
@@ -712,7 +712,7 @@ pub fn set_document_script(doc: &mut Document, name: &str, js: Option<&str>) -> 
         }
     }
     if let Some(js) = js {
-        let mut action = pdfcraft_cos::Dict::new();
+        let mut action = patronuspdf_cos::Dict::new();
         action.set(b"S".to_vec(), Object::name("JavaScript"));
         action.set(b"JS".to_vec(), PdfString::text(js));
         let a = doc.add(Object::Dict(action));
@@ -723,7 +723,7 @@ pub fn set_document_script(doc: &mut Document, name: &str, js: Option<&str>) -> 
         _ => String::new(),
     });
     pairs = kept.into_iter().flat_map(|(k, v)| [k, v]).collect();
-    let mut t = pdfcraft_cos::Dict::new();
+    let mut t = patronuspdf_cos::Dict::new();
     t.set(b"Names".to_vec(), Object::Array(pairs));
     names.set(b"JavaScript".to_vec(), Object::Dict(t));
     doc.update_dict(root, |c| c.set(b"Names".to_vec(), Object::Dict(names)))?;
@@ -743,7 +743,7 @@ pub fn set_field_script(doc: &mut Document, name: &str, event: &str, js: Option<
 /// [`set_field_script`] for the field `f` itself, which may share its name with another.
 fn set_script_of(doc: &mut Document, f: &Field, event: &str, js: Option<&str>) -> Result<(), FormError> {
     let action = |doc: &mut Document, js: &str| {
-        let mut a = pdfcraft_cos::Dict::new();
+        let mut a = patronuspdf_cos::Dict::new();
         a.set(b"S".to_vec(), Object::name("JavaScript"));
         a.set(b"JS".to_vec(), PdfString::text(js));
         Object::Ref(doc.add(Object::Dict(a)))

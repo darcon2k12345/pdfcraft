@@ -1,5 +1,5 @@
 [package]
-name = "pdfcraft-sign"
+name = "patronuspdf-sign"
 description = "Digital signatures (ISO 32000-2 §12.8, PAdES): X.509, CMS, PKCS #12, signing and validation"
 version.workspace = true
 edition.workspace = true
@@ -13,11 +13,11 @@ workspace = true
 [dependencies]
 # Existing shared ASN.1 codec; PDF signature policy remains local.
 craft-pkcs7 = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "bc4aae37bb219049596327fca971046dab0b78be" }
-pdfcraft-cos = { workspace = true }
-pdfcraft-annot = { workspace = true }
-pdfcraft-content = { workspace = true }
-pdfcraft-fonts = { workspace = true }
-pdfcraft-model = { workspace = true }
+patronuspdf-cos = { workspace = true }
+patronuspdf-annot = { workspace = true }
+patronuspdf-content = { workspace = true }
+patronuspdf-fonts = { workspace = true }
+patronuspdf-model = { workspace = true }
 thiserror.workspace = true
 zeroize.workspace = true
 # ASN.1 UTCTime/GeneralizedTime conversion goes through chrono (no hand-rolled calendar code).
@@ -46,7 +46,7 @@ ripemd = "0.2.0"
 ed25519-dalek = "3.0.0"
 
 [dev-dependencies]
-pdfcraft-testkit = { workspace = true }
+patronuspdf-testkit = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 aws-lc-rs = { version = "1.18", default-features = false, features = ["aws-lc-sys", "prebuilt-nasm"] }

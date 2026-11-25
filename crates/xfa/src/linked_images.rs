@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use pdfcraft_cos::{Document, ObjRef, Object};
+use patronuspdf_cos::{Document, ObjRef, Object};
 
 use crate::model::{Field, Node, Subform, Template, Value};
 

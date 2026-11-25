@@ -6,8 +6,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 use crate::file_filter::AddFilterAnyCase as _;
 use egui::{Color32, CornerRadius, Pos2, Rect, Stroke};
-use pdfcraft_engine::{Added, AddedContent, AddedText, Edit};
-use pdfcraft_render::DocInfo;
+use patronuspdf_engine::{Added, AddedContent, AddedText, Edit};
+use patronuspdf_render::DocInfo;
 
 use crate::canvas::{DocView, PageToolContext, PageXform};
 use crate::page_cursor::Layer;
@@ -29,7 +29,7 @@ pub(crate) fn undrawable(d: &TextDraft, memo: &UndrawableMemo) -> Option<char> {
     {
         return *c;
     }
-    let c = pdfcraft_engine::first_undrawable(&t);
+    let c = patronuspdf_engine::first_undrawable(&t);
     *memo.borrow_mut() = Some((t, c));
     c
 }
@@ -47,15 +47,15 @@ pub(crate) fn undrawable_message(c: char) -> String {
     )
 }
 
-/// The warning after an edit that saved text its font can't draw: PdfCraft drew `?` for it (a form
+/// The warning after an edit that saved text its font can't draw: Patronus PDF drew `?` for it (a form
 /// field, which other viewers redraw from its value, or a comment, where the `?` shows everywhere).
-pub(crate) fn undrawn_message(n: &pdfcraft_engine::TextNotice) -> String {
+pub(crate) fn undrawn_message(n: &patronuspdf_engine::TextNotice) -> String {
     let template = if n.redrawn_elsewhere {
         tl!(
-            "This field's font can't draw “{c}” ({code}), so PdfCraft shows ? in its place. The value is saved, and other PDF viewers redraw the field from it."
+            "This field's font can't draw “{c}” ({code}), so Patronus PDF shows ? in its place. The value is saved, and other PDF viewers redraw the field from it."
         )
     } else {
-        tl!("The fonts PdfCraft writes with can't draw “{c}” ({code}), so it shows as ? in every PDF viewer. The text is saved.")
+        tl!("The fonts Patronus PDF writes with can't draw “{c}” ({code}), so it shows as ? in every PDF viewer. The text is saved.")
     };
     crate::i18n::fmt(template, &[("c", &n.ch.to_string()), ("code", &format!("U+{:04X}", u32::from(n.ch)))])
 }
@@ -84,7 +84,7 @@ pub struct TextDraft {
 impl TextDraft {
     /// Take the shared text box for this box ([`crate::edit_text_ui::forget_typing_before`]): its
     /// own history, or none once the page has its text.
-    pub(crate) fn claim_typing(&mut self, ctx: &egui::Context, doc: pdfcraft_engine::DocId) {
+    pub(crate) fn claim_typing(&mut self, ctx: &egui::Context, doc: patronuspdf_engine::DocId) {
         crate::edit_text_ui::forget_typing_before(ctx, input_id(), doc, &mut self.typing_from, &self.style.text);
     }
 
@@ -154,11 +154,11 @@ impl ContentView {
 #[derive(Default)]
 pub(crate) struct MoveBackground {
     key: Option<(u64, usize, usize)>,
-    renderer: Option<pdfcraft_render::RenderPool>,
+    renderer: Option<patronuspdf_render::RenderPool>,
     texture: Option<egui::TextureHandle>,
     /// The item alone on a transparent page: the pixels that follow the pointer. The page's own
     /// raster has whatever the item covers in its box too, which must stay where it is (#4464).
-    item_renderer: Option<pdfcraft_render::RenderPool>,
+    item_renderer: Option<patronuspdf_render::RenderPool>,
     item: Option<egui::TextureHandle>,
     tag: Option<u64>,
     /// The item's display-space box when the gesture started.
@@ -180,7 +180,7 @@ impl MoveBackground {
         self.texture.is_some() && self.item.is_some()
     }
 
-    pub fn prepare(&mut self, ctx: &egui::Context, doc: &pdfcraft_engine::Document, cv: &ContentView, scale: f32) {
+    pub fn prepare(&mut self, ctx: &egui::Context, doc: &patronuspdf_engine::Document, cv: &ContentView, scale: f32) {
         let picture = |page, index| on_page(doc.added(), page).into_iter().any(|(i, a)| i == index && matches!(a.content, AddedContent::Image(_)));
         let key = match (cv.grab, cv.selected) {
             (Some((gp, Grab::Move, _)), Some((sp, si))) if gp == sp => Some((doc.edit_generation(), sp, si)),
@@ -209,7 +209,7 @@ impl MoveBackground {
         let tag = (scale * 1000.0) as u64;
         if self.tag != Some(tag) {
             for r in [renderer, item_renderer] {
-                r.set_queue(vec![pdfcraft_render::RenderRequest { page, scale, tag, ..Default::default() }]);
+                r.set_queue(vec![patronuspdf_render::RenderRequest { page, scale, tag, ..Default::default() }]);
             }
             self.tag = Some(tag);
         }
@@ -596,7 +596,7 @@ pub(crate) fn paint_page(
 }
 
 /// The image controller owns image selection; the added-content panel follows the same XObject.
-pub(crate) fn sync_image_selection(view: &mut DocView, page: usize, images: &[pdfcraft_engine::PageImage], added: &[Added]) {
+pub(crate) fn sync_image_selection(view: &mut DocView, page: usize, images: &[patronuspdf_engine::PageImage], added: &[Added]) {
     let Some(selection) = view.image_selection.as_ref().filter(|selection| selection.page == page) else { return };
     if view.content.draft.is_some() {
         return;
@@ -695,11 +695,11 @@ pub(crate) fn editor(ctx: &egui::Context, keys: PageKeys, view: &mut DocView, in
             draft.rect = source;
         } else {
             let natural = ctx.fonts_mut(|f| f.layout_no_wrap(draft.text.clone(), font.clone(), Color32::BLACK).size().x) as f64 / zoom as f64;
-            let width = natural.max(pdfcraft_engine::added_text_width(&text)) + 2.0;
+            let width = natural.max(patronuspdf_engine::added_text_width(&text)) + 2.0;
             let available = page_width - source[0];
             let width = width.max(source[2] - source[0]).min(available.max(1.0));
             draft.rect = [source[0], source[1], source[0] + width, source[3]];
-            draft.rect = pdfcraft_engine::added_text_rect(&AddedText { rect: draft.rect, ..text.clone() });
+            draft.rect = patronuspdf_engine::added_text_rect(&AddedText { rect: draft.rect, ..text.clone() });
         }
         view.content.layout = Some((text, zoom, page_width, draft.rect));
     }
@@ -713,10 +713,10 @@ pub(crate) fn editor(ctx: &egui::Context, keys: PageKeys, view: &mut DocView, in
     let width = r.width().max(60.0);
     // The alignment every line shares, its own or the box's.
     let first = draft.style.paragraph_align(0);
-    let shared = (1..pdfcraft_engine::paragraph_align::count(&draft.text)).all(|i| draft.style.paragraph_align(i) == first).then_some(first);
+    let shared = (1..patronuspdf_engine::paragraph_align::count(&draft.text)).all(|i| draft.style.paragraph_align(i) == first).then_some(first);
     let anchor = match shared {
-        Some(pdfcraft_engine::TextAlign::Center) => 0.5,
-        Some(pdfcraft_engine::TextAlign::Right) => 1.0,
+        Some(patronuspdf_engine::TextAlign::Center) => 0.5,
+        Some(patronuspdf_engine::TextAlign::Right) => 1.0,
         _ => 0.0,
     };
     let at = r.min - egui::vec2((width - r.width()) * anchor, 0.0);
@@ -848,7 +848,7 @@ fn finish(cv: &mut ContentView, d: TextDraft, added: &[Added]) -> Option<Edit> {
         return None;
     }
     let text = d.text.trim_end().to_string();
-    let aligns = pdfcraft_engine::paragraph_align::remap(&d.text, &text, &d.style.aligns);
+    let aligns = patronuspdf_engine::paragraph_align::remap(&d.text, &text, &d.style.aligns);
     let d = TextDraft { style: AddedText { aligns, ..d.style }, ..d };
     match d.index {
         None if text.trim().is_empty() => None,
@@ -887,7 +887,7 @@ fn aligned_galley(
     letter_spacing: f32,
     wrap: f32,
 ) -> std::sync::Arc<egui::Galley> {
-    use pdfcraft_engine::TextAlign;
+    use patronuspdf_engine::TextAlign;
     let job = |text: &str, align: TextAlign| {
         let mut job = spaced_job(text, font, color, letter_spacing, wrap, egui::Align::Min);
         job.justify = align == TextAlign::Justify;
@@ -939,7 +939,7 @@ pub(crate) fn hint(ui: &mut egui::Ui, t: &Tokens) {
     ui.add_space(4.0);
 }
 
-impl crate::PdfCraftApp {
+impl crate::PatronusPdfApp {
     /// Pick an image file for the active document, read it, and call `then` with its name and
     /// bytes: now when `save_override` answers (tests and automation never see a native dialog),
     /// otherwise on a later frame, and only if that document is still the active one.
@@ -980,7 +980,7 @@ impl crate::PdfCraftApp {
             app.apply_edit(Edit::EditPageImage {
                 page,
                 index,
-                change: pdfcraft_engine::ImageEdit::Replace { name, bytes: std::sync::Arc::new(bytes) },
+                change: patronuspdf_engine::ImageEdit::Replace { name, bytes: std::sync::Arc::new(bytes) },
             });
         });
         #[cfg(target_arch = "wasm32")]
@@ -1055,7 +1055,8 @@ impl crate::PdfCraftApp {
             self.notify_error(tl!("The document's security settings don't allow this change"));
             return false;
         }
-        if !self.copy_page_image(page, index) || !self.apply_edit(Edit::EditPageImage { page, index, change: pdfcraft_engine::ImageEdit::Delete }) {
+        if !self.copy_page_image(page, index) || !self.apply_edit(Edit::EditPageImage { page, index, change: patronuspdf_engine::ImageEdit::Delete })
+        {
             return false;
         }
         if let Some(view) = self.views.get_mut(view) {
@@ -1069,7 +1070,7 @@ impl crate::PdfCraftApp {
     pub(crate) fn redact_page_image(&mut self, page: usize, index: usize) {
         let Some(rect) = self.page_image_box(page, index) else { return };
         let author = self.comment_prefs.author.clone();
-        let mark = self.redact_prefs.mark(page, vec![pdfcraft_engine::rect_quad(rect)], &author);
+        let mark = self.redact_prefs.mark(page, vec![patronuspdf_engine::rect_quad(rect)], &author);
         if self.apply_edit(mark) {
             self.notify_tr("The image is marked for redaction. Apply it with Redact a PDF");
         }
@@ -1096,7 +1097,7 @@ impl crate::PdfCraftApp {
         self.choose_field_image_target(id, name, None);
     }
     /// Keep the clicked document and field identity through the asynchronous image picker.
-    pub fn choose_field_image_target(&mut self, id: pdfcraft_engine::DocId, name: &str, identity: Option<u64>) {
+    pub fn choose_field_image_target(&mut self, id: patronuspdf_engine::DocId, name: &str, identity: Option<u64>) {
         if identity.is_some_and(|key| key >= 1u64 << 48) {
             self.notify("The selected image field identity is invalid");
             return;
@@ -1113,7 +1114,7 @@ impl crate::PdfCraftApp {
                 let image = std::sync::Arc::new(bytes);
                 let edit = match identity {
                     Some(key) => {
-                        Edit::SetFieldImageTarget { name, object: pdfcraft_cos::ObjRef { num: (key >> 16) as u32, generation: key as u16 }, image }
+                        Edit::SetFieldImageTarget { name, object: patronuspdf_cos::ObjRef { num: (key >> 16) as u32, generation: key as u16 }, image }
                     }
                     None => Edit::SetFieldImage { name, image },
                 };
@@ -1308,7 +1309,7 @@ impl crate::PdfCraftApp {
                 .as_ref()
                 .map(|(w, h, _)| (*w as f64, *h as f64))
                 .or_else(|| {
-                    (bytes.len() <= 64_000_000 * 4).then(|| pdfcraft_engine::image_dimensions(&bytes)).flatten().map(|(w, h)| (w as f64, h as f64))
+                    (bytes.len() <= 64_000_000 * 4).then(|| patronuspdf_engine::image_dimensions(&bytes)).flatten().map(|(w, h)| (w as f64, h as f64))
                 })
                 .unwrap_or((100.0, 100.0));
             let (pw, ph) =
@@ -1326,7 +1327,7 @@ impl crate::PdfCraftApp {
 
         let added_before: std::collections::HashSet<_> =
             self.session.get(id).into_iter().flat_map(|doc| doc.added()).filter(|item| item.page == page).map(|item| item.obj).collect();
-        if self.apply_edit(pdfcraft_engine::Edit::AddImage { page, rect: target_rect, name, bytes: std::sync::Arc::new(bytes) }) {
+        if self.apply_edit(patronuspdf_engine::Edit::AddImage { page, rect: target_rect, name, bytes: std::sync::Arc::new(bytes) }) {
             let selection = self.session.get(id).and_then(|doc| {
                 let mut inserted =
                     doc.added().iter().filter(|item| item.page == page).enumerate().filter(|(_, item)| !added_before.contains(&item.obj));
@@ -1355,7 +1356,7 @@ impl crate::PdfCraftApp {
 
 /// What the image tools ask for.
 pub(crate) enum ImageAction {
-    Update(pdfcraft_engine::AddedContent),
+    Update(patronuspdf_engine::AddedContent),
     Replace,
 }
 
@@ -1365,13 +1366,13 @@ const FLIP_HORIZONTAL_ICON: &str = "flip-vertical-2";
 const FLIP_VERTICAL_ICON: &str = "flip-horizontal-2";
 
 /// Edit image: rotate, flip, crop, replace (shown while an added image is selected).
-pub(crate) fn image_panel(ui: &mut egui::Ui, t: &Tokens, img: &pdfcraft_engine::AddedImage) -> Option<ImageAction> {
+pub(crate) fn image_panel(ui: &mut egui::Ui, t: &Tokens, img: &patronuspdf_engine::AddedImage) -> Option<ImageAction> {
     let mut out = None;
     widgets::section_title(ui, tl!("Edit image"));
     ui.horizontal(|ui| {
         let mut i = img.clone();
         let r = i.rect;
-        let turn = |i: &mut pdfcraft_engine::AddedImage, k: u8| {
+        let turn = |i: &mut patronuspdf_engine::AddedImage, k: u8| {
             i.rotation = (i.rotation + k) % 4;
             // The box turns with the picture, around its centre.
             let (cx, cy, w, h) = ((r[0] + r[2]) / 2.0, (r[1] + r[3]) / 2.0, r[2] - r[0], r[3] - r[1]);
@@ -1398,7 +1399,7 @@ pub(crate) fn image_panel(ui: &mut egui::Ui, t: &Tokens, img: &pdfcraft_engine::
         }
     });
     ui.label(egui::RichText::new(tl!("Crop (% trimmed from each side)")).small().color(t.text_muted));
-    let most = (1.0 - pdfcraft_engine::AddedImage::MIN_CROP_KEEP) * 100.0;
+    let most = (1.0 - patronuspdf_engine::AddedImage::MIN_CROP_KEEP) * 100.0;
     // Unrounded: a side the user doesn't touch keeps its stored value, also one read from a file.
     let shown = img.crop.map(|v| v * 100.0);
     let mut crop = shown;
@@ -1446,7 +1447,7 @@ mod tests {
 
     #[test]
     fn delivered_pixels_are_bounded_before_cache_or_document_changes() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.create_blank();
         app.last_copied_image = Some((1, 1, vec![0, 255, 0, 255]));
         let before = app.last_copied_image.clone();
@@ -1461,7 +1462,7 @@ mod tests {
 
     #[test]
     fn delivered_pixels_keep_unpremultiplied_alpha() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.create_blank();
         let image = egui::ColorImage::from_rgba_unmultiplied([1, 1], &[255, 0, 0, 128]);
         assert!(app.paste_received_image(0, &image));
@@ -1470,7 +1471,7 @@ mod tests {
 
     #[test]
     fn review_web_can_paste_an_internal_image_without_a_native_clipboard() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.create_blank();
         app.system_clipboard = true;
         app.last_copied_image = Some((1, 1, vec![255, 0, 0, 255]));
@@ -1481,7 +1482,7 @@ mod tests {
 
     #[test]
     fn review_system_without_supported_formats_does_not_paste_a_cached_image() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.create_blank();
         app.system_clipboard = true;
         app.last_copied_image = Some((1, 1, vec![255, 0, 0, 255]));
@@ -1490,20 +1491,20 @@ mod tests {
 
     #[test]
     fn review_cut_checks_modify_permission_before_writing_the_clipboard() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
         let png = crate::create_ui::png_from_rgba(1, 1, &[255, 0, 0, 255]).unwrap();
         app.add_image("test.png".into(), png);
-        app.apply_edit(Edit::Protect(pdfcraft_engine::Protection {
+        app.apply_edit(Edit::Protect(patronuspdf_engine::Protection {
             permissions_password: Some("owner".into()),
-            changes: pdfcraft_engine::Changes::None,
+            changes: patronuspdf_engine::Changes::None,
             copy: true,
             ..Default::default()
         }));
         let id = app.active_ids().unwrap().1;
         let bytes = app.session.save_bytes(id).unwrap();
-        let mut locked = crate::PdfCraftApp::new();
+        let mut locked = crate::PatronusPdfApp::new();
         locked.system_clipboard = false;
         locked.open_bytes("locked.pdf", None, bytes.as_ref().clone()).unwrap();
         assert!(!locked.session.get(locked.active_ids().unwrap().1).unwrap().allows_modification());
@@ -1515,7 +1516,7 @@ mod tests {
 
     #[test]
     fn system_text_prevents_context_menu_paste_of_a_cached_image() {
-        let mut app = crate::PdfCraftApp::new();
+        let mut app = crate::PatronusPdfApp::new();
         app.system_clipboard = false;
         app.create_blank();
         let id = app.active_ids().unwrap().1;
@@ -1528,11 +1529,11 @@ mod tests {
     }
 
     /// The image a flip button leaves behind, as the panel returns it.
-    fn flipped(tooltip: &str) -> pdfcraft_engine::AddedImage {
-        let img = pdfcraft_engine::AddedImage::new([0.0, 0.0, 100.0, 50.0], pdfcraft_cos::ObjRef::new(7, 0));
+    fn flipped(tooltip: &str) -> patronuspdf_engine::AddedImage {
+        let img = patronuspdf_engine::AddedImage::new([0.0, 0.0, 100.0, 50.0], patronuspdf_cos::ObjRef::new(7, 0));
         let mut fonts = false;
         let mut h = egui_kittest::Harness::new_ui_state(
-            move |ui, out: &mut Option<pdfcraft_engine::AddedImage>| {
+            move |ui, out: &mut Option<patronuspdf_engine::AddedImage>| {
                 // The app's fonts (the semibold section title) take effect from the next frame.
                 if !fonts {
                     ui.ctx().set_fonts(crate::theme::font_definitions());
@@ -1579,8 +1580,8 @@ mod tests {
         let texture = |name| Some(ctx.load_texture(name, egui::ColorImage::filled([1, 1], Color32::WHITE), egui::TextureOptions::LINEAR));
         // Bytes no parser accepts: every render answers with an error.
         let pool = || {
-            let pool = pdfcraft_render::RenderPool::new_inline(std::sync::Arc::new(b"not a pdf".to_vec()), Default::default());
-            pool.set_queue(vec![pdfcraft_render::RenderRequest { page: 0, scale: 2.0, tag: 2000, ..Default::default() }]);
+            let pool = patronuspdf_render::RenderPool::new_inline(std::sync::Arc::new(b"not a pdf".to_vec()), Default::default());
+            pool.set_queue(vec![patronuspdf_render::RenderRequest { page: 0, scale: 2.0, tag: 2000, ..Default::default() }]);
             pool
         };
         let mut mb = MoveBackground {

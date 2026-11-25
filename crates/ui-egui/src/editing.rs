@@ -1,10 +1,10 @@
 //! Editing glue: apply engine edits from the UI, undo/redo, save/save-as, and the
 //! "save changes?" prompt when closing a tab or quitting with unsaved edits.
 
-use pdfcraft_engine::Edit;
-use pdfcraft_platform::staging::{StagingName, staging_suffixes};
+use patronuspdf_engine::Edit;
+use patronuspdf_platform::staging::{StagingName, staging_suffixes};
 
-use crate::PdfCraftApp;
+use crate::PatronusPdfApp;
 
 mod close;
 mod save;
@@ -46,8 +46,8 @@ fn clear_shifted_page_comment_state(view: &mut crate::DocView, shifted_from: usi
 fn select_after_edit(
     view: &mut crate::DocView,
     edit: &Edit,
-    info: &pdfcraft_render::DocInfo,
-    annots_before: &[pdfcraft_render::Annotation],
+    info: &patronuspdf_render::DocInfo,
+    annots_before: &[patronuspdf_render::Annotation],
     quick_tool: crate::QuickTool,
     across_pages: Option<usize>,
 ) {
@@ -77,7 +77,7 @@ fn select_after_edit(
         // A stroke drawn with the pen stays unselected, so the selection box and
         // author popup don't sit over the next stroke (#429).
         Edit::AddAnnotation(a)
-            if matches!(a.shape, pdfcraft_engine::Shape::Ink { .. } | pdfcraft_engine::Shape::FreehandHighlight { .. })
+            if matches!(a.shape, patronuspdf_engine::Shape::Ink { .. } | patronuspdf_engine::Shape::FreehandHighlight { .. })
                 && matches!(
                     quick_tool,
                     crate::QuickTool::Comment(crate::comments::CommentTool::Ink | crate::comments::CommentTool::FreehandHighlight)
@@ -93,7 +93,7 @@ fn select_after_edit(
             view.comments.reveal = true;
             // A new highlight opens its note for typing straight away, as in Acrobat,
             // unless a note typed into another card is still unsaved.
-            if let (pdfcraft_engine::Shape::TextMarkup { kind: pdfcraft_engine::Markup::Highlight, .. }, Some(n)) = (&a.shape, newest)
+            if let (patronuspdf_engine::Shape::TextMarkup { kind: patronuspdf_engine::Markup::Highlight, .. }, Some(n)) = (&a.shape, newest)
                 && a.contents.is_empty()
                 && view.comments.editing.is_none()
             {
@@ -140,13 +140,13 @@ fn select_after_edit(
 /// The pages whose widgets differ between two form states, and the (field, page) pairs whose
 /// value changed and so must not be drawn from the baked page.
 fn form_edit_pages(
-    before: &[pdfcraft_engine::FormField],
-    after: &[pdfcraft_engine::FormField],
+    before: &[patronuspdf_engine::FormField],
+    after: &[patronuspdf_engine::FormField],
 ) -> (std::collections::BTreeSet<usize>, Vec<(String, usize)>) {
     let mut changed_pages = std::collections::BTreeSet::new();
     let mut unbaked = Vec::new();
     for f in after {
-        let pages = |field: &pdfcraft_engine::FormField| field.widgets.iter().filter_map(|w| w.page).collect::<Vec<_>>();
+        let pages = |field: &patronuspdf_engine::FormField| field.widgets.iter().filter_map(|w| w.page).collect::<Vec<_>>();
         match before.iter().find(|old| old.name == f.name) {
             Some(old) if old == f => {}
             Some(old) => {
@@ -168,7 +168,7 @@ fn form_edit_pages(
     (changed_pages, unbaked)
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Apply an edit to the active document. Returns `true` on success; failures are shown.
     pub fn apply_edit(&mut self, edit: Edit) -> bool {
         let Some((i, id)) = self.active_ids() else { return false };
@@ -176,7 +176,7 @@ impl PdfCraftApp {
         let across_pages = std::mem::take(&mut self.views[i].marks_across_pages).filter(|_| annotated_pages(&edit).is_some());
         let label = edit.label();
         let target_arrange_image = match &edit {
-            Edit::EditPageImage { page, index, change: pdfcraft_engine::ImageEdit::Arrange(_) } => {
+            Edit::EditPageImage { page, index, change: patronuspdf_engine::ImageEdit::Arrange(_) } => {
                 let doc = self.session.get(id);
                 let target = doc.and_then(|d| d.page_images(*page).get(*index).cloned());
                 let ambiguous = doc.is_some_and(|d| {
@@ -210,7 +210,7 @@ impl PdfCraftApp {
         };
         // The comments the pop-ups hold unsaved text or a drag for, to see afterwards whether
         // their places still name them (pages may move, come or go).
-        let popups_before: Vec<pdfcraft_render::Annotation> = match (self.views.get(i), self.session.get(id)) {
+        let popups_before: Vec<patronuspdf_render::Annotation> = match (self.views.get(i), self.session.get(id)) {
             (Some(v), Some(d)) => {
                 let keys = v.comments.popup_keys();
                 d.info.annotations.iter().filter(|a| keys.contains(&(a.page, a.index))).cloned().collect()
@@ -286,10 +286,12 @@ impl PdfCraftApp {
                 // Before the scripts' output, so an alert they raise still shows.
                 if let Some(n) = self.session.get(id).and_then(|d| d.edit_notices.first()).cloned() {
                     self.notify(match &n {
-                        pdfcraft_engine::EditNotice::Undrawn(t) => crate::content_ui::undrawn_message(t),
-                        pdfcraft_engine::EditNotice::BackdropsLeftOff { pages } => crate::marks_ui::backdrops_left_off_message(pages),
-                        pdfcraft_engine::EditNotice::RedactionElsewhere(e) => crate::dialogs::still_holding_note(e).unwrap_or_else(|| n.to_string()),
-                        pdfcraft_engine::EditNotice::RedactionIdentification(id) => {
+                        patronuspdf_engine::EditNotice::Undrawn(t) => crate::content_ui::undrawn_message(t),
+                        patronuspdf_engine::EditNotice::BackdropsLeftOff { pages } => crate::marks_ui::backdrops_left_off_message(pages),
+                        patronuspdf_engine::EditNotice::RedactionElsewhere(e) => {
+                            crate::dialogs::still_holding_note(e).unwrap_or_else(|| n.to_string())
+                        }
+                        patronuspdf_engine::EditNotice::RedactionIdentification(id) => {
                             crate::dialogs::identification_note(id).unwrap_or_else(|| n.to_string())
                         }
                     });
@@ -302,7 +304,7 @@ impl PdfCraftApp {
                 if let Some(view) = self.views.get_mut(i) {
                     // A drawing whose annotation wasn't added must not stay painted.
                     view.comments.drawings_refused();
-                    if matches!(&edit, Edit::EditPageImage { change, .. } if !matches!(change, pdfcraft_engine::ImageEdit::Arrange(_))) {
+                    if matches!(&edit, Edit::EditPageImage { change, .. } if !matches!(change, patronuspdf_engine::ImageEdit::Arrange(_))) {
                         view.image_selection = None;
                     }
                     // A paragraph that couldn't be applied opens again with its typing, instead of
@@ -461,7 +463,7 @@ impl PdfCraftApp {
     /// What was typed is then the step Undo takes back. False (nothing is undone, and the box
     /// stays open) while it holds text the standard fonts can't draw, or text that couldn't be
     /// applied: it is shown, never lost.
-    pub(crate) fn close_text_editors(&mut self, i: usize, id: pdfcraft_engine::DocId) -> bool {
+    pub(crate) fn close_text_editors(&mut self, i: usize, id: patronuspdf_engine::DocId) -> bool {
         let Some(view) = self.views.get_mut(i) else { return true };
         if let Some(c) = view.content.blocked() {
             view.content.hold_blocked();
@@ -558,7 +560,7 @@ impl PdfCraftApp {
             && generation(self) == before
             && let Some(view) = self.views.get_mut(i)
         {
-            view.forms.triggers.retain(|(_, t)| *t != pdfcraft_engine::FieldTrigger::MouseUp);
+            view.forms.triggers.retain(|(_, t)| *t != patronuspdf_engine::FieldTrigger::MouseUp);
         }
         // After the queued edit: a value typed into the field the focus left has been taken (and
         // its change has run the field's exit) before the focus scripts run.
@@ -665,7 +667,7 @@ impl PdfCraftApp {
     fn camera_level(&mut self, i: usize) {
         let Some(view) = self.views.get(i) else { return };
         let (id, Some(done)) = (view.id, view.camera_done) else { return };
-        let ours = |s: &pdfcraft_engine::Session, k: usize| {
+        let ours = |s: &patronuspdf_engine::Session, k: usize| {
             let label = s.get(id).and_then(|d| d.can_undo().map(str::to_owned));
             let want = if k + 1 == done.steps { "Enhance camera image" } else { "Rotate page" };
             label.as_deref() == Some(want)
@@ -792,7 +794,7 @@ impl PdfCraftApp {
         // Pasting into the document the pages came from is a duplicate (or, after Cut, a move):
         // its fields keep their names. Pasting into another document renames colliding ones.
         let field_conflicts =
-            if self.views[i].id == clip.from { pdfcraft_engine::FieldConflicts::Merge } else { pdfcraft_engine::FieldConflicts::Rename };
+            if self.views[i].id == clip.from { patronuspdf_engine::FieldConflicts::Merge } else { patronuspdf_engine::FieldConflicts::Rename };
         if self.apply_edit(Edit::InsertPagesFrom {
             name: clip.name.clone(),
             bytes: clip.bytes.clone(),
@@ -862,14 +864,14 @@ impl PdfCraftApp {
         let left = std::mem::replace(&mut view.forms.focused, now.clone());
         let id = view.id;
         let edited = view.forms.focus.clone();
-        use pdfcraft_engine::js::FieldFocus;
+        use patronuspdf_engine::js::FieldFocus;
         for ((name, obj, widget), focus) in [left.map(|l| (l, FieldFocus::Exit)), now.map(|n| (n, FieldFocus::Enter))].into_iter().flatten() {
             // The edited field's value before this script, to tell its untouched draft from typing:
             // the exit of the field left may have changed it already, and the draft with it.
             let before: Option<(String, Vec<String>)> = edited.as_ref().and_then(|e| {
                 crate::forms_ui::focused_field(e, &self.session.get(id)?.form).map(|f| (crate::forms_ui::draft_text(f), f.value.clone()))
             });
-            match self.session.field_focus_target(id, &name, obj.map(pdfcraft_engine::js::field_object_id), widget, focus) {
+            match self.session.field_focus_target(id, &name, obj.map(patronuspdf_engine::js::field_object_id), widget, focus) {
                 Ok(changed) => {
                     if changed
                         && let Some(info) = self.session.get(id).map(|d| d.info.clone())
@@ -993,7 +995,7 @@ impl PdfCraftApp {
     ///
     /// Each tab of the document holds typing of its own (split view). The tab in use stays active
     /// when the others have been committed.
-    pub(crate) fn commit_typing_in(&mut self, id: pdfcraft_engine::DocId) -> bool {
+    pub(crate) fn commit_typing_in(&mut self, id: patronuspdf_engine::DocId) -> bool {
         let keep = self.active_ids().filter(|(_, active)| *active == id).and_then(|(i, _)| self.views.get(i)).map(|v| v.pane.key);
         let tabs: Vec<u64> = self.views.iter().filter(|v| v.id == id).map(|v| v.pane.key).collect();
         for key in tabs {
@@ -1010,7 +1012,7 @@ impl PdfCraftApp {
     }
 
     /// [`Self::commit_typing_in`] for one tab of the document.
-    fn commit_typing_of_tab(&mut self, i: usize, id: pdfcraft_engine::DocId) -> bool {
+    fn commit_typing_of_tab(&mut self, i: usize, id: patronuspdf_engine::DocId) -> bool {
         // Added text the standard fonts can't draw can't be saved: show it rather than drop it.
         // Its page is brought into view, so the text, the warning and Discard are on screen.
         let blocked = self.views.get_mut(i).and_then(|v| {
@@ -1045,7 +1047,7 @@ impl PdfCraftApp {
     /// The Edit a PDF ▸ Text boxes (new text, and a paragraph open for editing) commit on
     /// click-away. Save does that first, so the typed text is in the file instead of being left
     /// open on the screen (#3496).
-    fn commit_open_text_edits(&mut self, i: usize, id: pdfcraft_engine::DocId) -> bool {
+    fn commit_open_text_edits(&mut self, i: usize, id: patronuspdf_engine::DocId) -> bool {
         let Some(doc) = self.session.get(id) else { return true };
         let Some(view) = self.views.get_mut(i) else { return true };
         // Both are taken out of the view before either edit runs, so keep what is needed to put
@@ -1068,7 +1070,7 @@ impl PdfCraftApp {
 
     /// The Fill & Sign type box commits on click-away. Save does that first, so the text is in
     /// the file (and can be flattened) instead of being left on the screen.
-    fn commit_open_fill_text(&mut self, i: usize, id: pdfcraft_engine::DocId) -> bool {
+    fn commit_open_fill_text(&mut self, i: usize, id: patronuspdf_engine::DocId) -> bool {
         let Some(tb) = self.views.get(i).and_then(|v| v.fill_text.clone()) else { return true };
         let text = tb.text.trim().to_string();
         if text.is_empty() {
@@ -1093,7 +1095,7 @@ impl PdfCraftApp {
 
     /// When the preference is on, bake Fill & Sign marks before the bytes are written.
     /// Returns false when the document is not allowed to change (nothing is written).
-    fn flatten_fill_sign_for_save(&mut self, id: pdfcraft_engine::DocId) -> bool {
+    fn flatten_fill_sign_for_save(&mut self, id: patronuspdf_engine::DocId) -> bool {
         if !self.flatten_fill_sign_on_save {
             return true;
         }
@@ -1140,9 +1142,9 @@ fn rect_matches(a: [f64; 4], b: [f64; 4]) -> bool {
 fn re_resolve_image_selection(
     view: &mut crate::DocView,
     page: usize,
-    target: &pdfcraft_engine::PageImage,
+    target: &patronuspdf_engine::PageImage,
     ambiguous_before: bool,
-    page_images: &[pdfcraft_engine::PageImage],
+    page_images: &[patronuspdf_engine::PageImage],
 ) {
     let exact_matches: Vec<usize> = page_images
         .iter()
@@ -1201,8 +1203,8 @@ fn content_page(edit: &Edit) -> Option<usize> {
 fn signatures_changed_after_edit(
     view: &mut crate::DocView,
     edit: &Edit,
-    info: &pdfcraft_render::DocInfo,
-    annots_before: &[pdfcraft_render::Annotation],
+    info: &patronuspdf_render::DocInfo,
+    annots_before: &[patronuspdf_render::Annotation],
     form_unbaked: Option<Vec<(String, usize)>>,
     one_page: Option<usize>,
 ) {
@@ -1227,8 +1229,8 @@ fn one_page_changed(
     view: &mut crate::DocView,
     edit: &Edit,
     page: usize,
-    annots_before: &[pdfcraft_render::Annotation],
-    info: &pdfcraft_render::DocInfo,
+    annots_before: &[patronuspdf_render::Annotation],
+    info: &patronuspdf_render::DocInfo,
 ) {
     if !matches!(edit, Edit::SetAnnotationPopup { .. }) {
         view.page_changed(page);
@@ -1296,7 +1298,7 @@ fn is_form_edit(edit: &Edit) -> bool {
     )
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Carry out a Bookmarks-panel action as an undoable edit.
     pub fn bookmark_action(&mut self, action: crate::panels::BmAction) {
         use crate::panels::BmAction as A;
@@ -1376,11 +1378,11 @@ impl PdfCraftApp {
     }
 }
 
-impl PdfCraftApp {
+impl PatronusPdfApp {
     /// Put the bookmark at `path` and its subtree on the bookmark clipboard. `Some(true)` when
     /// bookmarks nested too deep to list were left out; `None` if it could not be read (the reason
     /// is shown).
-    fn copy_bookmark(&mut self, id: pdfcraft_engine::DocId, path: &[usize]) -> Option<bool> {
+    fn copy_bookmark(&mut self, id: patronuspdf_engine::DocId, path: &[usize]) -> Option<bool> {
         match self.session.outline_tree(id, path) {
             Some(Ok(tree)) => {
                 if tree.truncated {
@@ -1399,10 +1401,10 @@ impl PdfCraftApp {
 
     /// Paste the bookmark clipboard as one undoable edit. Bookmarks whose page this document lacks
     /// arrive without a destination, and the toast says how many.
-    fn paste_bookmarks(&mut self, id: pdfcraft_engine::DocId, parent: Vec<usize>, index: usize) {
+    fn paste_bookmarks(&mut self, id: patronuspdf_engine::DocId, parent: Vec<usize>, index: usize) {
         let Some(bookmarks) = self.bookmark_clipboard.clone() else { return };
         let pages = self.session.get(id).map_or(0, |d| d.info.pages.len());
-        let unmapped = pdfcraft_engine::outline_unmapped(&bookmarks, pages).len();
+        let unmapped = patronuspdf_engine::outline_unmapped(&bookmarks, pages).len();
         if self.apply_edit(Edit::ImportBookmarks { parent, index, bookmarks, replace: false }) && unmapped > 0 {
             let n = u64::try_from(unmapped).unwrap_or(u64::MAX);
             self.notify(crate::i18n::trn(
@@ -1415,7 +1417,7 @@ impl PdfCraftApp {
     }
 }
 
-fn bookmark_at<'a>(items: &'a [pdfcraft_render::OutlineItem], path: &[usize]) -> Option<&'a pdfcraft_render::OutlineItem> {
+fn bookmark_at<'a>(items: &'a [patronuspdf_render::OutlineItem], path: &[usize]) -> Option<&'a patronuspdf_render::OutlineItem> {
     let (first, rest) = path.split_first()?;
     let item = items.get(*first)?;
     if rest.is_empty() { Some(item) } else { bookmark_at(&item.children, rest) }
@@ -1448,7 +1450,7 @@ mod tests;
 mod revert_draft_tests {
     use super::*;
     use crate::forms_ui::Focus;
-    use pdfcraft_engine::FieldValue;
+    use patronuspdf_engine::FieldValue;
 
     /// An open editor on the first widget of the field "name", holding `text` as typed.
     fn focus(text: &str) -> Focus {
@@ -1469,13 +1471,13 @@ mod revert_draft_tests {
         }
     }
 
-    fn app() -> PdfCraftApp {
-        let mut app = PdfCraftApp::new();
+    fn app() -> PatronusPdfApp {
+        let mut app = PatronusPdfApp::new();
         app.open_bytes("source.pdf", None, include_bytes!("../tests/data/form.pdf").to_vec()).unwrap();
         app
     }
 
-    fn queue_draft(app: &mut PdfCraftApp, index: usize, text: &str) {
+    fn queue_draft(app: &mut PatronusPdfApp, index: usize, text: &str) {
         app.views[index].forms.focus = Some(focus(text));
         let form = app.session.get(app.views[index].id).unwrap().form.clone();
         crate::forms_ui::commit(&mut app.views[index], &form);
@@ -1524,7 +1526,7 @@ mod revert_draft_tests {
         }
         let mut app = app();
         let fill =
-            |app: &mut PdfCraftApp, text: &str| app.apply_edit(Edit::SetFieldValue { name: "name".into(), value: FieldValue::Text(text.into()) });
+            |app: &mut PatronusPdfApp, text: &str| app.apply_edit(Edit::SetFieldValue { name: "name".into(), value: FieldValue::Text(text.into()) });
         assert!(fill(&mut app, "张三"));
         let toast = app.toast.as_ref().map(|t| t.0.clone()).expect("a notice");
         assert!(toast.contains("“张” (U+5F20)") && toast.contains("other PDF viewers redraw the field"), "{toast}");
@@ -1583,15 +1585,15 @@ mod revert_draft_tests {
     #[test]
     fn saving_on_close_keeps_text_typed_into_a_new_text_box() {
         use crate::content_ui::{TextDraft, default_style};
-        use pdfcraft_engine::AddedContent;
+        use patronuspdf_engine::AddedContent;
         for quit in [false, true] {
-            let dir = std::env::temp_dir().join(format!("pdfcraft-ui-new-text-{}-{quit}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("patronuspdf-ui-new-text-{}-{quit}", std::process::id()));
             let _ = std::fs::remove_dir_all(&dir);
             std::fs::create_dir_all(&dir).unwrap();
             let path = dir.join("source.pdf").to_string_lossy().into_owned();
             let bytes = include_bytes!("../tests/data/form.pdf").to_vec();
             std::fs::write(&path, &bytes).unwrap();
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.open_bytes("source.pdf", Some(path.clone()), bytes).unwrap();
             let rect = [72.0, 72.0, 272.0, 92.0];
             app.views[0].content.draft = Some(TextDraft {
@@ -1614,7 +1616,7 @@ mod revert_draft_tests {
             app.resolve_close(&ctx, Some(true));
             assert!(app.views.is_empty(), "the tab closes once saved");
 
-            let mut reopened = PdfCraftApp::new();
+            let mut reopened = PatronusPdfApp::new();
             reopened.open_bytes("source.pdf", Some(path.clone()), std::fs::read(&path).unwrap()).unwrap();
             let doc = reopened.session.get(reopened.views[0].id).unwrap();
             assert!(doc.added().iter().any(|a| matches!(&a.content, AddedContent::Text(t) if t.text == "Typed")), "quit: {quit}");
@@ -1626,10 +1628,10 @@ mod revert_draft_tests {
     /// is the saved one again, and nothing changes it after.
     #[test]
     fn revert_runs_no_exit_for_the_field_that_had_the_focus() {
-        let mut app = PdfCraftApp::new();
-        app.open_bytes("focus.pdf", None, pdfcraft_xfa::fixtures::shell(&pdfcraft_xfa::fixtures::focus_template())).unwrap();
+        let mut app = PatronusPdfApp::new();
+        app.open_bytes("focus.pdf", None, patronuspdf_xfa::fixtures::shell(&patronuspdf_xfa::fixtures::focus_template())).unwrap();
         let id = app.views[0].id;
-        let count = |app: &PdfCraftApp, name: &str| {
+        let count = |app: &PatronusPdfApp, name: &str| {
             app.session.get(id).unwrap().form.iter().find(|f| f.name == name).and_then(|f| f.value.first().cloned()).unwrap_or_default()
         };
         app.views[0].forms.focus = Some(Focus { name: "probe".into(), ..focus("") });
@@ -1646,9 +1648,9 @@ mod revert_draft_tests {
     /// field) runs them before anything reads the document: `hint`'s enter clears its "Type here".
     #[test]
     fn committing_the_form_runs_the_focus_scripts_of_a_move_not_yet_run() {
-        let mut app = PdfCraftApp::new();
-        app.open_bytes("focus.pdf", None, pdfcraft_xfa::fixtures::shell(&pdfcraft_xfa::fixtures::focus_template())).unwrap();
-        let hint = |app: &PdfCraftApp| {
+        let mut app = PatronusPdfApp::new();
+        app.open_bytes("focus.pdf", None, patronuspdf_xfa::fixtures::shell(&patronuspdf_xfa::fixtures::focus_template())).unwrap();
+        let hint = |app: &PatronusPdfApp| {
             app.session
                 .get(app.views[0].id)
                 .unwrap()
@@ -1690,13 +1692,13 @@ mod revert_draft_tests {
         }
         pdf.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
         for (typed, shown) in [(false, "new"), (true, "typed")] {
-            let mut app = PdfCraftApp::new();
+            let mut app = PatronusPdfApp::new();
             app.open_bytes("hot.pdf", None, pdf.clone()).unwrap();
             let hot = app.session.get(app.views[0].id).unwrap().form.iter().find(|f| f.name == "hot").unwrap().obj;
             let text = if typed { "typed" } else { "old" };
             app.views[0].forms.focus = Some(Focus { text: text.into(), picked: vec!["old".into()], ..focus("") });
-            let hot = ("hot".to_string(), pdfcraft_engine::js::field_object_id(hot), 0);
-            app.views[0].forms.triggers.push((hot, pdfcraft_engine::FieldTrigger::MouseEnter));
+            let hot = ("hot".to_string(), patronuspdf_engine::js::field_object_id(hot), 0);
+            app.views[0].forms.triggers.push((hot, patronuspdf_engine::FieldTrigger::MouseEnter));
             app.run_field_triggers(0);
             assert_eq!(app.views[0].forms.focus.as_ref().map(|f| f.text.as_str()), Some(shown), "typed: {typed}");
         }
@@ -1758,14 +1760,14 @@ mod revert_draft_tests {
             matches!(&app.views[0].pending_edit, Some(Edit::SetFieldValue { name, value: FieldValue::Text(text) }) if name == "name" && text == "Queued draft")
         );
         assert_eq!(app.active_ids(), Some((0, source)));
-        assert_eq!(app.toast.as_ref().unwrap().0, pdfcraft_engine::EditError::NoDocument.to_string());
+        assert_eq!(app.toast.as_ref().unwrap().0, patronuspdf_engine::EditError::NoDocument.to_string());
     }
 }
 
 #[cfg(test)]
 mod content_page_tests {
     use super::content_page;
-    use pdfcraft_engine::{Edit, ObjectKind, ObjectTarget};
+    use patronuspdf_engine::{Edit, ObjectKind, ObjectTarget};
 
     /// Single-page content edits keep every other page's rasters; anything else still
     /// invalidates the whole document.
@@ -1781,11 +1783,11 @@ mod content_page_tests {
 #[cfg(test)]
 mod attention_tests {
     use super::CloseRequest;
-    use crate::PdfCraftApp;
+    use crate::PatronusPdfApp;
 
     /// The attention requests one frame of `attend_save_prompt` sends, with the window `focused`
     /// or not.
-    fn attend(app: &mut PdfCraftApp, ctx: &egui::Context, focused: bool) -> Vec<egui::UserAttentionType> {
+    fn attend(app: &mut PatronusPdfApp, ctx: &egui::Context, focused: bool) -> Vec<egui::UserAttentionType> {
         let mut out = ctx.run_ui(egui::RawInput { focused, ..Default::default() }, |ui| app.attend_save_prompt(ui.ctx()));
         // The frame's font texture isn't uploaded anywhere in a unit test.
         out.textures_delta.clear();
@@ -1801,12 +1803,12 @@ mod attention_tests {
     #[test]
     fn a_save_finishing_behind_a_newer_question_the_user_saw_asks_for_nothing() {
         let ctx = egui::Context::default();
-        let mut app = PdfCraftApp::new();
+        let mut app = PatronusPdfApp::new();
         for name in ["a.pdf", "b.pdf", "c.pdf"] {
             let bytes = app.session.create_blank(200.0, 300.0, 1).unwrap();
             app.open_bytes(name, None, bytes.as_ref().clone()).unwrap();
             app.active = Some(app.views.len() - 1);
-            assert!(app.apply_edit(pdfcraft_engine::Edit::RotatePages { pages: vec![0], degrees: 90 }));
+            assert!(app.apply_edit(patronuspdf_engine::Edit::RotatePages { pages: vec![0], degrees: 90 }));
         }
         // a.pdf was answered with Save while quitting. While that save is pending, the user closes
         // c.pdf's tab, and its question opens in front.
